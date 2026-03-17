@@ -250,6 +250,7 @@ class DiscordNotificationService
 
   def project_url
     host = Rails.env.development? ? "http://localhost:3000" : ENV.fetch("APP_HOST", "https://activerabbit.com")
+    host = "https://#{host}" unless host.start_with?("http://", "https://")
     "#{host}/#{@project.slug}"
   end
 
