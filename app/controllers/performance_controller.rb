@@ -758,6 +758,35 @@ class PerformanceController < ApplicationController
     end
   end
 
+  def reopen_pr
+    project_scope = @current_project || @project
+    target = params[:target]
+
+    pr_url = project_scope&.settings&.dig("perf_pr_urls", target.to_s)
+
+    redirect_path = if @current_project
+                      performance_action_detail_path(target: target)
+    elsif @project
+                      project_performance_action_detail_path(@project, target: target)
+    else
+                      performance_action_detail_path(target: target)
+    end
+
+    unless pr_url.present?
+      redirect_to redirect_path, alert: "No existing PR found for this action"
+      return
+    end
+
+    pr_service = Github::PrService.new(project_scope)
+    result = pr_service.reopen_pr(pr_url)
+
+    if result[:success]
+      redirect_to result[:pr_url], allow_other_host: true
+    else
+      redirect_to redirect_path, alert: result[:error]
+    end
+  end
+
   def create_n_plus_one_pr
     project_scope = @current_project || @project
     @sql_fingerprint = project_scope.sql_fingerprints.find(params[:id])

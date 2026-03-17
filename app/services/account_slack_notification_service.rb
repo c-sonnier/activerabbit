@@ -111,7 +111,9 @@ class AccountSlackNotificationService
     if Rails.env.development?
       "http://localhost:3000/account/settings"
     else
-      "#{ENV.fetch('APP_HOST', 'https://activerabbit.com')}/account/settings"
+      host = ENV.fetch("APP_HOST", "https://activerabbit.com")
+      host = "https://#{host}" unless host.start_with?("http://", "https://")
+      "#{host}/account/settings"
     end
   end
 
@@ -119,7 +121,9 @@ class AccountSlackNotificationService
     if Rails.env.development?
       "http://localhost:3000/projects/#{project.slug}"
     else
-      "#{ENV.fetch('APP_HOST', 'https://activerabbit.com')}/projects/#{project.slug}"
+      host = ENV.fetch("APP_HOST", "https://activerabbit.com")
+      host = "https://#{host}" unless host.start_with?("http://", "https://")
+      "#{host}/projects/#{project.slug}"
     end
   end
 

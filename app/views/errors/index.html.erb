@@ -81,6 +81,37 @@
           <% end %>
         </div>
 
+        <!-- Severity Distribution -->
+        <div class="mb-8">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Severity Distribution</h3>
+          <div class="grid grid-cols-4 gap-4 mb-4">
+            <% sev_total = [@critical_count, @high_count, @medium_count, @low_count].sum.to_f %>
+            <% [
+              { key: "critical", label: "Critical", count: @critical_count, bg: "bg-gray-50",  border: "border-gray-200",    text: "text-gray-900",    bar: "bg-red-500",    icon_bg: "bg-red-100", icon_text: "text-red-600" },
+              { key: "high",     label: "High",     count: @high_count,     bg: "bg-gray-50",  border: "border-gray-200",    text: "text-gray-900",    bar: "bg-orange-500", icon_bg: "bg-orange-100", icon_text: "text-orange-600" },
+              { key: "medium",   label: "Medium",   count: @medium_count,   bg: "bg-gray-50",  border: "border-gray-200",    text: "text-gray-900",    bar: "bg-yellow-400", icon_bg: "bg-yellow-100", icon_text: "text-yellow-600" },
+              { key: "low",      label: "Low",      count: @low_count,      bg: "bg-gray-50",  border: "border-gray-200",    text: "text-gray-900",    bar: "bg-gray-300",   icon_bg: "bg-gray-100", icon_text: "text-gray-500" }
+            ].each do |s| %>
+              <% pct = sev_total > 0 ? ((s[:count] / sev_total) * 100).round(1) : 0 %>
+              <%= link_to errors_index_path(filter: s[:key]), class: "relative overflow-hidden rounded-xl border #{s[:border]} p-4 hover:shadow-md transition-shadow" do %>
+                <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-full <%= s[:icon_bg] %> flex items-center justify-center">
+                      <div class="w-2.5 h-2.5 rounded-full <%= s[:bar] %>"></div>
+                    </div>
+                    <span class="text-sm font-medium <%= s[:text] %>"><%= s[:label] %></span>
+                  </div>
+                  <span class="text-2xl font-bold <%= s[:text] %>"><%= s[:count] %></span>
+                </div>
+                <div class="w-full bg-white/60 rounded-full h-1.5">
+                  <div class="<%= s[:bar] %> h-1.5 rounded-full transition-all" style="width: <%= pct %>%"></div>
+                </div>
+                <div class="mt-1 text-right text-[10px] font-medium <%= s[:text] %> opacity-70"><%= pct %>%</div>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-medium text-gray-900">Error count over time</h3>
           <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner">
@@ -159,16 +190,19 @@
       <table class="w-full divide-y divide-gray-200 table-fixed" style="position: relative;">
         <thead class="bg-white border-b border-gray-200">
           <tr>
-            <th class="w-[40%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th class="w-[35%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <%= sort_link(@q, :exception_class, class: "inline-flex items-center gap-2") do %>
                 <span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-indigo-50 text-sm leading-none">🐰</span>
                 <span>Error & Action</span>
               <% end %>
             </th>
-            <th class="w-[12%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th class="w-[8%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <%= sort_link(@q, :severity, "Severity", class: "inline-flex items-center") %>
+            </th>
+            <th class="w-[10%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <%= sort_link(@q, :last_seen_at, "Last Seen", class: "inline-flex items-center") %>
             </th>
-            <th class="w-[8%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th class="w-[7%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <%= sort_link(@q, :count, "Total", class: "inline-flex items-center") %>
             </th>
             <th class="w-[10%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -199,34 +233,43 @@
               <td class="px-4 py-4 overflow-hidden">
                 <div class="flex items-start">
                   <div class="flex-shrink-0 mt-1">
-                    <% severity = issue.severity || 'low' %>
-                    <% severity_classes = {
-                      'critical' => 'bg-red-500',
-                      'high' => 'bg-orange-500',
-                      'medium' => 'bg-yellow-400',
-                      'low' => 'bg-gray-300'
-                    } %>
-                    <div class="w-2.5 h-2.5 rounded-full <%= severity_classes[severity] %>" title="<%= severity.capitalize %> severity"></div>
+                    <% dot_sev = issue.severity || 'low' %>
+                    <% dot_classes = { 'critical' => 'bg-red-500', 'high' => 'bg-orange-500', 'medium' => 'bg-yellow-400', 'low' => 'bg-gray-300' } %>
+                    <div class="w-2.5 h-2.5 rounded-full <%= dot_classes[dot_sev] %>" title="<%= dot_sev.capitalize %> severity"></div>
                   </div>
                   <div class="ml-3 min-w-0">
-                    <div class="flex items-center space-x-2 mb-1 flex-wrap gap-1">
-                      <span class="text-sm font-medium text-indigo-600">
-                        <%= issue.exception_class %>
-                      </span>
-                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                        <%= truncate(issue.project&.name || 'Unknown', length: 15) %>
-                      </span>
-                      <% if (@issue_ids_with_job_failures || Set.new).include?(issue.id) %>
-                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800" title="From Sidekiq/Solid Queue job">Job</span>
-                      <% end %>
-                    </div>
-                    <% if issue.sample_message.present? %>
-                      <div class="text-xs text-gray-600">
-                        <%= truncate(issue.sample_message, length: 80) %>
-                      </div>
+                  <div class="flex items-center space-x-2 mb-1 flex-wrap gap-1">
+                    <span class="text-sm font-medium text-indigo-600">
+                      <%= issue.exception_class %>
+                    </span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                      <%= truncate(issue.project&.name || 'Unknown', length: 15) %>
+                    </span>
+                    <% if (@issue_ids_with_job_failures || Set.new).include?(issue.id) %>
+                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800" title="From Sidekiq/Solid Queue job">Job</span>
                     <% end %>
                   </div>
+                  <% if issue.sample_message.present? %>
+                    <div class="text-xs text-gray-600">
+                      <%= truncate(issue.sample_message, length: 80) %>
+                    </div>
+                  <% end %>
+                  </div>
                 </div>
+              </td>
+
+              <!-- Severity -->
+              <td class="px-4 py-4">
+                <% sev = issue.severity || 'low' %>
+                <% sev_badge = {
+                  'critical' => 'bg-red-100 text-red-700 border-red-200',
+                  'high'     => 'bg-orange-100 text-orange-700 border-orange-200',
+                  'medium'   => 'bg-yellow-50 text-yellow-700 border-yellow-200',
+                  'low'      => 'bg-gray-50 text-gray-500 border-gray-200'
+                } %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold border <%= sev_badge[sev] %>">
+                  <%= sev.capitalize %>
+                </span>
               </td>
 
               <!-- Last Seen -->
