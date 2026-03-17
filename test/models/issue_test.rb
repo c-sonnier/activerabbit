@@ -159,28 +159,59 @@ class IssueTest < ActiveSupport::TestCase
   end
 
   # Severity calculation
+  #
+  # severity_score = impact + frequency + business + regression + data_risk - mitigation
+  # Thresholds: critical >= 80, high >= 55, medium >= 25, low < 25
 
-  test "calculated_severity returns low for low event counts" do
-    issue = issues(:old_issue)
-    issue.count = 5
+  test "calculated_severity returns low for cosmetic error in admin area" do
+    # RoutingError (cosmetic=5) + admin (biz=8) + no events (freq=0) - mitigation (admin -10, few users -8 = -18)
+    # Score: 5 + 0 + 8 + 0 + 0 - 18 = -5 → clamped to 0 → Low
+    project = projects(:default)
+    issue = Issue.new(
+      project: project, fingerprint: "sev-low-#{SecureRandom.hex(4)}",
+      exception_class: "ActionController::RoutingError",
+      top_frame: "/app/test.rb:1", controller_action: "Admin::DashboardController#index",
+      count: 1, status: "open", first_seen_at: 2.days.ago, last_seen_at: 1.day.ago
+    )
     assert_equal "low", issue.calculated_severity
   end
 
-  test "calculated_severity returns medium for moderate event counts" do
-    issue = issues(:open_issue)
-    issue.count = 50
+  test "calculated_severity returns medium for regular error in normal feature" do
+    # RuntimeError (internal=25) + regular feature (biz=12) - few users (-8)
+    # Score: 25 + 0 + 12 + 0 + 0 - 8 = 29 → Medium
+    project = projects(:default)
+    issue = Issue.new(
+      project: project, fingerprint: "sev-med-#{SecureRandom.hex(4)}",
+      exception_class: "RuntimeError",
+      top_frame: "/app/test.rb:1", controller_action: "ReportsController#show",
+      count: 1, status: "open", first_seen_at: 2.days.ago, last_seen_at: 1.hour.ago
+    )
     assert_equal "medium", issue.calculated_severity
   end
 
-  test "calculated_severity returns high for high event counts" do
-    issue = issues(:open_issue)
-    issue.count = 500
+  test "calculated_severity returns high for internal error in checkout area" do
+    # NoMethodError (internal=25) + checkout (biz=30) + data_risk (checkout=30, cap 40) - few users (-8)
+    # Score: 25 + 0 + 30 + 0 + 30 - 8 = 77 → High
+    project = projects(:default)
+    issue = Issue.new(
+      project: project, fingerprint: "sev-high-#{SecureRandom.hex(4)}",
+      exception_class: "NoMethodError",
+      top_frame: "/app/test.rb:1", controller_action: "CheckoutController#create",
+      count: 1, status: "open", first_seen_at: 2.days.ago, last_seen_at: 1.hour.ago
+    )
     assert_equal "high", issue.calculated_severity
   end
 
-  test "calculated_severity returns critical for very high event counts" do
-    issue = issues(:open_issue)
-    issue.count = 2000
+  test "calculated_severity returns critical for crash in payment with security risk" do
+    # SecurityError (crash=35) + checkout (biz=30) + data_risk (security=40) - few users (-8)
+    # Score: 35 + 0 + 30 + 0 + 40 - 8 = 97 → Critical
+    project = projects(:default)
+    issue = Issue.new(
+      project: project, fingerprint: "sev-crit-#{SecureRandom.hex(4)}",
+      exception_class: "SecurityError",
+      top_frame: "/app/test.rb:1", controller_action: "PaymentController#charge",
+      count: 1, status: "open", first_seen_at: 2.days.ago, last_seen_at: 1.hour.ago
+    )
     assert_equal "critical", issue.calculated_severity
   end
 
@@ -189,23 +220,28 @@ class IssueTest < ActiveSupport::TestCase
     issue = Issue.new(
       project: project,
       fingerprint: "test-severity-#{SecureRandom.hex(8)}",
-      exception_class: "SeverityTestError",
+      exception_class: "RuntimeError",
       top_frame: "/app/test.rb:1",
       controller_action: "TestController#test",
-      count: 500,
+      count: 1,
       status: "open",
       first_seen_at: Time.current,
       last_seen_at: Time.current
     )
     issue.save!
 
-    # Should have severity set based on count
     assert_includes %w[low medium high critical], issue.severity
   end
 
   test "update_severity! updates stored severity" do
-    issue = issues(:open_issue)
-    issue.update_column(:count, 2000)
+    # SecurityError in payment → critical (score ~97)
+    project = projects(:default)
+    issue = Issue.create!(
+      project: project, fingerprint: "sev-update-#{SecureRandom.hex(4)}",
+      exception_class: "SecurityError",
+      top_frame: "/app/test.rb:1", controller_action: "PaymentController#charge",
+      count: 1, status: "open", first_seen_at: 2.days.ago, last_seen_at: 1.hour.ago
+    )
     issue.update_column(:severity, "low") # Force wrong severity
 
     issue.update_severity!

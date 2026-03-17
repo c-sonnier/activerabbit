@@ -61,7 +61,7 @@ class Event < ApplicationRecord
     end
 
     # Create event (individual occurrence)
-    create!(
+    event = create!(
       project: project,
       issue: issue,
       exception_class: exception_class,
@@ -78,6 +78,12 @@ class Event < ApplicationRecord
       server_name: payload[:server_name],
       request_id: payload[:request_id]
     )
+
+    # Recalculate severity now that the event exists (the before_save callback
+    # at issue creation time sees 0 events; this update catches up).
+    issue.update_severity!
+
+    event
   end
 
   def top_frame

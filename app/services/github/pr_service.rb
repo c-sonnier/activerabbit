@@ -58,6 +58,58 @@ module Github
       end
     end
 
+    def reopen_pr(pr_url)
+      return { success: false, error: "GitHub integration not configured" } unless configured?
+      return { success: false, error: "No PR URL provided" } if pr_url.blank?
+
+      pr_number = extract_pr_number(pr_url)
+      return { success: false, error: "Could not parse PR number from URL" } unless pr_number
+
+      owner, repo = @github_repo.split("/", 2)
+      token = @token_manager.get_token
+      return { success: false, error: "Failed to acquire GitHub token" } unless token.present?
+
+      api_client = Github::ApiClient.new(token)
+      pr_info = api_client.get_pr_info(owner, repo, pr_number)
+      return { success: false, error: "PR ##{pr_number} not found" } unless pr_info
+
+      if pr_info[:merged]
+        return { success: false, error: "PR ##{pr_number} has already been merged and cannot be reopened" }
+      end
+
+      if pr_info[:state] == "open"
+        return { success: true, pr_url: pr_info[:html_url], already_open: true }
+      end
+
+      result = api_client.reopen_pr(owner, repo, pr_number)
+      if result.is_a?(Hash) && result[:error]
+        return { success: false, error: "Failed to reopen PR ##{pr_number}: #{result[:error]}" }
+      end
+
+      Rails.logger.info "[GitHub API] Reopened PR ##{pr_number} at #{pr_info[:html_url]}"
+      { success: true, pr_url: pr_info[:html_url], reopened: true }
+    rescue => e
+      Rails.logger.error "GitHub PR reopen failed: #{e.class}: #{e.message}"
+      { success: false, error: e.message }
+    end
+
+    def pr_state(pr_url)
+      return nil if pr_url.blank? || !configured?
+
+      pr_number = extract_pr_number(pr_url)
+      return nil unless pr_number
+
+      owner, repo = @github_repo.split("/", 2)
+      token = @token_manager.get_token
+      return nil unless token.present?
+
+      api_client = Github::ApiClient.new(token)
+      api_client.get_pr_info(owner, repo, pr_number)
+    rescue => e
+      Rails.logger.error "GitHub PR state check failed: #{e.class}: #{e.message}"
+      nil
+    end
+
     def create_pr_for_issue(issue, custom_branch_name: nil)
       return { success: false, error: "GitHub integration not configured" } unless configured?
 
@@ -164,6 +216,11 @@ module Github
 
     def configured?
       @token_manager.configured? && @github_repo.present?
+    end
+
+    def extract_pr_number(pr_url)
+      match = pr_url.to_s.match(%r{/pull/(\d+)})
+      match[1].to_i if match
     end
 
     # Load private key from environment (supports multiple formats)

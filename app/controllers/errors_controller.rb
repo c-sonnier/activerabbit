@@ -32,6 +32,14 @@ class ErrorsController < ApplicationController
       base_scope = base_scope.from_job_failures
     when "ai"
       base_scope = base_scope.where.not(ai_summary: [nil, ""])
+    when "critical"
+      base_scope = base_scope.by_severity("critical")
+    when "high"
+      base_scope = base_scope.by_severity("high")
+    when "medium"
+      base_scope = base_scope.by_severity("medium")
+    when "low"
+      base_scope = base_scope.by_severity("low")
     end
 
     # Time period filter from header buttons — default to show all
@@ -50,7 +58,11 @@ class ErrorsController < ApplicationController
     end
 
     @q = base_scope.ransack(params[:q])
-    scoped_issues = @q.result.includes(:project).recent
+    scoped_issues = if params[:q]&.dig(:s).present?
+                      @q.result.includes(:project)
+                    else
+                      @q.result.includes(:project).severity_ordered
+                    end
 
     # Use pagy_countless to skip the expensive SELECT COUNT(*) on millions of rows.
     # Trade-off: we don't show "Page X of Y" or total count in pagination.
@@ -64,13 +76,18 @@ class ErrorsController < ApplicationController
       issues_base = project_scope ? project_scope.issues : Issue
       issues_base = issues_base.where("last_seen_at < ?", 1.minute.ago)
       status_counts = issues_base.group(:status).count
+      severity_counts = issues_base.group(:severity).count
       {
         total: status_counts.values.sum,
         wip: status_counts.fetch("wip", 0),
         closed: status_counts.fetch("closed", 0),
         recent: issues_base.where("last_seen_at > ?", 24.hours.ago).count,
         failed_jobs: issues_base.from_job_failures.count,
-        ai_summaries: issues_base.where.not(ai_summary: [nil, ""]).count
+        ai_summaries: issues_base.where.not(ai_summary: [nil, ""]).count,
+        critical: severity_counts.fetch("critical", 0),
+        high: severity_counts.fetch("high", 0),
+        medium: severity_counts.fetch("medium", 0),
+        low: severity_counts.fetch("low", 0)
       }
     end
 
@@ -80,6 +97,10 @@ class ErrorsController < ApplicationController
     @recent_errors = stats[:recent]
     @failed_jobs_count = stats[:failed_jobs]
     @ai_summaries_count = stats[:ai_summaries]
+    @critical_count = stats[:critical]
+    @high_count = stats[:high]
+    @medium_count = stats[:medium]
+    @low_count = stats[:low]
 
     # ── Impact metrics (scoped to the 25 issues on this page) ─────────
     issue_ids = @issues.map(&:id)
@@ -498,6 +519,51 @@ class ErrorsController < ApplicationController
         render json: { success: false, error: result[:error] || "Failed to create PR" }, status: :unprocessable_entity
       else
         redirect_to redirect_path, alert: (result[:error] || "Failed to open PR")
+      end
+    end
+  end
+
+  def reopen_pr
+    project_scope = @current_project || @project
+    @issue = (project_scope ? project_scope.issues : Issue).find(params[:id])
+
+    pr_url = (project_scope || @issue.project)&.settings&.dig("issue_pr_urls", @issue.id.to_s)
+
+    redirect_path = if @current_project
+                      "/#{@current_project.slug}/errors/#{@issue.id}"
+    elsif @project
+                      project_error_path(@project, @issue)
+    else
+                      error_path(@issue)
+    end
+
+    unless pr_url.present?
+      if request.xhr? || request.format.json?
+        render json: { success: false, error: "No existing PR found for this issue" }, status: :not_found
+      else
+        redirect_to redirect_path, alert: "No existing PR found for this issue"
+      end
+      return
+    end
+
+    pr_service = Github::PrService.new(project_scope || @issue.project)
+    result = pr_service.reopen_pr(pr_url)
+
+    if result[:success]
+      if request.xhr? || request.format.json?
+        render json: { success: true, pr_url: result[:pr_url], reopened: result[:reopened], already_open: result[:already_open] }
+      else
+        if result[:already_open]
+          redirect_to result[:pr_url], allow_other_host: true
+        else
+          redirect_to result[:pr_url], allow_other_host: true, notice: "PR reopened successfully"
+        end
+      end
+    else
+      if request.xhr? || request.format.json?
+        render json: { success: false, error: result[:error] }, status: :unprocessable_entity
+      else
+        redirect_to redirect_path, alert: result[:error]
       end
     end
   end

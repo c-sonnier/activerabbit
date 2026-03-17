@@ -73,6 +73,7 @@ Rails.application.routes.draw do
   get "performance/:id", to: "performance#show", as: "performance_issue"
   get "performance/actions/:target", to: "performance#action_detail", as: "performance_action_detail", constraints: { target: /[^\/]+/ }, format: false
   post "performance/actions/:target/create_pr", to: "performance#create_pr", as: "performance_create_pr"
+  post "performance/actions/:target/reopen_pr", to: "performance#reopen_pr", as: "performance_reopen_pr"
   get "performance/sql_fingerprints", to: "performance#sql_fingerprints", as: "performance_sql_fingerprints"
   get "performance/sql_fingerprints/:id", to: "performance#sql_fingerprint", as: "performance_sql_fingerprint"
   post "performance/sql_fingerprints/:id/create_pr", to: "performance#create_n_plus_one_pr", as: "performance_create_n_plus_one_pr"
@@ -82,6 +83,7 @@ Rails.application.routes.draw do
   get "projects/:project_id/performance/:id", to: "performance#show", as: "project_performance_issue"
   get "projects/:project_id/performance/actions/:target", to: "performance#action_detail", as: "project_performance_action_detail", constraints: { target: /[^\/]+/ }, format: false
   post "projects/:project_id/performance/actions/:target/create_pr", to: "performance#create_pr", as: "project_performance_action_create_pr"
+  post "projects/:project_id/performance/actions/:target/reopen_pr", to: "performance#reopen_pr", as: "project_performance_action_reopen_pr"
   get "projects/:project_id/performance/sql_fingerprints", to: "performance#sql_fingerprints", as: "project_performance_sql_fingerprints"
   get "projects/:project_id/performance/sql_fingerprints/:id", to: "performance#sql_fingerprint", as: "project_performance_sql_fingerprint"
   post "projects/:project_id/performance/sql_fingerprints/:id/create_pr", to: "performance#create_n_plus_one_pr", as: "project_performance_create_n_plus_one_pr"
@@ -95,6 +97,7 @@ Rails.application.routes.draw do
   patch "projects/:project_id/errors/:id", to: "errors#update"
   delete "projects/:project_id/errors/:id", to: "errors#destroy"
   post "projects/:project_id/errors/:id/create_pr", to: "errors#create_pr", as: "project_error_create_pr"
+  post "projects/:project_id/errors/:id/reopen_pr", to: "errors#reopen_pr", as: "project_error_reopen_pr"
   post "projects/:project_id/errors/:id/regenerate_ai_summary", to: "errors#regenerate_ai_summary", as: "regenerate_ai_summary_project_error"
 
   # Projects management (non-admin)
@@ -263,6 +266,7 @@ Rails.application.routes.draw do
   get ":project_slug/errors/:id", to: "errors#show", as: "project_slug_error"
   patch ":project_slug/errors/:id", to: "errors#update"
   post ":project_slug/errors/:id/create_pr", to: "errors#create_pr", as: "project_slug_error_create_pr"
+  post ":project_slug/errors/:id/reopen_pr", to: "errors#reopen_pr", as: "project_slug_error_reopen_pr"
   post ":project_slug/errors/:id/regenerate_ai_summary", to: "errors#regenerate_ai_summary", as: "project_slug_error_regenerate_ai_summary"
   get ":project_slug/performance", to: "performance#index", as: "project_slug_performance"
   get ":project_slug/performance/:id", to: "performance#show", as: "project_slug_performance_issue"

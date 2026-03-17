@@ -38,6 +38,30 @@ module Github
       nil
     end
 
+    def get_pr_info(owner, repo, pr_number)
+      pr = get("/repos/#{owner}/#{repo}/pulls/#{pr_number}")
+      return nil unless pr.is_a?(Hash) && pr["number"]
+
+      {
+        number: pr["number"],
+        state: pr["state"],
+        merged: pr["merged"] || false,
+        title: pr["title"],
+        html_url: pr["html_url"],
+        head_branch: pr.dig("head", "ref"),
+        base_branch: pr.dig("base", "ref"),
+        updated_at: pr["updated_at"],
+        draft: pr["draft"] || false
+      }
+    rescue => e
+      Rails.logger.error "[GitHub API] get_pr_info error: #{e.message}"
+      nil
+    end
+
+    def reopen_pr(owner, repo, pr_number)
+      patch("/repos/#{owner}/#{repo}/pulls/#{pr_number}", { state: "open" })
+    end
+
     private
 
     def headers
