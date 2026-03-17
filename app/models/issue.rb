@@ -81,6 +81,9 @@ class Issue < ApplicationRecord
   scope :by_severity, ->(level) { where(severity: level) }
   scope :critical, -> { where(severity: "critical") }
   scope :high_and_above, -> { where(severity: %w[high critical]) }
+  scope :severity_ordered, -> {
+    order(Arel.sql("CASE severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END, last_seen_at DESC"))
+  }
   # Fast job-failure filter using the denormalized boolean flag on issues.
   # Falls back to the expensive Event subquery only if the column hasn't been migrated yet.
   scope :from_job_failures, -> {

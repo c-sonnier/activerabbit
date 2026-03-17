@@ -498,6 +498,58 @@
                 </div>
               </div>
 
+              <!-- Severity Filter Dropdown -->
+              <div class="relative shrink-0" data-controller="dropdown">
+                <%
+                  sev_filter = params[:filter]
+                  sev_active = %w[critical high medium low].include?(sev_filter)
+                  sev_label = sev_active ? sev_filter.capitalize : "Severity"
+                  sev_icon_color = case sev_filter
+                    when "critical" then "text-red-500"
+                    when "high" then "text-orange-500"
+                    when "medium" then "text-yellow-500"
+                    when "low" then "text-gray-400"
+                    else "text-gray-500"
+                  end
+                %>
+                <button data-action="click->dropdown#toggle" class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-300 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                  <svg class="w-4 h-4 <%= sev_icon_color %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path>
+                  </svg>
+                  <span><%= sev_label %></span>
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div data-dropdown-target="menu" class="hidden absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+                  <div class="py-1">
+                    <% sev_base = defined?(filter_base_path) ? filter_base_path : errors_index_path %>
+                    <% sev_period = params[:period] %>
+                    <% sev_tab = params[:tab] %>
+                    <% if sev_active %>
+                      <% all_qs = [("period=#{sev_period}" if sev_period.present?), ("tab=#{sev_tab}" if sev_tab.present?)].compact.join("&") %>
+                      <%= link_to "#{sev_base}#{all_qs.present? ? '?' + all_qs : ''}", class: "flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" do %>
+                        <span class="w-2 h-2 rounded-full bg-gray-300"></span>
+                        All Severities
+                      <% end %>
+                      <div class="border-t border-gray-100"></div>
+                    <% end %>
+                    <% [
+                      { key: "critical", label: "Critical", dot: "bg-red-500" },
+                      { key: "high",     label: "High",     dot: "bg-orange-500" },
+                      { key: "medium",   label: "Medium",   dot: "bg-yellow-400" },
+                      { key: "low",      label: "Low",      dot: "bg-gray-300" }
+                    ].each do |s| %>
+                      <% sqs = ["filter=#{s[:key]}", ("period=#{sev_period}" if sev_period.present?), ("tab=#{sev_tab}" if sev_tab.present?)].compact.join("&") %>
+                      <%= link_to "#{sev_base}?#{sqs}", class: "flex items-center gap-2 px-4 py-2 text-sm #{sev_filter == s[:key] ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-100'}" do %>
+                        <span class="w-2 h-2 rounded-full <%= s[:dot] %>"></span>
+                        <%= s[:label] %>
+                      <% end %>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+
               <!-- List/Analytics View Toggle -->
               <div class="flex items-center gap-1 shrink-0">
                 <%

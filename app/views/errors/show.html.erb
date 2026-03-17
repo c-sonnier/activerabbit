@@ -549,6 +549,72 @@ end %>
 
   <% elsif current_tab == 'graph' %>
     <div class="border-t border-gray-200 px-6 py-6">
+
+      <%# ── Severity Radar Chart ─────────────────────────────── %>
+      <% breakdown = @issue.severity_score_breakdown rescue {} %>
+      <% radar_labels = ["Impact", "Frequency", "Business", "Regression", "Data Risk", "Mitigation"] %>
+      <% radar_scores = [
+        breakdown[:impact] || 0,
+        breakdown[:frequency] || 0,
+        breakdown[:business] || 0,
+        breakdown[:regression] || 0,
+        breakdown[:data_risk] || 0,
+        breakdown[:mitigation] || 0
+      ] %>
+      <% radar_max = [35, 25, 30, 15, 40, 18] %>
+
+      <div class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-medium text-gray-900">Severity Analysis</h3>
+          <% s_sev = @issue.severity || 'low' %>
+          <% s_sev_styles = {
+            'critical' => 'bg-red-100 text-red-700 border-red-200',
+            'high'     => 'bg-orange-100 text-orange-700 border-orange-200',
+            'medium'   => 'bg-yellow-100 text-yellow-700 border-yellow-200',
+            'low'      => 'bg-gray-100 text-gray-500 border-gray-200'
+          } %>
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border <%= s_sev_styles[s_sev] %>">
+            Score: <%= breakdown[:total] || 0 %>/100 &middot; <%= s_sev.capitalize %>
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Radar -->
+          <div class="relative bg-gray-50 rounded-xl p-4 border border-gray-100" style="height: 320px;">
+            <canvas data-controller="radar"
+                    data-radar-labels-value='<%= radar_labels.to_json %>'
+                    data-radar-scores-value='<%= radar_scores.to_json %>'
+                    data-radar-max-scores-value='<%= radar_max.to_json %>'></canvas>
+          </div>
+
+          <!-- Factor Breakdown -->
+          <div class="space-y-3">
+            <% factors = [
+              { label: "Impact",     score: breakdown[:impact]     || 0, max: 35, color: "indigo",  desc: "Exception severity (crash / internal / partial / cosmetic)" },
+              { label: "Frequency",  score: breakdown[:frequency]  || 0, max: 25, color: "blue",    desc: "Events/hour velocity + unique affected users" },
+              { label: "Business",   score: breakdown[:business]   || 0, max: 30, color: "violet",  desc: "Affected area (checkout / auth / core / admin)" },
+              { label: "Regression", score: breakdown[:regression] || 0, max: 15, color: "amber",   desc: "Re-opened after close or appeared after latest deploy" },
+              { label: "Data Risk",  score: breakdown[:data_risk]  || 0, max: 40, color: "red",     desc: "Security errors or data corruption in critical paths" },
+              { label: "Mitigation", score: breakdown[:mitigation] || 0, max: 18, color: "emerald", desc: "Reduced by: job context, admin area, low user count" }
+            ] %>
+            <% factors.each do |f| %>
+              <div class="bg-white rounded-lg border border-gray-100 px-4 py-3">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-sm font-medium text-gray-800"><%= f[:label] %></span>
+                  <span class="text-sm font-bold text-<%= f[:color] %>-600"><%= f[:score] %><span class="text-gray-400 font-normal">/<%= f[:max] %></span></span>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-1.5">
+                  <% bar_pct = f[:max] > 0 ? ((f[:score].to_f / f[:max]) * 100).clamp(0, 100).round : 0 %>
+                  <div class="bg-<%= f[:color] %>-500 h-1.5 rounded-full transition-all" style="width: <%= bar_pct %>%"></div>
+                </div>
+                <p class="mt-1 text-[11px] text-gray-400"><%= f[:desc] %></p>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <%# ── Error count over time ─────────────────────────────── %>
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-medium text-gray-900">Error count over time</h3>
         <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner">

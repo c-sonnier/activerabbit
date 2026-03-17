@@ -58,7 +58,11 @@ class ErrorsController < ApplicationController
     end
 
     @q = base_scope.ransack(params[:q])
-    scoped_issues = @q.result.includes(:project).recent
+    scoped_issues = if params[:q]&.dig(:s).present?
+                      @q.result.includes(:project)
+                    else
+                      @q.result.includes(:project).severity_ordered
+                    end
 
     # Use pagy_countless to skip the expensive SELECT COUNT(*) on millions of rows.
     # Trade-off: we don't show "Page X of Y" or total count in pagination.
