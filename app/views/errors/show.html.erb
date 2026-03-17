@@ -202,7 +202,8 @@
         'low'      => 'bg-gray-100 text-gray-600 border-gray-200'
       } %>
       <% sev_icons = { 'critical' => '🔴', 'high' => '🟠', 'medium' => '🟡', 'low' => '⚪' } %>
-      <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border <%= sev_styles[sev] %>" title="Severity score: <%= @issue.severity_score rescue 0 %>">
+      <% breakdown = @issue.severity_score_breakdown rescue {} %>
+      <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border <%= sev_styles[sev] %>" title="Score: <%= breakdown[:total] || 0 %> | Impact: <%= breakdown[:impact] || 0 %> Freq: <%= breakdown[:frequency] || 0 %> Biz: <%= breakdown[:business] || 0 %> Regr: <%= breakdown[:regression] || 0 %> Risk: <%= breakdown[:data_risk] || 0 %> Mitig: -<%= breakdown[:mitigation] || 0 %>">
         <span class="mr-1"><%= sev_icons[sev] %></span>
         <%= sev.upcase %>
       </span>

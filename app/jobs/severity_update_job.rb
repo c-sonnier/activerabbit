@@ -3,16 +3,16 @@
 # Recalculates severity for all active (open/wip) issues.
 # Run periodically (every 5-10 minutes) to keep severity badges accurate.
 #
-# Severity uses a multi-factor scoring algorithm (0-100 points):
-#   - Event frequency (24h)   – up to 25 pts
-#   - Total event count        – up to 10 pts
-#   - Unique users affected    – up to 20 pts
-#   - Velocity (spike detect)  – up to 15 pts
-#   - Exception type severity  – up to 15 pts
-#   - Recurrence (reopened)    – up to 10 pts
-#   - Freshness (new errors)   – up to  5 pts
+# severity_score = impact + frequency + business + regression + data_risk - mitigation
 #
-# Score thresholds: critical >= 60, high >= 35, medium >= 15, low < 15
+#   A. Impact        (max ~35) — how much does it break?
+#   B. Frequency     (max ~50) — events/hour + % of unique users
+#   C. Business      (max ~30) — checkout/auth/core/admin/internal
+#   D. Regression    (max ~25) — reappeared after fix or appeared after deploy
+#   E. Data Risk     (max ~40) — security/data-loss/billing risk
+#   F. Mitigation    (max -20) — auto-retry, admin-only, single user
+#
+# Score thresholds: critical >= 80, high >= 55, medium >= 25, low < 25
 #
 class SeverityUpdateJob < ApplicationJob
   queue_as :default

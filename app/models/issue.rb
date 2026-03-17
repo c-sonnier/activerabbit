@@ -15,42 +15,62 @@ class Issue < ApplicationRecord
 
   SEVERITIES = %w[low medium high critical].freeze
 
-  # Multi-factor severity scoring weights (total max ~100 points)
-  SEVERITY_WEIGHTS = {
-    frequency_24h: 25,      # events in last 24h
-    total_count: 10,        # lifetime event count
-    unique_users: 20,       # unique users affected in 24h
-    velocity: 15,           # acceleration: last 1h vs previous 1h
-    exception_type: 15,     # inherent severity of the exception class
-    recurrence: 10,         # was the issue previously closed and reopened?
-    freshness: 5            # first seen recently = higher urgency
-  }.freeze
+  # severity_score = impact + frequency + business + regression + data_risk - mitigation
+  # Score 0-100 → mapped to severity level
+  SEVERITY_SCORE_THRESHOLDS = { critical: 80, high: 55, medium: 25 }.freeze
 
-  SEVERITY_SCORE_THRESHOLDS = { critical: 60, high: 35, medium: 15 }.freeze
-
-  CRITICAL_EXCEPTION_CLASSES = %w[
-    SecurityError SignalException SystemExit SystemStackError
-    NoMemoryError fatal Errno::ENOMEM
-    OpenSSL::SSL::SSLError
+  # A. Impact — exception classes that signal app crashes / total failures
+  CRASH_EXCEPTION_CLASSES = %w[
+    SecurityError SystemStackError NoMemoryError SignalException SystemExit
+    fatal Errno::ENOMEM
     PG::ConnectionBad Mysql2::Error::ConnectionError
-    Redis::CannotConnectError
+    Redis::CannotConnectError Redis::TimeoutError
+    OpenSSL::SSL::SSLError
   ].freeze
 
-  HIGH_EXCEPTION_CLASSES = %w[
-    NoMethodError TypeError NameError ArgumentError
+  INTERNAL_ERROR_CLASSES = %w[
+    NoMethodError TypeError NameError ArgumentError RuntimeError
     ActiveRecord::StatementInvalid ActiveRecord::Deadlocked
     ActiveRecord::LockWaitTimeout
     Net::ReadTimeout Net::OpenTimeout Timeout::Error
     Errno::ECONNREFUSED Errno::ECONNRESET
+    Stripe::CardError Stripe::InvalidRequestError Stripe::APIConnectionError
+    Stripe::APIError Stripe::AuthenticationError
   ].freeze
 
-  MEDIUM_EXCEPTION_CLASSES = %w[
+  PARTIAL_BREAK_CLASSES = %w[
     ActiveRecord::RecordNotFound ActiveRecord::RecordInvalid
     ActiveRecord::RecordNotUnique
-    ActionController::RoutingError ActionController::UnknownFormat
-    ActionController::InvalidAuthenticityToken
+    ActionController::UnknownFormat
     ActionController::ParameterMissing
     JSON::ParserError Encoding::UndefinedConversionError
+  ].freeze
+
+  COSMETIC_CLASSES = %w[
+    ActionController::RoutingError
+    ActionController::InvalidAuthenticityToken
+    ActionDispatch::Http::MimeNegotiation::InvalidType
+  ].freeze
+
+  # C. Business — controller patterns by criticality
+  CHECKOUT_PATTERNS  = %w[checkout payment subscription charge billing invoice stripe order purchase cart].freeze
+  AUTH_PATTERNS      = %w[session login signin signup register password auth omniauth devise].freeze
+  CORE_PATTERNS      = %w[dashboard home main app api].freeze
+  ADMIN_PATTERNS     = %w[admin super_admin sidekiq administrate].freeze
+  INTERNAL_PATTERNS  = %w[health_check test_monitoring debug internal up].freeze
+
+  # D. Data risk — exception classes that signal data/security/money risk
+  SECURITY_RISK_CLASSES = %w[
+    SecurityError OpenSSL::SSL::SSLError
+    ActionController::InvalidAuthenticityToken
+    JWT::DecodeError JWT::VerificationError
+  ].freeze
+
+  DATA_CORRUPTION_CLASSES = %w[
+    ActiveRecord::StatementInvalid ActiveRecord::Deadlocked
+    ActiveRecord::SerializationFailure
+    PG::UniqueViolation PG::ForeignKeyViolation PG::NotNullViolation
+    Encoding::UndefinedConversionError
   ].freeze
 
   scope :open, -> { where(status: "open") }
@@ -156,28 +176,22 @@ class Issue < ApplicationRecord
     end
   end
 
-  # Detailed breakdown of all severity factors (useful for UI tooltips / debugging)
   def severity_score_breakdown
     {
-      frequency_24h: frequency_24h_score,
-      total_count: total_count_score,
-      unique_users: unique_users_score,
-      velocity: velocity_score,
-      exception_type: exception_type_score,
-      recurrence: recurrence_score,
-      freshness: freshness_score,
+      impact: impact_score,
+      frequency: frequency_score,
+      business: business_score,
+      regression: regression_score,
+      data_risk: data_risk_score,
+      mitigation: mitigation_score,
       total: severity_score
     }
   end
 
   def severity_score
-    frequency_24h_score +
-      total_count_score +
-      unique_users_score +
-      velocity_score +
-      exception_type_score +
-      recurrence_score +
-      freshness_score
+    raw = impact_score + frequency_score + business_score +
+          regression_score + data_risk_score - mitigation_score
+    raw.clamp(0, 100)
   end
 
   def update_severity!
@@ -308,6 +322,14 @@ class Issue < ApplicationRecord
     self.is_job_failure = controller_action.present? && !controller_action.include?("Controller#")
   end
 
+  def job_failure?
+    if has_attribute?(:is_job_failure)
+      is_job_failure?
+    else
+      controller_action.present? && !controller_action.to_s.include?("Controller#")
+    end
+  end
+
   def calculate_severity!
     return unless has_attribute?(:severity)
     return unless count_changed? || new_record? || severity.nil?
@@ -315,98 +337,167 @@ class Issue < ApplicationRecord
     self.severity = calculated_severity
   end
 
-  # --- Severity scoring factors ---
-
-  def frequency_24h_score
-    c = events_last_24h
-    max = SEVERITY_WEIGHTS[:frequency_24h]
-    if c >= 200 then max
-    elsif c >= 50 then (max * 0.8).round
-    elsif c >= 20 then (max * 0.6).round
-    elsif c >= 5  then (max * 0.3).round
-    elsif c >= 1  then (max * 0.1).round
-    else 0
-    end
-  end
-
-  def total_count_score
-    max = SEVERITY_WEIGHTS[:total_count]
-    if count >= 5000 then max
-    elsif count >= 1000 then (max * 0.8).round
-    elsif count >= 100  then (max * 0.5).round
-    elsif count >= 10   then (max * 0.2).round
-    else 0
-    end
-  end
-
-  def unique_users_score
-    users = unique_users_affected_24h
-    max = SEVERITY_WEIGHTS[:unique_users]
-    if users >= 50  then max
-    elsif users >= 20 then (max * 0.8).round
-    elsif users >= 5  then (max * 0.5).round
-    elsif users >= 2  then (max * 0.25).round
-    else 0
-    end
-  end
-
-  # Compare event rate in the last hour vs the hour before to detect spikes.
-  def velocity_score
-    now = Time.current
-    last_hour   = events.where(occurred_at: (now - 1.hour)..now).count
-    prev_hour   = events.where(occurred_at: (now - 2.hours)..(now - 1.hour)).count
-    max = SEVERITY_WEIGHTS[:velocity]
-
-    return 0 if last_hour == 0
-
-    if prev_hour == 0
-      last_hour >= 5 ? max : (max * 0.5).round
-    else
-      ratio = last_hour.to_f / prev_hour
-      if ratio >= 5.0    then max
-      elsif ratio >= 3.0 then (max * 0.7).round
-      elsif ratio >= 2.0 then (max * 0.4).round
-      else 0
-      end
-    end
-  end
-
-  def exception_type_score
-    max = SEVERITY_WEIGHTS[:exception_type]
+  # ── A. Impact Score (max ~35) ──────────────────────────────────────
+  # How much does it break?
+  def impact_score
     klass = exception_class.to_s
 
-    if CRITICAL_EXCEPTION_CLASSES.any? { |c| klass.include?(c) }
-      max
-    elsif HIGH_EXCEPTION_CLASSES.any? { |c| klass.include?(c) }
-      (max * 0.6).round
-    elsif MEDIUM_EXCEPTION_CLASSES.any? { |c| klass.include?(c) }
-      (max * 0.3).round
+    if CRASH_EXCEPTION_CLASSES.any? { |c| klass.include?(c) }
+      35 # App completely crashes / infra down
+    elsif INTERNAL_ERROR_CLASSES.any? { |c| klass.include?(c) }
+      25 # Request fails with 500
+    elsif job_failure?
+      8  # Background job failed (may auto-retry)
+    elsif PARTIAL_BREAK_CLASSES.any? { |c| klass.include?(c) }
+      15 # Page partly broken but usable
+    elsif COSMETIC_CLASSES.any? { |c| klass.include?(c) }
+      5  # Cosmetic / routing noise
     else
-      0
+      20 # Unknown exception → assume moderate impact
     end
   end
 
-  # Previously-resolved issues that reappear are more urgent.
-  def recurrence_score
-    max = SEVERITY_WEIGHTS[:recurrence]
+  # ── B. Frequency Score (max ~50) ───────────────────────────────────
+  # Events per hour + unique user percentage
+  def frequency_score
+    events_per_hour_score + unique_users_percentage_score
+  end
+
+  # ── C. Business Score (max ~30) ────────────────────────────────────
+  # Where does it happen? (checkout, auth, core, admin, internal)
+  def business_score
+    action = controller_action.to_s.downcase
+
+    if CHECKOUT_PATTERNS.any? { |p| action.include?(p) }
+      30
+    elsif AUTH_PATTERNS.any? { |p| action.include?(p) }
+      25
+    elsif CORE_PATTERNS.any? { |p| action.include?(p) }
+      20
+    elsif ADMIN_PATTERNS.any? { |p| action.include?(p) }
+      8
+    elsif INTERNAL_PATTERNS.any? { |p| action.include?(p) }
+      2
+    else
+      12 # Regular feature — moderate business value
+    end
+  end
+
+  # ── D. Regression Score (max ~25) ──────────────────────────────────
+  # Did this appear after a deploy or reappear after being fixed?
+  def regression_score
+    score = 0
+
+    # Reappeared after previously fixed (+25)
     if closed_at.present? && status != "closed"
-      max
-    elsif count_changed? && count > 1 && status == "open" && closed_at_was.present?
-      (max * 0.5).round
-    else
-      0
+      score += 25
+    elsif first_appeared_in_latest_release?
+      score += 20 # First seen in latest release, potential deploy regression
     end
+
+    score
   end
 
-  # Brand-new errors deserve more attention.
-  def freshness_score
-    max = SEVERITY_WEIGHTS[:freshness]
-    age = Time.current - (first_seen_at || created_at || Time.current)
-    if age < 1.hour   then max
-    elsif age < 6.hours then (max * 0.6).round
-    elsif age < 1.day   then (max * 0.3).round
+  # ── E. Data Risk Score (max ~40) ───────────────────────────────────
+  # Does it risk money, data, or security?
+  def data_risk_score
+    klass = exception_class.to_s
+    action = controller_action.to_s.downcase
+    score = 0
+
+    # Security / privacy risk
+    if SECURITY_RISK_CLASSES.any? { |c| klass.include?(c) }
+      score += 40
+    end
+
+    # Data corruption risk
+    if DATA_CORRUPTION_CLASSES.any? { |c| klass.include?(c) }
+      score += 35
+    end
+
+    # Billing / payment risk (exception in checkout/payment area)
+    if CHECKOUT_PATTERNS.any? { |p| action.include?(p) } &&
+       !COSMETIC_CLASSES.any? { |c| klass.include?(c) }
+      score += 30
+    end
+
+    # Cap at 40 to keep within overall balance
+    [score, 40].min
+  end
+
+  # ── F. Mitigation Score (subtracted, max ~20) ─────────────────────
+  # Reduce severity if the error is less harmful than it looks
+  def mitigation_score
+    score = 0
+
+    # Background job that likely auto-retries
+    if job_failure?
+      score += 10
+    end
+
+    # Only internal / admin users affected
+    action = controller_action.to_s.downcase
+    if ADMIN_PATTERNS.any? { |p| action.include?(p) } ||
+       INTERNAL_PATTERNS.any? { |p| action.include?(p) }
+      score += 10
+    end
+
+    # Very few users affected → low blast radius
+    if unique_users_affected_24h <= 1 && events_last_24h <= 2
+      score += 8
+    end
+
+    # Cap at 20 so mitigation cannot fully erase a real issue
+    [score, 20].min
+  end
+
+  # ── Frequency sub-scores ───────────────────────────────────────────
+
+  def events_per_hour_score
+    now = Time.current
+    last_hour = events.where(occurred_at: (now - 1.hour)..now).count
+
+    if last_hour >= 1000 then 25
+    elsif last_hour >= 100 then 18
+    elsif last_hour >= 10  then 10
+    elsif last_hour >= 1   then 4
     else 0
     end
+  end
+
+  def unique_users_percentage_score
+    return 0 if project.nil?
+
+    users_1h = events.where("occurred_at > ?", 1.hour.ago)
+                     .where.not(user_id_hash: nil)
+                     .distinct.count(:user_id_hash)
+    return 0 if users_1h == 0
+
+    total_users_1h = ActsAsTenant.without_tenant do
+      Event.where(project_id: project.id)
+           .where("occurred_at > ?", 1.hour.ago)
+           .where.not(user_id_hash: nil)
+           .distinct.count(:user_id_hash)
+    end
+    return 0 if total_users_1h == 0
+
+    pct = (users_1h.to_f / total_users_1h * 100)
+
+    if pct >= 20.0 then 25
+    elsif pct >= 5.0 then 15
+    elsif pct >= 1.0 then 8
+    else 0
+    end
+  end
+
+  def first_appeared_in_latest_release?
+    return false unless first_seen_at && project
+
+    latest_release = project.releases.recent.first
+    return false unless latest_release&.deployed_at
+
+    first_seen_at >= latest_release.deployed_at &&
+      first_seen_at <= latest_release.deployed_at + 2.hours
   end
 
   # Exception classes that should be grouped by originating code location
