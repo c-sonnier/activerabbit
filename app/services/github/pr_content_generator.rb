@@ -515,6 +515,7 @@ module Github
 
     def error_url(issue)
       host = Rails.env.development? ? "http://localhost:3000" : ENV.fetch("APP_HOST", "https://activerabbit.com")
+      host = "https://#{host}" unless host.start_with?("http://", "https://")
       "#{host}/#{issue.project.slug}/errors/#{issue.id}"
     end
   end
