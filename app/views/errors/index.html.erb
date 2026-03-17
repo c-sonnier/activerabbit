@@ -120,6 +120,30 @@
       </div>
     <% end %>
 
+    <%# Severity filter bar %>
+    <div class="mx-6 mt-4 mb-2 flex items-center gap-2">
+      <span class="text-xs font-medium text-gray-500 uppercase tracking-wider mr-1">Severity:</span>
+      <% severity_filters = [
+        { key: "critical", label: "Critical", count: @critical_count, dot: "bg-red-500",    active_bg: "bg-red-50 border-red-300 text-red-800",     inactive: "bg-white border-gray-200 text-gray-600 hover:bg-red-50" },
+        { key: "high",     label: "High",     count: @high_count,     dot: "bg-orange-500", active_bg: "bg-orange-50 border-orange-300 text-orange-800", inactive: "bg-white border-gray-200 text-gray-600 hover:bg-orange-50" },
+        { key: "medium",   label: "Medium",   count: @medium_count,   dot: "bg-yellow-400", active_bg: "bg-yellow-50 border-yellow-300 text-yellow-800", inactive: "bg-white border-gray-200 text-gray-600 hover:bg-yellow-50" },
+        { key: "low",      label: "Low",      count: @low_count,      dot: "bg-gray-300",   active_bg: "bg-gray-100 border-gray-300 text-gray-700",     inactive: "bg-white border-gray-200 text-gray-500 hover:bg-gray-50" }
+      ] %>
+      <% severity_filters.each do |sf| %>
+        <% active = params[:filter] == sf[:key] %>
+        <%= link_to errors_index_path(filter: sf[:key], period: params[:period]), class: "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition #{active ? sf[:active_bg] : sf[:inactive]}" do %>
+          <span class="w-2 h-2 rounded-full <%= sf[:dot] %>"></span>
+          <%= sf[:label] %>
+          <span class="text-[10px] opacity-70">(<%= sf[:count] %>)</span>
+        <% end %>
+      <% end %>
+      <% if %w[critical high medium low].include?(params[:filter]) %>
+        <%= link_to errors_index_path(period: params[:period]), class: "text-xs text-gray-500 hover:text-gray-700 ml-1 underline" do %>
+          Clear
+        <% end %>
+      <% end %>
+    </div>
+
     <% if @issues.empty? %>
       <div class="p-12 text-center">
         <% if params[:filter] == "ai" %>
