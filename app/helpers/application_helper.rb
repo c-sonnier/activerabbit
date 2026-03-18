@@ -13,6 +13,14 @@ module ApplicationHelper
     controller_path.include?("users")
   end
 
+  # Returns the URL only if it uses a safe protocol (http/https), nil otherwise.
+  # Used in views to prevent Brakeman LinkToHref warnings when rendering
+  # user-supplied URLs as link hrefs.
+  def safe_url(url)
+    return unless url.present? && url.match?(%r{\Ahttps?://}i)
+    url
+  end
+
   # Unified helper for errors index path that respects project scoping (global, project_id, or slug)
   def errors_index_path(options = {})
     if defined?(@current_project) && @current_project
