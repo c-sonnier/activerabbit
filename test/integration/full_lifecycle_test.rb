@@ -67,7 +67,8 @@ class FullLifecycleTest < ActionDispatch::IntegrationTest
       project: {
         name: "My Rails App #{SecureRandom.hex(4)}",
         environment: "production",
-        url: "https://myapp-#{SecureRandom.hex(4)}.example.com"
+        url: "https://myapp-#{SecureRandom.hex(4)}.example.com",
+        tech_stack: "rails"
       }
     }
 
@@ -90,7 +91,8 @@ class FullLifecycleTest < ActionDispatch::IntegrationTest
         project: {
           name: "App #{i + 1} #{SecureRandom.hex(4)}",
           environment: "production",
-          url: "https://app#{i + 1}-#{SecureRandom.hex(4)}.example.com"
+          url: "https://app#{i + 1}-#{SecureRandom.hex(4)}.example.com",
+          tech_stack: "rails"
         }
       }
       assert_response :redirect
@@ -586,7 +588,8 @@ class FullLifecycleTest < ActionDispatch::IntegrationTest
       project: {
         name: "Lifecycle App #{SecureRandom.hex(4)}",
         environment: "production",
-        url: "https://lifecycle-#{SecureRandom.hex(4)}.example.com"
+        url: "https://lifecycle-#{SecureRandom.hex(4)}.example.com",
+        tech_stack: "rails"
       }
     }
     assert_response :redirect, "Step 2: Project created"
@@ -858,7 +861,8 @@ class FullLifecycleTest < ActionDispatch::IntegrationTest
       project: {
         name: "Team E2E App #{SecureRandom.hex(4)}",
         environment: "production",
-        url: "https://team-e2e-#{SecureRandom.hex(4)}.example.com"
+        url: "https://team-e2e-#{SecureRandom.hex(4)}.example.com",
+        tech_stack: "rails"
       }
     }
     assert_response :redirect, "Team plan should be able to create projects"

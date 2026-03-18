@@ -150,10 +150,9 @@ module Api
 
         def extract_backtrace(issue)
           recent_event = issue.events.order(occurred_at: :desc).first
-          return [issue.top_frame] unless recent_event&.backtrace
+          return [issue.top_frame].compact unless recent_event&.backtrace
 
-          # Return first 10 frames
-          recent_event.backtrace.first(10)
+          recent_event.formatted_backtrace.first(10)
         end
 
         def extract_tags(issue)

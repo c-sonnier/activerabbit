@@ -127,8 +127,8 @@
                   <% @projects_by_account[account.id].each do |project| %>
                     <div class="flex items-center gap-1.5">
                       <%= link_to project.name, admin_project_path(project), class: "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors" %>
-                      <% if project.url.present? %>
-                        <%= link_to project.url, project.url, target: "_blank", rel: "noopener noreferrer", class: "text-xs text-gray-400 hover:text-indigo-600 truncate max-w-[200px]", title: project.url %>
+                      <% if (href = safe_url(project.url)) %>
+                        <%= link_to href, href, target: "_blank", rel: "noopener noreferrer", class: "text-xs text-gray-400 hover:text-indigo-600 truncate max-w-[200px]", title: href %>
                       <% end %>
                     </div>
                   <% end %>

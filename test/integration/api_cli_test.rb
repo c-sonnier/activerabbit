@@ -258,11 +258,14 @@ class ApiCliTest < ActionDispatch::IntegrationTest
   end
 
   test "GET /api/v1/cli/apps/:slug/incidents/:id/explain generates fallback when no cache" do
-    # Clear any cached summary
     @open_issue.update!(ai_summary: nil, ai_summary_generated_at: nil)
 
-    # The AI stub is already set up in test_helper.rb via WebMock
-    # The endpoint will call AiSummaryService which hits api.anthropic.com
+    stub_request(:post, "https://api.anthropic.com/v1/messages").to_return(
+      status: 200,
+      body: { "content" => [{ "type" => "text", "text" => "## Root Cause\nTest error\n## Confidence Score\n0.8" }] }.to_json,
+      headers: { "Content-Type" => "application/json" }
+    )
+
     get "/api/v1/cli/apps/#{@project.slug}/incidents/inc_#{@open_issue.id}/explain", headers: @headers
 
     assert_response :success

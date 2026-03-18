@@ -60,9 +60,9 @@ class ErrorsController < ApplicationController
     @q = base_scope.ransack(params[:q])
     scoped_issues = if params[:q]&.dig(:s).present?
                       @q.result.includes(:project)
-                    else
+    else
                       @q.result.includes(:project).severity_ordered
-                    end
+    end
 
     # Use pagy_countless to skip the expensive SELECT COUNT(*) on millions of rows.
     # Trade-off: we don't show "Page X of Y" or total count in pagination.
@@ -125,6 +125,7 @@ class ErrorsController < ApplicationController
         .where("controller_action NOT LIKE '%Controller#%'")
         .pluck(:id)
         .to_set
+
     else
       @total_events_24h = 0
       @events_24h_by_issue_id = {}

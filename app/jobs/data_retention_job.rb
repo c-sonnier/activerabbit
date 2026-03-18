@@ -7,6 +7,7 @@ class DataRetentionJob < ApplicationJob
   DEFAULT_RETENTION_DAYS = 31
   FREE_PLAN_RETENTION_DAYS = 5
   BATCH_SIZE = 50_000  # Larger batches since we have indexes on occurred_at
+  PURGEABLE_TABLES = %w[events performance_events].freeze
 
   # Delete events and performance events based on plan-specific retention.
   # Runs daily via Sidekiq Cron.
@@ -70,24 +71,20 @@ class DataRetentionJob < ApplicationJob
     delete_in_batches_for_accounts("performance_events", cutoff_date, account_ids)
   end
 
-  # Efficient batch deletion using raw SQL (global — all accounts)
   def delete_in_batches(table_name, cutoff_date)
+    validate_table_name!(table_name)
     total_deleted = 0
     conn = ActiveRecord::Base.connection
-    sanitized_table = conn.quote_table_name(table_name)
-    sanitized_cutoff = conn.quote(cutoff_date.utc)
+    quoted_table = conn.quote_table_name(table_name)
 
     loop do
-      sql = <<-SQL.squish
-        DELETE FROM #{sanitized_table}
-        WHERE ctid IN (
-          SELECT ctid FROM #{sanitized_table}
-          WHERE occurred_at < #{sanitized_cutoff}
-          LIMIT #{BATCH_SIZE}
-        )
-      SQL
+      sql = ActiveRecord::Base.sanitize_sql_array([
+        "DELETE FROM #{quoted_table} WHERE ctid IN (SELECT ctid FROM #{quoted_table} WHERE occurred_at < ? LIMIT ?)",
+        cutoff_date.utc,
+        BATCH_SIZE
+      ])
 
-      result = ActiveRecord::Base.connection.execute(sql)
+      result = conn.execute(sql)
       deleted_count = result.cmd_tuples
       total_deleted += deleted_count
 
@@ -100,27 +97,27 @@ class DataRetentionJob < ApplicationJob
     total_deleted
   end
 
-  # Efficient batch deletion scoped to specific accounts (via project_id join)
   def delete_in_batches_for_accounts(table_name, cutoff_date, account_ids)
+    validate_table_name!(table_name)
     total_deleted = 0
     conn = ActiveRecord::Base.connection
-    sanitized_table = conn.quote_table_name(table_name)
-    sanitized_cutoff = conn.quote(cutoff_date.utc)
-    sanitized_ids = account_ids.map { |id| conn.quote(id) }.join(", ")
+    quoted_table = conn.quote_table_name(table_name)
 
     loop do
-      sql = <<-SQL.squish
-        DELETE FROM #{sanitized_table}
-        WHERE ctid IN (
-          SELECT #{sanitized_table}.ctid FROM #{sanitized_table}
-          INNER JOIN projects ON projects.id = #{sanitized_table}.project_id
-          WHERE #{sanitized_table}.occurred_at < #{sanitized_cutoff}
-          AND projects.account_id IN (#{sanitized_ids})
-          LIMIT #{BATCH_SIZE}
-        )
-      SQL
+      sql = ActiveRecord::Base.sanitize_sql_array([
+        "DELETE FROM #{quoted_table} WHERE ctid IN (" \
+          "SELECT #{quoted_table}.ctid FROM #{quoted_table} " \
+          "INNER JOIN projects ON projects.id = #{quoted_table}.project_id " \
+          "WHERE #{quoted_table}.occurred_at < ? " \
+          "AND projects.account_id IN (?) " \
+          "LIMIT ?" \
+        ")",
+        cutoff_date.utc,
+        account_ids,
+        BATCH_SIZE
+      ])
 
-      result = ActiveRecord::Base.connection.execute(sql)
+      result = conn.execute(sql)
       deleted_count = result.cmd_tuples
       total_deleted += deleted_count
 
@@ -131,5 +128,9 @@ class DataRetentionJob < ApplicationJob
     end
 
     total_deleted
+  end
+
+  def validate_table_name!(table_name)
+    raise ArgumentError, "Unknown table: #{table_name}" unless PURGEABLE_TABLES.include?(table_name)
   end
 end

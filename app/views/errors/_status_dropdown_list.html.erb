@@ -4,12 +4,7 @@
     <button type="button"
             data-action="click->dropdown#toggle"
             onclick="event.stopPropagation();"
-            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200 hover:shadow-md hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-1
-                   <%= case issue.status
-                       when 'open' then 'bg-red-50 text-red-700 border border-red-200 focus:ring-red-400'
-                       when 'wip' then 'bg-amber-50 text-amber-700 border border-amber-200 focus:ring-amber-400'
-                       else 'bg-emerald-50 text-emerald-700 border border-emerald-200 focus:ring-emerald-400'
-                       end %>">
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200 hover:shadow-md hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-1 bg-gray-50 text-gray-700 border border-gray-200 focus:ring-gray-400">
       <span class="w-1.5 h-1.5 rounded-full <%= case issue.status
                                                 when 'open' then 'bg-red-500'
                                                 when 'wip' then 'bg-amber-500'
