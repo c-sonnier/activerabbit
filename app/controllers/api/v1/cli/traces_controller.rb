@@ -119,17 +119,17 @@ module Api
             }
           end
 
-          # Check for N+1 issues
           n_plus_ones = project.sql_fingerprints
                                .where("created_at > ?", 24.hours.ago)
-                               .where(severity: %w[high critical])
+                               .where("total_count > ?", 10)
+                               .order(total_count: :desc)
                                .limit(3)
 
           n_plus_ones.each do |fp|
             n1_time = fp.avg_duration_ms || 50
             n1_percent = [(n1_time.to_f / [avg_total, 1].max * 100).round, 50].min
             spans << {
-              name: "N+1: #{fp.table_name || 'query'}",
+              name: "N+1: #{fp.query_type || 'query'}",
               duration_ms: n1_time.round,
               percent: n1_percent
             }
@@ -143,20 +143,20 @@ module Api
           fingerprints = project.sql_fingerprints.where("created_at > ?", 24.hours.ago)
           return 0 if fingerprints.empty?
 
-          fingerprints.sum(:total_duration_ms).to_f / [fingerprints.sum(:call_count), 1].max
+          fingerprints.sum(:total_duration_ms).to_f / [fingerprints.sum(:total_count), 1].max
         end
 
         def identify_bottlenecks(project, endpoint, spans)
           bottlenecks = []
 
-          # Check for N+1 queries
           n_plus_ones = project.sql_fingerprints
                                .where("created_at > ?", 24.hours.ago)
-                               .where(severity: %w[high critical])
+                               .where("total_count > ?", 10)
+                               .order(total_count: :desc)
 
           if n_plus_ones.any?
             n_plus_ones.limit(2).each do |fp|
-              bottlenecks << "N+1 query on #{fp.table_name || 'table'} (#{fp.call_count} calls)"
+              bottlenecks << "N+1 query on #{fp.query_type || 'table'} (#{fp.total_count} calls)"
             end
           end
 
