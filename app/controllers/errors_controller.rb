@@ -58,11 +58,21 @@ class ErrorsController < ApplicationController
     end
 
     @q = base_scope.ransack(params[:q])
-    scoped_issues = if params[:q]&.dig(:s).present?
+    sort_param = params[:q]&.dig(:s).to_s.strip
+    scoped_issues = if sort_param.match?(/\Aevents_24h_count\s+(asc|desc)\z/i)
+                      # One aggregated subquery + JOIN instead of N correlated subqueries — fast at any scale.
+                      dir = sort_param.split(/\s+/).last.downcase == "asc" ? "ASC" : "DESC"
+                      events_scope = project_scope ? project_scope.events : Event
+                      events_scope = events_scope.within_retention(retention_cutoff) if retention_cutoff
+                      subquery_sql = events_scope.where("occurred_at > ?", 24.hours.ago).group(:issue_id).select("issue_id, COUNT(*)::integer AS cnt").to_sql
+                      @q.result.includes(:project).except(:order)
+                        .joins("LEFT JOIN (#{subquery_sql}) AS impact_counts ON impact_counts.issue_id = issues.id")
+                        .order(Arel.sql("impact_counts.cnt #{dir} NULLS LAST"))
+                    elsif sort_param.present?
                       @q.result.includes(:project)
-    else
+                    else
                       @q.result.includes(:project).severity_ordered
-    end
+                    end
 
     # Use pagy_countless to skip the expensive SELECT COUNT(*) on millions of rows.
     # Trade-off: we don't show "Page X of Y" or total count in pagination.
@@ -240,8 +250,8 @@ class ErrorsController < ApplicationController
       end
     @selected_event ||= @events.first
 
-    # Graph data for counts over time (only build when requested)
-    if params[:tab] == "graph"
+    # Graph data for counts over time (build for Graph tab and Impact/Severity Analysis tab)
+    if params[:tab].in?(["graph", "analytics"])
       range_key = (params[:range] || "7D").to_s.upcase
       max_retention_seconds = ((current_account&.data_retention_days || 31) * 24).hours
       window_seconds = case range_key
