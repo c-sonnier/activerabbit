@@ -594,8 +594,10 @@ end %>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="relative bg-gray-50 rounded-xl p-4 border border-gray-100" style="height: 320px;">
+        <div class="relative bg-gray-50 rounded-xl p-4 border border-gray-100 w-full min-w-0" style="height: 320px;">
           <canvas data-controller="radar"
+                  width="400"
+                  height="320"
                   data-radar-labels-value='<%= radar_labels.to_json %>'
                   data-radar-scores-value='<%= radar_scores.to_json %>'
                   data-radar-max-scores-value='<%= radar_max.to_json %>'></canvas>
