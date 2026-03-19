@@ -1,4 +1,16 @@
 module ErrorsHelper
+  # Short "last seen" label: "11m", "2h", "3d", "1w", "2mo"
+  def last_seen_short(time)
+    return "—" if time.blank?
+    diff = Time.current - time.to_time
+    return "<1m" if diff < 60
+    return "#{(diff / 60).to_i}m" if diff < 3600
+    return "#{(diff / 3600).to_i}h" if diff < 86400
+    return "#{(diff / 86400).to_i}d" if diff < 604800
+    return "#{(diff / 604800).to_i}w" if diff < 2592000
+    "#{(diff / 2592000).to_i}mo"
+  end
+
   # Parse a single backtrace line into structured data
   # Example input: "app/controllers/resumes_controller.rb:101:in `import_from_pdf'"
   # Returns: { file: "app/controllers/resumes_controller.rb", line: 101, method: "import_from_pdf", in_app: true }

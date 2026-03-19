@@ -40,6 +40,13 @@ if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present? && !ActiveModel::Type::B
       "cron_timezone" => "America/Los_Angeles"
     },
 
+    # Recalculate severity for all open/wip issues (backfills nil, keeps scores accurate)
+    "severity_update" => {
+      "cron" => "*/10 * * * *",  # Every 10 minutes
+      "class" => "SeverityUpdateJob",
+      "cron_timezone" => "America/Los_Angeles"
+    },
+
     # ========================================
     # Usage & Quota Management
     # ========================================

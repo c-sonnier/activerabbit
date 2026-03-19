@@ -178,7 +178,7 @@
             <svg class="w-4 h-4 mr-1 text-red-500" fill="currentColor" viewBox="0 0 20 20">
               <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
             </svg>
-            <span class="text-gray-500">Unique users:</span>
+            <span class="text-gray-500">Unique identifiers:</span>
             <span class="ml-2 font-semibold text-red-600"><%= @unique_users_24h %></span>
           </div>
         <% end %>
@@ -229,10 +229,11 @@
   </div>
 </div>
 
-<!-- Tabs: AI summary | Stack Trace | Samples | Analytics -->
+<!-- Tabs: Stack Trace | Samples | Impact | Analytics -->
 <% current_tab = case params[:tab]
 when 'ai' then 'ai'
 when 'samples' then 'samples'
+when 'analytics' then 'analytics'
 when 'graph' then 'graph'
 else 'stack'
 end %>
@@ -247,6 +248,9 @@ end %>
           <% end %>
           <%= link_to url_for(params.permit!.to_h.merge(tab: 'samples')), class: "ml-1 px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'samples' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'samples') } do %>
             Samples
+          <% end %>
+          <%= link_to url_for(params.permit!.to_h.merge(tab: 'analytics', event_id: nil)), class: "ml-1 px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'analytics' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'analytics') } do %>
+            Impact
           <% end %>
           <%= link_to url_for(params.permit!.to_h.merge(tab: 'graph', event_id: nil)), class: "ml-1 px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'graph' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'graph') } do %>
             Analytics
@@ -560,10 +564,9 @@ end %>
       <% end %>
     </div>
 
-  <% elsif current_tab == 'graph' %>
+  <% elsif current_tab == 'analytics' %>
     <div class="border-t border-gray-200 px-6 py-6">
-
-      <%# ── Severity Radar Chart ─────────────────────────────── %>
+      <%# Severity Analysis (radar + factor breakdown) %>
       <% breakdown = @issue.severity_score_breakdown rescue {} %>
       <% radar_labels = ["Impact", "Frequency", "Business", "Regression", "Data Risk", "Mitigation"] %>
       <% radar_scores = [
@@ -576,60 +579,60 @@ end %>
       ] %>
       <% radar_max = [35, 25, 30, 15, 40, 18] %>
 
-      <div class="mb-8">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-medium text-gray-900">Severity Analysis</h3>
-          <% s_sev = @issue.severity || 'low' %>
-          <% s_sev_styles = {
-            'critical' => 'bg-red-100 text-red-700 border-red-200',
-            'high'     => 'bg-orange-100 text-orange-700 border-orange-200',
-            'medium'   => 'bg-yellow-100 text-yellow-700 border-yellow-200',
-            'low'      => 'bg-gray-100 text-gray-500 border-gray-200'
-          } %>
-          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border <%= s_sev_styles[s_sev] %>">
-            Score: <%= breakdown[:total] || 0 %>/100 &middot; <%= s_sev.capitalize %>
-          </span>
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-medium text-gray-900">Severity Analysis</h3>
+        <% s_sev = @issue.severity || 'low' %>
+        <% s_sev_styles = {
+          'critical' => 'bg-red-100 text-red-700 border-red-200',
+          'high'     => 'bg-orange-100 text-orange-700 border-orange-200',
+          'medium'   => 'bg-yellow-100 text-yellow-700 border-yellow-200',
+          'low'      => 'bg-gray-100 text-gray-500 border-gray-200'
+        } %>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border <%= s_sev_styles[s_sev] %>">
+          Score: <%= breakdown[:total] || 0 %>/100 &middot; <%= s_sev.capitalize %>
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="relative bg-gray-50 rounded-xl p-4 border border-gray-100 w-full min-w-0" style="height: 320px;">
+          <canvas data-controller="radar"
+                  width="400"
+                  height="320"
+                  data-radar-labels-value='<%= radar_labels.to_json %>'
+                  data-radar-scores-value='<%= radar_scores.to_json %>'
+                  data-radar-max-scores-value='<%= radar_max.to_json %>'></canvas>
         </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Radar -->
-          <div class="relative bg-gray-50 rounded-xl p-4 border border-gray-100" style="height: 320px;">
-            <canvas data-controller="radar"
-                    data-radar-labels-value='<%= radar_labels.to_json %>'
-                    data-radar-scores-value='<%= radar_scores.to_json %>'
-                    data-radar-max-scores-value='<%= radar_max.to_json %>'></canvas>
-          </div>
-
-          <!-- Factor Breakdown -->
-          <div class="space-y-3">
-            <% factors = [
-              { label: "Impact",     score: breakdown[:impact]     || 0, max: 35, color: "indigo",  desc: "Exception severity (crash / internal / partial / cosmetic)" },
-              { label: "Frequency",  score: breakdown[:frequency]  || 0, max: 25, color: "blue",    desc: "Events/hour velocity + unique affected users" },
-              { label: "Business",   score: breakdown[:business]   || 0, max: 30, color: "violet",  desc: "Affected area (checkout / auth / core / admin)" },
-              { label: "Regression", score: breakdown[:regression] || 0, max: 15, color: "amber",   desc: "Re-opened after close or appeared after latest deploy" },
-              { label: "Data Risk",  score: breakdown[:data_risk]  || 0, max: 40, color: "red",     desc: "Security errors or data corruption in critical paths" },
-              { label: "Mitigation", score: breakdown[:mitigation] || 0, max: 18, color: "emerald", desc: "Reduced by: job context, admin area, low user count" }
-            ] %>
-            <% factors.each do |f| %>
-              <div class="bg-white rounded-lg border border-gray-100 px-4 py-3">
-                <div class="flex items-center justify-between mb-1.5">
-                  <span class="text-sm font-medium text-gray-800"><%= f[:label] %></span>
-                  <span class="text-sm font-bold text-<%= f[:color] %>-600"><%= f[:score] %><span class="text-gray-400 font-normal">/<%= f[:max] %></span></span>
-                </div>
-                <div class="w-full bg-gray-100 rounded-full h-1.5">
-                  <% bar_pct = f[:max] > 0 ? ((f[:score].to_f / f[:max]) * 100).clamp(0, 100).round : 0 %>
-                  <div class="bg-<%= f[:color] %>-500 h-1.5 rounded-full transition-all" style="width: <%= bar_pct %>%"></div>
-                </div>
-                <p class="mt-1 text-[11px] text-gray-400"><%= f[:desc] %></p>
+        <div class="space-y-3">
+          <% factors = [
+            { label: "Impact",     score: breakdown[:impact]     || 0, max: 35, color: "indigo",  desc: "Exception severity (crash / internal / partial / cosmetic)" },
+            { label: "Frequency",  score: breakdown[:frequency]  || 0, max: 25, color: "blue",    desc: "Events/hour velocity + unique affected users" },
+            { label: "Business",   score: breakdown[:business]   || 0, max: 30, color: "violet",  desc: "Affected area (checkout / auth / core / admin)" },
+            { label: "Regression", score: breakdown[:regression] || 0, max: 15, color: "amber",   desc: "Re-opened after close or appeared after latest deploy" },
+            { label: "Data Risk",  score: breakdown[:data_risk]  || 0, max: 40, color: "red",     desc: "Security errors or data corruption in critical paths" },
+            { label: "Mitigation", score: breakdown[:mitigation] || 0, max: 18, color: "emerald", desc: "Reduced by: job context, admin area, low user count" }
+          ] %>
+          <% factors.each do |f| %>
+            <div class="bg-white rounded-lg border border-gray-100 px-4 py-3">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-sm font-medium text-gray-800"><%= f[:label] %></span>
+                <span class="text-sm font-bold text-<%= f[:color] %>-600"><%= f[:score] %><span class="text-gray-400 font-normal">/<%= f[:max] %></span></span>
               </div>
-            <% end %>
-          </div>
+              <div class="w-full bg-gray-100 rounded-full h-1.5">
+                <% bar_pct = f[:max] > 0 ? ((f[:score].to_f / f[:max]) * 100).clamp(0, 100).round : 0 %>
+                <div class="bg-<%= f[:color] %>-500 h-1.5 rounded-full transition-all" style="width: <%= bar_pct %>%"></div>
+              </div>
+              <p class="mt-1 text-[11px] text-gray-400"><%= f[:desc] %></p>
+            </div>
+          <% end %>
         </div>
       </div>
 
-      <%# ── Error count over time ─────────────────────────────── %>
+    </div>
+
+  <% elsif current_tab == 'graph' %>
+    <div class="border-t border-gray-200 px-6 py-6">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-medium text-gray-900">Error count over time</h3>
+        <h3 class="text-lg font-medium text-gray-900">Analytics</h3>
         <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner">
           <% %w[1H 4H 8H 12H 24H 48H 7D 30D].each do |rk| %>
             <% active = (@graph_range_key || '24H') == rk %>

@@ -10,15 +10,18 @@ export default class extends Controller {
 
   connect() {
     const ctx = this.element.getContext("2d")
+    const labels = Array.isArray(this.labelsValue) ? this.labelsValue : []
+    const scores = Array.isArray(this.scoresValue) ? this.scoresValue : []
+    const maxScores = Array.isArray(this.maxScoresValue) ? this.maxScoresValue : []
 
     this.chart = new Chart(ctx, {
       type: "radar",
       data: {
-        labels: this.labelsValue,
+        labels: labels.length ? labels : ["—"],
         datasets: [
           {
             label: "Score",
-            data: this.scoresValue,
+            data: scores.length ? scores : [0],
             backgroundColor: "rgba(99, 102, 241, 0.15)",
             borderColor: "rgba(99, 102, 241, 0.9)",
             borderWidth: 2,
@@ -30,7 +33,7 @@ export default class extends Controller {
           },
           {
             label: "Max",
-            data: this.maxScoresValue,
+            data: maxScores.length ? maxScores : [40],
             backgroundColor: "rgba(229, 231, 235, 0.12)",
             borderColor: "rgba(209, 213, 219, 0.5)",
             borderWidth: 1,
@@ -49,7 +52,7 @@ export default class extends Controller {
             callbacks: {
               label: (item) => {
                 if (item.datasetIndex === 1) return null
-                const max = this.maxScoresValue[item.dataIndex] || 0
+                const max = maxScores[item.dataIndex] || 0
                 return `${item.label}: ${item.raw} / ${max}`
               }
             },
@@ -59,7 +62,7 @@ export default class extends Controller {
         scales: {
           r: {
             beginAtZero: true,
-            max: Math.max(...this.maxScoresValue, 40),
+            max: maxScores.length ? Math.max(...maxScores, 40) : 40,
             ticks: {
               stepSize: 10,
               color: "#9ca3af",

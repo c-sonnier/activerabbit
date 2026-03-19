@@ -335,11 +335,30 @@ class Issue < ApplicationRecord
     url
   end
 
+  # Sort by impact (24h event count). Used for "Impact %" column sorting.
+  # Index: events(issue_id, occurred_at) — used by the correlated subquery when this ransacker is used.
+  # For better scale, ErrorsController#index uses a single aggregated subquery + LEFT JOIN when sorting by this.
+  ransacker :events_24h_count do
+    Arel.sql("(SELECT COUNT(*)::integer FROM events WHERE events.issue_id = issues.id AND events.occurred_at > (NOW() - INTERVAL '24 hours'))")
+  end
+
+  # Sort by whether issue has a PR (1 = has PR URL in project settings, 0 = not). Used for "PR" column sorting.
+  # One projects PK lookup per row; projects is small — fine at scale.
+  ransacker :has_pr_url do
+    Arel.sql("(SELECT CASE WHEN (p.settings->'issue_pr_urls'->(issues.id::text)) IS NOT NULL AND (p.settings->'issue_pr_urls'->(issues.id::text))::text != 'null' THEN 1 ELSE 0 END FROM projects p WHERE p.id = issues.project_id)")
+  end
+
+  # Sort severity as Critical (0) → High (1) → Medium (2) → Low (3). Used for "Severity" column sorting.
+  # In-row expression only — no extra I/O; index on severity can be used for filter, not for this sort expression.
+  ransacker :severity_order do
+    Arel.sql("CASE severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END")
+  end
+
   def self.ransackable_attributes(auth_object = nil)
     ["account_id", "ai_summary", "ai_summary_generated_at", "closed_at",
     "controller_action", "count", "created_at", "exception_class",
-    "fingerprint", "first_seen_at", "id", "id_value", "last_seen_at",
-    "project_id", "sample_message", "severity", "status", "top_frame", "updated_at"]
+    "events_24h_count", "fingerprint", "first_seen_at", "has_pr_url", "id", "id_value", "last_seen_at",
+    "project_id", "sample_message", "severity", "severity_order", "status", "top_frame", "updated_at"]
   end
 
   def self.ransackable_associations(auth_object = nil)
