@@ -51,7 +51,8 @@ module Github
         head_branch: pr.dig("head", "ref"),
         base_branch: pr.dig("base", "ref"),
         updated_at: pr["updated_at"],
-        draft: pr["draft"] || false
+        draft: pr["draft"] || false,
+        changed_files: pr["changed_files"].to_i
       }
     rescue => e
       Rails.logger.error "[GitHub API] get_pr_info error: #{e.message}"
@@ -60,6 +61,10 @@ module Github
 
     def reopen_pr(owner, repo, pr_number)
       patch("/repos/#{owner}/#{repo}/pulls/#{pr_number}", { state: "open" })
+    end
+
+    def close_pr(owner, repo, pr_number)
+      patch("/repos/#{owner}/#{repo}/pulls/#{pr_number}", { state: "closed" })
     end
 
     # Combined commit status (legacy status API)

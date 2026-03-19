@@ -77,25 +77,48 @@ module Github
         return { success: false, error: "PR ##{pr_number} has already been merged and cannot be reopened" }
       end
 
+      # If the PR has 0 changed files, the fix was never applied — close the
+      # empty PR and create a brand-new one that will attempt the fix again.
+      if pr_info[:changed_files] == 0
+        Rails.logger.info "[GitHub API] PR ##{pr_number} has 0 changed files, replacing with a new PR"
+        api_client.close_pr(owner, repo, pr_number) if pr_info[:state] == "open"
+        issue = find_issue_by_pr_url(pr_url)
+        if issue
+          new_result = create_pr_for_issue(issue)
+          if new_result[:success]
+            update_stored_pr_url(issue, new_result[:pr_url])
+            schedule_auto_merge(issue, new_result)
+          end
+          return new_result
+        end
+        return { success: false, error: "PR ##{pr_number} has no file changes and the associated issue could not be found" }
+      end
+
       if pr_info[:state] == "open"
-        # Undraft if auto-merge is on and PR is still draft
         if pr_info[:draft] && @project.auto_merge_enabled?
           api_client.mark_pr_ready(owner, repo, pr_number)
           Rails.logger.info "[GitHub API] Marked PR ##{pr_number} as ready for review"
         end
+        schedule_auto_merge_for_existing_pr(find_issue_by_pr_url(pr_url), pr_info)
         return { success: true, pr_url: pr_info[:html_url], already_open: true }
       end
 
       result = api_client.reopen_pr(owner, repo, pr_number)
       if result.is_a?(Hash) && result[:error]
-        # Branch deleted or other unrecoverable error — create a fresh PR instead
         Rails.logger.info "[GitHub API] Reopen failed (#{result[:error]}), creating new PR for issue"
         issue = find_issue_by_pr_url(pr_url)
         if issue
-          return create_pr_for_issue(issue)
+          new_result = create_pr_for_issue(issue)
+          if new_result[:success]
+            update_stored_pr_url(issue, new_result[:pr_url])
+            schedule_auto_merge(issue, new_result)
+          end
+          return new_result
         end
         return { success: false, error: "Could not reopen PR ##{pr_number}: #{result[:error]}. Branch may have been deleted — use 'Create PR' to generate a new fix." }
       end
+
+      schedule_auto_merge_for_existing_pr(find_issue_by_pr_url(pr_url), pr_info)
 
       if @project.auto_merge_enabled?
         api_client.mark_pr_ready(owner, repo, pr_number)
@@ -247,6 +270,56 @@ module Github
       match[1].to_i if match
     end
 
+    def update_stored_pr_url(issue, new_pr_url)
+      settings = @project.settings || {}
+      issue_pr_urls = settings["issue_pr_urls"] || {}
+      issue_pr_urls[issue.id.to_s] = new_pr_url
+      settings["issue_pr_urls"] = issue_pr_urls
+      @project.update_column(:settings, settings)
+    end
+
+    # After creating a new PR (from reopen), update the issue and enqueue monitor
+    def schedule_auto_merge(issue, create_result)
+      return unless @project.auto_merge_enabled?
+      return unless create_result[:branch_name].to_s.start_with?("ai-fix/")
+
+      status = create_result[:actual_fix_applied] ? "pr_created" : "pr_created_review_needed"
+      pr_number = extract_pr_number(create_result[:pr_url])
+
+      issue.update_columns(
+        auto_fix_status: status,
+        auto_fix_pr_url: create_result[:pr_url],
+        auto_fix_pr_number: pr_number,
+        auto_fix_branch: create_result[:branch_name],
+        auto_fix_attempted_at: Time.current,
+        auto_fix_error: nil
+      )
+
+      AutoFixMonitorJob.perform_in(10, issue.id, @project.id, 0)
+      Rails.logger.info "[PrService] Scheduled AutoFixMonitorJob for issue ##{issue.id} (PR #{create_result[:pr_url]})"
+    end
+
+    # For reopened/already-open PRs that have files, schedule monitor if not already running
+    def schedule_auto_merge_for_existing_pr(issue, pr_info)
+      return unless issue
+      return unless @project.auto_merge_enabled?
+      return unless pr_info[:head_branch].to_s.start_with?("ai-fix/")
+      return if issue.auto_fix_status == "merged"
+
+      unless %w[pr_created pr_created_review_needed ci_pending].include?(issue.auto_fix_status)
+        issue.update_columns(
+          auto_fix_status: "pr_created",
+          auto_fix_pr_url: pr_info[:html_url],
+          auto_fix_pr_number: pr_info[:number],
+          auto_fix_branch: pr_info[:head_branch],
+          auto_fix_attempted_at: Time.current,
+          auto_fix_error: nil
+        )
+      end
+
+      AutoFixMonitorJob.perform_in(10, issue.id, @project.id, 0)
+      Rails.logger.info "[PrService] Scheduled AutoFixMonitorJob for reopened PR ##{pr_info[:number]}"
+    end
 
     # Create a commit with actual code fix applied to source files
     def create_fix_commit(api_client, code_fix_applier, owner, repo, branch, base_sha, issue, code_fix, before_code, pr_body, file_fixes = [])
