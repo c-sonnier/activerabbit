@@ -74,6 +74,11 @@ class SlackNotificationService
     "#{host}/#{@project.slug}"
   end
 
+  def performance_action_url(target)
+    return "#{project_url}/performance" if target.blank? || target == "Unknown"
+    "#{project_url}/performance/actions/#{URI.encode_www_form_component(target)}"
+  end
+
   def error_url(issue, tab: nil, event_id: nil)
     q = []
     q << "tab=#{tab}" if tab
@@ -145,7 +150,7 @@ class SlackNotificationService
       {
         type: "actions",
         elements: [
-          { type: "button", text: { type: "plain_text", text: "View Performance", emoji: true }, url: "#{project_url}/performance", style: "primary" }
+          { type: "button", text: { type: "plain_text", text: "View Performance", emoji: true }, url: performance_action_url(endpoint), style: "primary" }
         ]
       }
     ]
@@ -172,7 +177,7 @@ class SlackNotificationService
       {
         type: "actions",
         elements: [
-          { type: "button", text: { type: "plain_text", text: "View Queries", emoji: true }, url: "#{project_url}/performance", style: "primary" }
+          { type: "button", text: { type: "plain_text", text: "View Queries", emoji: true }, url: performance_action_url(controller_action), style: "primary" }
         ]
       }
     ]
@@ -373,7 +378,7 @@ class SlackNotificationService
             {
               type: "button",
               text: "View Performance",
-              url: "#{project_url}/performance",
+              url: performance_action_url(event.target.presence || payload["target"] || payload["controller_action"] || event.request_path),
               style: "primary"
             }
           ],
@@ -435,7 +440,7 @@ class SlackNotificationService
             {
               type: "button",
               text: "View Queries",
-              url: "#{project_url}/performance",
+              url: performance_action_url(controller_action),
               style: "primary"
             }
           ],
