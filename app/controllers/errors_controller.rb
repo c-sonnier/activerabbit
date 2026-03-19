@@ -68,11 +68,11 @@ class ErrorsController < ApplicationController
                       @q.result.includes(:project).except(:order)
                         .joins("LEFT JOIN (#{subquery_sql}) AS impact_counts ON impact_counts.issue_id = issues.id")
                         .order(Arel.sql("impact_counts.cnt #{dir} NULLS LAST"))
-                    elsif sort_param.present?
+    elsif sort_param.present?
                       @q.result.includes(:project)
-                    else
+    else
                       @q.result.includes(:project).severity_ordered
-                    end
+    end
 
     # Use pagy_countless to skip the expensive SELECT COUNT(*) on millions of rows.
     # Trade-off: we don't show "Page X of Y" or total count in pagination.
