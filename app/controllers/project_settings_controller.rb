@@ -32,6 +32,7 @@ class ProjectSettingsController < ApplicationController
     ok &&= update_notification_settings if params[:project]&.dig(:notifications)
     ok &&= copy_github_from_project if params[:project]&.dig(:copy_github_from_project_id).present?
     ok &&= update_github_settings if github_params_present?
+    ok &&= update_auto_fix_settings if auto_fix_params_present?
     ok &&= update_fizzy_settings if fizzy_params_present?
     ok &&= update_notification_preferences if params[:preferences].present?
 
@@ -333,6 +334,40 @@ class ProjectSettingsController < ApplicationController
     %i[fizzy_endpoint_url fizzy_api_key fizzy_sync_enabled].any? do |key|
       project_params.key?(key)
     end
+  end
+
+  def auto_fix_params_present?
+    project_params = params[:project]
+    return false unless project_params
+
+    %i[auto_fix_enabled auto_merge_enabled auto_fix_skip_ci auto_fix_min_severity].any? do |key|
+      project_params.key?(key)
+    end
+  end
+
+  def update_auto_fix_settings
+    af_params = params.fetch(:project, {}).permit(:auto_fix_enabled, :auto_merge_enabled, :auto_fix_skip_ci, :auto_fix_min_severity)
+    return true if af_params.blank?
+
+    was_auto_merge = @project.auto_merge_enabled?
+
+    settings = @project.settings || {}
+    settings["auto_fix"] ||= {}
+
+    settings["auto_fix"]["enabled"] = af_params[:auto_fix_enabled] == "1" if af_params.key?(:auto_fix_enabled)
+    settings["auto_fix"]["auto_merge"] = af_params[:auto_merge_enabled] == "1" if af_params.key?(:auto_merge_enabled)
+    settings["auto_fix"]["skip_ci"] = af_params[:auto_fix_skip_ci] == "1" if af_params.key?(:auto_fix_skip_ci)
+    settings["auto_fix"]["min_severity"] = af_params[:auto_fix_min_severity] if af_params.key?(:auto_fix_min_severity)
+
+    @project.settings = settings
+    saved = @project.save
+
+    # When auto-merge is turned on, merge any existing open PRs
+    if saved && @project.auto_merge_enabled? && !was_auto_merge
+      AutoFixBatchMergeJob.perform_async(@project.id)
+    end
+
+    saved
   end
 
   def project_details_params_present?
