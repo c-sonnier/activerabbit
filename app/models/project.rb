@@ -131,6 +131,20 @@ class Project < ApplicationRecord
     update!(health_status: new_status)
   end
 
+  # ---- Auto AI Summary ----
+  def auto_ai_summary_enabled?
+    settings.dig("auto_ai_summary", "enabled") != false
+  end
+
+  def auto_ai_summary_severity_levels
+    settings.dig("auto_ai_summary", "severity_levels") || Issue::SEVERITIES
+  end
+
+  def auto_ai_summary_for_severity?(severity)
+    return false unless auto_ai_summary_enabled?
+    auto_ai_summary_severity_levels.include?(severity.to_s)
+  end
+
   # ---- Notifications ----
   def slack_configured?
     # Check project-level Slack token OR account-level Slack webhook

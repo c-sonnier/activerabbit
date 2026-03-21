@@ -273,6 +273,69 @@ class ErrorIngestJobTest < ActiveSupport::TestCase
     end
   end
 
+  test "does not auto-enqueue AiSummaryJob when severity is excluded by project settings" do
+    Sidekiq::Worker.clear_all
+    Sidekiq.redis { |c| c.del("ai_summary_enqueued:#{@account.id}:#{Date.current.strftime('%Y-%m')}") }
+
+    @project.settings = { "auto_ai_summary" => { "enabled" => true, "severity_levels" => %w[critical] } }
+    @project.save!
+
+    payload = {
+      exception_class: "LowSeverityAutoAIError",
+      message: "Low severity should be skipped when only critical is selected",
+      backtrace: ["app/models/low.rb:1:in `go'"],
+      controller_action: "LowController#go",
+      environment: "production"
+    }
+
+    ErrorIngestJob.new.perform(@project.id, payload)
+
+    assert_equal 0, AiSummaryJob.jobs.size,
+      "AiSummaryJob should not be auto-enqueued when issue severity is excluded"
+  end
+
+  test "does not auto-enqueue AiSummaryJob when auto AI summary is disabled" do
+    Sidekiq::Worker.clear_all
+    Sidekiq.redis { |c| c.del("ai_summary_enqueued:#{@account.id}:#{Date.current.strftime('%Y-%m')}") }
+
+    @project.settings = { "auto_ai_summary" => { "enabled" => false, "severity_levels" => %w[critical high medium low] } }
+    @project.save!
+
+    payload = {
+      exception_class: "DisabledAutoAIError",
+      message: "Auto AI summary is disabled",
+      backtrace: ["app/models/disabled.rb:1:in `go'"],
+      controller_action: "DisabledController#go",
+      environment: "production"
+    }
+
+    ErrorIngestJob.new.perform(@project.id, payload)
+
+    assert_equal 0, AiSummaryJob.jobs.size,
+      "AiSummaryJob should not be auto-enqueued when auto AI summary is disabled"
+  end
+
+  test "auto-enqueues AiSummaryJob when severity matches project settings" do
+    Sidekiq::Worker.clear_all
+    Sidekiq.redis { |c| c.del("ai_summary_enqueued:#{@account.id}:#{Date.current.strftime('%Y-%m')}") }
+
+    @project.settings = { "auto_ai_summary" => { "enabled" => true, "severity_levels" => %w[critical high medium low] } }
+    @project.save!
+
+    payload = {
+      exception_class: "MatchingSeverityAutoAIError",
+      message: "Severity matches — should enqueue",
+      backtrace: ["app/models/match.rb:1:in `go'"],
+      controller_action: "MatchController#go",
+      environment: "production"
+    }
+
+    ErrorIngestJob.new.perform(@project.id, payload)
+
+    assert_equal 1, AiSummaryJob.jobs.size,
+      "AiSummaryJob should be auto-enqueued when severity matches project settings"
+  end
+
   test "does NOT auto-enqueue AiSummaryJob for free plan (0 AI quota)" do
     Sidekiq::Worker.clear_all
     # Clear Redis counter again right before this test (parallel workers may pollute)

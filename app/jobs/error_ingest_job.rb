@@ -86,17 +86,23 @@ class ErrorIngestJob
     # Uses Redis atomic counter to prevent over-enqueuing when many ingest
     # jobs run in parallel (cached_ai_summaries_used is only updated hourly).
     if issue && issue.count == 1 && issue.ai_summary.blank?
-      account = project.account
-      if account&.eligible_for_auto_ai_summary?
-        redis_key = "ai_summary_enqueued:#{account.id}:#{Date.current.strftime('%Y-%m')}"
-        count = Sidekiq.redis { |c| c.incr(redis_key) }
-        # Set TTL on first increment (expires after 35 days to cover billing period)
-        Sidekiq.redis { |c| c.expire(redis_key, 35.days.to_i) } if count == 1
+      unless project.auto_ai_summary_for_severity?(issue.severity)
+        Rails.logger.info("[AutoAI] Skipped for issue #{issue.id} — severity '#{issue.severity}' not in project auto-summary levels (enabled=#{project.auto_ai_summary_enabled?}, levels=#{project.auto_ai_summary_severity_levels})")
+      else
+        account = project.account
+        if account&.eligible_for_auto_ai_summary?
+          redis_key = "ai_summary_enqueued:#{account.id}:#{Date.current.strftime('%Y-%m')}"
+          count = Sidekiq.redis { |c| c.incr(redis_key) }
+          # Set TTL on first increment (expires after 35 days to cover billing period)
+          Sidekiq.redis { |c| c.expire(redis_key, 35.days.to_i) } if count == 1
 
-        if count <= account.ai_summaries_quota
-          AiSummaryJob.perform_async(issue.id, event.id, project.id)
+          if count <= account.ai_summaries_quota
+            AiSummaryJob.perform_async(issue.id, event.id, project.id)
+          else
+            Rails.logger.info("[Quota] AI auto-summary skipped for issue #{issue.id} — Redis counter #{count} >= quota #{account.ai_summaries_quota}")
+          end
         else
-          Rails.logger.info("[Quota] AI auto-summary skipped for issue #{issue.id} — Redis counter #{count} >= quota #{account.ai_summaries_quota}")
+          Rails.logger.info("[AutoAI] Skipped for issue #{issue.id} — account #{account&.id} not eligible (plan=#{account&.send(:effective_plan_key)}, subscription=#{account&.active_subscription?})")
         end
       end
     end
