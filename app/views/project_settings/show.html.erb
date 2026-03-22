@@ -867,36 +867,46 @@
             </p>
 
             <% selected_levels = @project.auto_ai_summary_severity_levels %>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-4">
               <% [
                 ["critical", "Critical", "Crashes, infrastructure failures, security issues", "red"],
                 ["high",     "High",     "Request failures, 500 errors, timeouts", "orange"],
                 ["medium",   "Medium",   "Partial failures, validation errors", "yellow"],
                 ["low",      "Low",      "Routing errors, cosmetic issues", "gray"]
               ].each do |value, label, description, color| %>
-                <label class="relative flex items-start p-3 rounded-lg border cursor-pointer
-                              hover:bg-gray-50 transition-colors
-                              <%= selected_levels.include?(value) ? 'border-violet-300 bg-violet-50/50' : 'border-gray-200' %>">
-                  <input type="checkbox"
-                         name="project[auto_ai_summary][severity_levels][]"
-                         value="<%= value %>"
-                         class="h-4 w-4 text-violet-600 border-gray-300 rounded focus:ring-violet-500 mt-0.5"
-                         data-auto-ai-summary-target="severity"
-                         <%= "checked" if selected_levels.include?(value) %>>
-                  <div class="ml-3">
-                    <span class="flex items-center text-sm font-medium text-gray-900">
-                      <span class="inline-block w-2 h-2 rounded-full mr-2
-                                   <%= case color
-                                       when 'red' then 'bg-red-500'
-                                       when 'orange' then 'bg-orange-500'
-                                       when 'yellow' then 'bg-yellow-500'
-                                       else 'bg-gray-400'
-                                       end %>"></span>
-                      <%= label %>
-                    </span>
-                    <p class="text-xs text-gray-500 mt-0.5"><%= description %></p>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full mr-3
+                                 <%= case color
+                                     when 'red' then 'bg-red-500'
+                                     when 'orange' then 'bg-orange-500'
+                                     when 'yellow' then 'bg-yellow-500'
+                                     else 'bg-gray-400'
+                                     end %>"></span>
+                    <div>
+                      <label class="text-sm font-medium text-gray-900"><%= label %></label>
+                      <p class="text-sm text-gray-500"><%= description %></p>
+                    </div>
                   </div>
-                </label>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="hidden"
+                           name="project[auto_ai_summary][severity_levels][]"
+                           value="">
+                    <input type="checkbox"
+                           name="project[auto_ai_summary][severity_levels][]"
+                           value="<%= value %>"
+                           class="sr-only peer"
+                           data-auto-ai-summary-target="severity"
+                           <%= "checked" if selected_levels.include?(value) %>>
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer
+                                peer-checked:bg-violet-600
+                                after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+                                after:bg-white after:border-gray-300 after:border after:rounded-full
+                                after:h-5 after:w-5 after:transition-all
+                                peer-checked:after:translate-x-full">
+                    </div>
+                  </label>
+                </div>
               <% end %>
             </div>
           </div>
