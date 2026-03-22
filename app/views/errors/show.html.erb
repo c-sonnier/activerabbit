@@ -3,7 +3,7 @@
 <% end %>
 
 <!-- Breadcrumb + Prev/Next navigation -->
-<nav class="flex items-center justify-between mb-6" aria-label="Breadcrumb">
+<nav class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6" aria-label="Breadcrumb">
   <ol class="inline-flex items-center space-x-1 md:space-x-3">
     <li class="inline-flex items-center">
       <%= link_to((@current_project || @project) ? "/#{(@current_project || @project).slug}/errors" : errors_path, class: "inline-flex items-center text-sm font-medium text-gray-700 hover:text-indigo-600") do %>
@@ -60,7 +60,7 @@
 <!-- Error Header -->
 <div class="bg-white rounded-lg shadow mb-6">
   <!-- Main Header Bar -->
-  <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+  <div class="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
     <div class="flex items-start justify-between">
       <div class="flex items-start flex-1">
         <div class="flex-shrink-0">
@@ -87,14 +87,14 @@
       </div>
     </div>
     <% if (explanation = error_explanation(@issue.exception_class)).present? %>
-      <div class="mt-3 flex items-center justify-between bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
-        <div class="flex items-start flex-1 mr-4">
+      <div class="mt-3 bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
+        <div class="flex items-start mb-3">
           <svg class="w-5 h-5 text-blue-500 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
-          <p class="text-base text-blue-800 leading-relaxed"><%= explanation %></p>
+          <p class="text-sm sm:text-base text-blue-800 leading-relaxed"><%= explanation %></p>
         </div>
-        <div class="flex items-center space-x-4 flex-shrink-0">
+        <div class="flex items-center gap-4">
           <% error_url = if @current_project
                            "/#{@current_project.slug}/errors/#{@issue.id}"
                          elsif @project
@@ -135,7 +135,7 @@
 
   <% unless error_explanation(@issue.exception_class).present? %>
     <!-- Fallback status/occurrences when no explanation -->
-    <div class="px-6 py-3 border-b border-gray-200 flex justify-end">
+    <div class="px-4 sm:px-6 py-3 border-b border-gray-200 flex justify-end">
       <div class="flex items-center space-x-4">
         <% error_url = if @current_project
                          "/#{@current_project.slug}/errors/#{@issue.id}"
@@ -154,54 +154,54 @@
   <% end %>
 
   <!-- Impact Metrics Bar -->
-  <div class="px-6 py-3 bg-gray-50 border-b border-gray-200">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center space-x-6 text-sm">
+  <div class="px-4 sm:px-6 py-3 bg-gray-50 border-b border-gray-200">
+    <div class="flex flex-col gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center gap-x-4 sm:gap-x-6 gap-y-1.5 sm:gap-y-2 text-xs sm:text-sm">
         <div>
           <span class="text-gray-500">Seen:</span>
-          <span class="ml-2 font-semibold text-gray-900"><%= number_with_delimiter(@issue.count) %> times</span>
+          <span class="ml-1 font-semibold text-gray-900"><%= number_with_delimiter(@issue.count) %> times</span>
         </div>
         <div>
           <span class="text-gray-500">Last 24h:</span>
-          <span class="ml-2 font-semibold text-gray-900"><%= @events_24h %> occurrences</span>
+          <span class="ml-1 font-semibold text-gray-900"><%= @events_24h %></span>
         </div>
         <div>
           <span class="text-gray-500">First seen:</span>
-          <span class="ml-2 font-semibold text-gray-900"><%= time_ago_in_words(@issue.first_seen_at) %> ago</span>
+          <span class="ml-1 font-semibold text-gray-900"><%= time_ago_in_words(@issue.first_seen_at) %> ago</span>
         </div>
         <div>
           <span class="text-gray-500">Last seen:</span>
-          <span class="ml-2 font-semibold text-gray-900"><%= time_ago_in_words(@issue.last_seen_at) %> ago</span>
+          <span class="ml-1 font-semibold text-gray-900"><%= time_ago_in_words(@issue.last_seen_at) %> ago</span>
         </div>
         <% if @unique_users_24h > 0 %>
           <div class="flex items-center">
-            <svg class="w-4 h-4 mr-1 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+            <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 text-red-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
             </svg>
             <span class="text-gray-500">Unique identifiers:</span>
-            <span class="ml-2 font-semibold text-red-600"><%= @unique_users_24h %></span>
+            <span class="ml-1 font-semibold text-red-600"><%= @unique_users_24h %></span>
           </div>
         <% end %>
         <% if @impact_percentage > 0 %>
           <div class="flex items-center">
-            <svg class="w-4 h-4 mr-1 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+            <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 text-orange-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
             </svg>
             <span class="text-gray-500">Impact:</span>
-            <span class="ml-2 font-semibold <%= @impact_percentage > 50 ? 'text-red-600' : 'text-gray-900' %>">~<%= @impact_percentage %>%</span>
-            <span class="ml-1 text-xs text-gray-500">of all requests</span>
+            <span class="ml-1 font-semibold <%= @impact_percentage > 50 ? 'text-red-600' : 'text-gray-900' %>">~<%= @impact_percentage %>%</span>
+            <span class="ml-1 text-[10px] sm:text-xs text-gray-500">of all requests</span>
           </div>
         <% end %>
       </div>
 
-      <div class="flex items-center space-x-3">
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
         <% if @current_release.present? && @current_release != "unknown" %>
-          <span class="text-gray-500">Release:</span>
-          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700 font-mono">
-            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <span class="text-gray-500 text-xs sm:text-sm shrink-0">Release:</span>
+          <span class="inline-flex items-center px-2 sm:px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-medium bg-indigo-100 text-indigo-700 font-mono max-w-[calc(100%-5rem)] overflow-hidden">
+            <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
             </svg>
-            <%= @current_release %>
+            <span class="truncate"><%= @current_release %></span>
           </span>
         <% end %>
         <% if @events.first&.context&.dig('error', 'severity') %>
@@ -239,20 +239,20 @@ else 'stack'
 end %>
 
 <div class="bg-white rounded-lg shadow" data-controller="ai-inline">
-  <div class="px-6 pt-4 pb-4 mb-4">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner" role="tablist" aria-label="Error detail tabs">
-          <%= link_to url_for(params.permit!.to_h.merge(tab: 'stack', event_id: nil)), class: "px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'stack' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'stack') } do %>
+  <div class="px-4 sm:px-6 pt-4 pb-4 mb-4">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner overflow-x-auto max-w-full" role="tablist" aria-label="Error detail tabs">
+          <%= link_to url_for(params.permit!.to_h.merge(tab: 'stack', event_id: nil)), class: "px-3 sm:px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap #{current_tab == 'stack' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'stack') } do %>
             Stack Trace
           <% end %>
-          <%= link_to url_for(params.permit!.to_h.merge(tab: 'samples')), class: "ml-1 px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'samples' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'samples') } do %>
+          <%= link_to url_for(params.permit!.to_h.merge(tab: 'samples')), class: "ml-1 px-3 sm:px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap #{current_tab == 'samples' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'samples') } do %>
             Samples
           <% end %>
-          <%= link_to url_for(params.permit!.to_h.merge(tab: 'analytics', event_id: nil)), class: "ml-1 px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'analytics' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'analytics') } do %>
+          <%= link_to url_for(params.permit!.to_h.merge(tab: 'analytics', event_id: nil)), class: "ml-1 px-3 sm:px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap #{current_tab == 'analytics' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'analytics') } do %>
             Impact
           <% end %>
-          <%= link_to url_for(params.permit!.to_h.merge(tab: 'graph', event_id: nil)), class: "ml-1 px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'graph' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'graph') } do %>
+          <%= link_to url_for(params.permit!.to_h.merge(tab: 'graph', event_id: nil)), class: "ml-1 px-3 sm:px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap #{current_tab == 'graph' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'graph') } do %>
             Analytics
           <% end %>
         </div>
@@ -368,7 +368,7 @@ end %>
           <% end %>
         <% end %>
       </div>
-      <div class="flex items-center space-x-2"
+      <div class="flex flex-wrap items-center gap-2"
            data-controller="pr-modal"
            data-pr-modal-issue-id-value="<%= @issue.id %>"
            data-pr-modal-exception-class-value="<%= @issue.exception_class %>"
@@ -531,7 +531,7 @@ end %>
   </div>
 
   <% if current_tab == 'stack' %>
-    <div class="px-6 py-4 border-t border-gray-200">
+    <div class="px-4 sm:px-6 py-4 border-t border-gray-200">
       <!-- Summary Info -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div class="bg-gray-50 rounded-lg p-4">
@@ -565,7 +565,7 @@ end %>
     </div>
 
   <% elsif current_tab == 'analytics' %>
-    <div class="border-t border-gray-200 px-6 py-6">
+    <div class="border-t border-gray-200 px-4 sm:px-6 py-6">
       <%# Severity Analysis (radar + factor breakdown) %>
       <% breakdown = @issue.severity_score_breakdown rescue {} %>
       <% radar_labels = ["Impact", "Frequency", "Business", "Regression", "Data Risk", "Mitigation"] %>
@@ -579,7 +579,7 @@ end %>
       ] %>
       <% radar_max = [35, 25, 30, 15, 40, 18] %>
 
-      <div class="flex items-center justify-between mb-4">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
         <h3 class="text-lg font-medium text-gray-900">Severity Analysis</h3>
         <% s_sev = @issue.severity || 'low' %>
         <% s_sev_styles = {
@@ -630,13 +630,13 @@ end %>
     </div>
 
   <% elsif current_tab == 'graph' %>
-    <div class="border-t border-gray-200 px-6 py-6">
-      <div class="flex items-center justify-between mb-4">
+    <div class="border-t border-gray-200 px-4 sm:px-6 py-6">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
         <h3 class="text-lg font-medium text-gray-900">Analytics</h3>
-        <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner">
+        <div class="inline-flex flex-wrap bg-gray-100 p-1 rounded-full shadow-inner">
           <% %w[1H 4H 8H 12H 24H 48H 7D 30D].each do |rk| %>
             <% active = (@graph_range_key || '24H') == rk %>
-            <%= link_to rk, url_for(params.permit!.to_h.merge(tab: 'graph', range: rk)), class: "ml-1 first:ml-0 px-3 py-1.5 rounded-full text-xs font-medium #{active ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}" %>
+            <%= link_to rk, url_for(params.permit!.to_h.merge(tab: 'graph', range: rk)), class: "ml-1 first:ml-0 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium #{active ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}" %>
           <% end %>
         </div>
       </div>
@@ -656,11 +656,11 @@ end %>
 
   <% else %>
     <!-- Samples Table & Selected Sample Details -->
-    <div class="border-t border-gray-200 px-6 py-6">
-      <div class="flex items-center justify-between mb-4">
+    <div class="border-t border-gray-200 px-4 sm:px-6 py-6">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
         <h3 class="text-lg font-medium text-gray-900">Samples</h3>
         <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner">
-          <div class="px-4 py-2 text-xs text-gray-500">Click any value to apply a filter</div>
+          <div class="px-3 sm:px-4 py-2 text-xs text-gray-500">Click any value to apply a filter</div>
         </div>
       </div>
 
@@ -670,37 +670,37 @@ end %>
           <div class="lg:col-span-2">
             <% if @selected_event %>
               <div class="px-2 py-2">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <h4 class="text-md font-medium text-gray-900">Tags for sample that occurred at</h4>
                   <div class="text-xs text-gray-500"><%= @selected_event.occurred_at.strftime('%b %-d %Y %H:%M:%S') %></div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-                  <div>
+                  <div class="min-w-0">
                     <dl class="divide-y divide-gray-200 text-[13px]">
-                      <div class="py-2 grid grid-cols-3 gap-2">
-                        <dt class="text-gray-500">hostname:</dt>
-                        <dd class="mt-1 text-indigo-600 col-span-2 truncate"><%= @selected_event.server_name || '–' %></dd>
+                      <div class="py-2 flex gap-2">
+                        <dt class="text-gray-500 shrink-0 w-28">hostname:</dt>
+                        <dd class="text-indigo-600 truncate min-w-0"><%= @selected_event.server_name || '–' %></dd>
                       </div>
-                      <div class="py-2 grid grid-cols-3 gap-2">
-                        <dt class="text-gray-500">method:</dt>
-                        <dd class="mt-1 text-indigo-600 col-span-2"><%= @selected_event.request_method || '–' %></dd>
+                      <div class="py-2 flex gap-2">
+                        <dt class="text-gray-500 shrink-0 w-28">method:</dt>
+                        <dd class="text-indigo-600 min-w-0"><%= @selected_event.request_method || '–' %></dd>
                       </div>
-                      <div class="py-2 grid grid-cols-3 gap-2">
-                        <dt class="text-gray-500">path:</dt>
-                        <dd class="mt-1 text-indigo-600 col-span-2 break-all"><%= @selected_event.request_path || '–' %></dd>
+                      <div class="py-2 flex gap-2">
+                        <dt class="text-gray-500 shrink-0 w-28">path:</dt>
+                        <dd class="text-indigo-600 break-all min-w-0"><%= @selected_event.request_path || '–' %></dd>
                       </div>
-                      <div class="py-2 grid grid-cols-3 gap-2">
-                        <dt class="text-gray-500">request_id:</dt>
-                        <dd class="mt-1 text-indigo-600 col-span-2 break-all"><%= @selected_event.request_id || '–' %></dd>
+                      <div class="py-2 flex gap-2">
+                        <dt class="text-gray-500 shrink-0 w-28">request_id:</dt>
+                        <dd class="text-indigo-600 break-all min-w-0"><%= @selected_event.request_id || '–' %></dd>
                       </div>
-                      <div class="py-2 grid grid-cols-3 gap-2">
-                        <dt class="text-gray-500">response_status:</dt>
-                        <dd class="mt-1 text-gray-700 col-span-2"><%= (@selected_event.context && (@selected_event.context['error_status'] || @selected_event.context[:error_status])) || '–' %></dd>
+                      <div class="py-2 flex gap-2">
+                        <dt class="text-gray-500 shrink-0 w-28">response_status:</dt>
+                        <dd class="text-gray-700 min-w-0"><%= (@selected_event.context && (@selected_event.context['error_status'] || @selected_event.context[:error_status])) || '–' %></dd>
                       </div>
-                      <div class="py-2 grid grid-cols-3 gap-2">
-                        <dt class="text-gray-500">revision:</dt>
-                        <dd class="mt-1 text-gray-700 col-span-2"><%= @selected_event.release_version || '–' %></dd>
+                      <div class="py-2 flex gap-2">
+                        <dt class="text-gray-500 shrink-0 w-28">revision:</dt>
+                        <dd class="text-gray-700 min-w-0 break-all"><%= @selected_event.release_version || '–' %></dd>
                       </div>
                     </dl>
                   </div>
