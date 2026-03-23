@@ -38,8 +38,11 @@ class UptimeController < ApplicationController
   end
 
   def show
-    @recent_checks = @monitor.uptime_checks.recent.limit(20)
+    @pagy, @recent_checks = pagy(@monitor.uptime_checks.recent, limit: 25)
     @daily_summaries = @monitor.uptime_daily_summaries.recent.limit(30)
+
+    # Data retention info
+    @retention_days = current_account.data_retention_days
 
     # Calculate current uptime %
     @uptime_30d = @daily_summaries.any? ?
