@@ -238,25 +238,46 @@ export default class extends Controller {
       return
     }
 
-    const barWidth = bar.clientWidth || 600
-    const slotCount = Math.min(data.length, Math.floor(barWidth / 4))
-    const bucketSize = Math.ceil(data.length / slotCount)
+    // Always use a fixed number of slots to fill the full width
+    const slotCount = 90
+    const bucketSize = Math.max(1, Math.ceil(data.length / slotCount))
     const fragment = document.createDocumentFragment()
+
+    // Use flex to stretch bars across full width
+    bar.style.display = "flex"
+    bar.style.gap = "1px"
 
     for (let i = 0; i < slotCount; i++) {
       const start = i * bucketSize
       const bucket = data.slice(start, Math.min(start + bucketSize, data.length))
-      const allOk = bucket.every(d => d.ok)
-      const anyFail = bucket.some(d => !d.ok)
 
       const dot = document.createElement("div")
-      dot.className = "inline-block rounded-sm cursor-pointer transition-opacity hover:opacity-80"
-      dot.style.cssText = `width:3px;height:24px;margin-right:1px;background:${allOk ? "#22c55e" : (anyFail && bucket.some(d => d.ok)) ? "#f59e0b" : "#ef4444"}`
+      dot.style.cssText = "flex:1;height:28px;border-radius:2px;cursor:pointer;transition:opacity 0.15s;"
+      dot.onmouseenter = () => { dot.style.opacity = "0.7" }
+      dot.onmouseleave = () => { dot.style.opacity = "1" }
 
-      const t = new Date(bucket[0].t)
-      const avgMs = Math.round(bucket.filter(d => d.ms).reduce((s, d) => s + d.ms, 0) / (bucket.filter(d => d.ms).length || 1))
-      const okCount = bucket.filter(d => d.ok).length
-      dot.title = `${t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} — ${okCount}/${bucket.length} OK, avg ${avgMs}ms`
+      if (bucket.length === 0) {
+        // No data for this slot — gray
+        dot.style.background = "#e5e7eb"
+        dot.title = "No data"
+      } else {
+        const allOk = bucket.every(d => d.ok)
+        const anyFail = bucket.some(d => !d.ok)
+        const anyOk = bucket.some(d => d.ok)
+
+        if (allOk) {
+          dot.style.background = "#22c55e"
+        } else if (anyFail && anyOk) {
+          dot.style.background = "#f59e0b"
+        } else {
+          dot.style.background = "#ef4444"
+        }
+
+        const t = new Date(bucket[0].t)
+        const avgMs = Math.round(bucket.filter(d => d.ms).reduce((s, d) => s + d.ms, 0) / (bucket.filter(d => d.ms).length || 1))
+        const okCount = bucket.filter(d => d.ok).length
+        dot.title = `${t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} — ${okCount}/${bucket.length} OK, avg ${avgMs}ms`
+      }
 
       fragment.appendChild(dot)
     }
