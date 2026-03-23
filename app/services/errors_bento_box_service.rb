@@ -97,7 +97,7 @@ class ErrorsBentoBoxService
     distinct_groups = keys.uniq.sort_by { |k| [-max_count_for_group(issues, k), -k] }
 
     span_by_group = {}
-    
+
     distinct_groups.each_with_index do |group, idx|
       # Distribute sizes from 20x20 down to 1x1 based on rank
       # Top errors get largest boxes, progressively smaller for lower ranks
