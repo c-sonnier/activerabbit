@@ -25,10 +25,11 @@ export default class extends Controller {
 
   _drawChart() {
     const canvas = this.canvasTarget
-    const container = canvas.parentElement
     const data = this.dataValue
 
-    const width = container.clientWidth
+    // Get width from canvas parent; ensure canvas doesn't inflate it
+    canvas.style.width = "0px"
+    const width = canvas.parentElement.clientWidth
     const height = 200
     const dpr = window.devicePixelRatio || 1
     canvas.width = width * dpr
@@ -109,8 +110,11 @@ export default class extends Controller {
     ctx.lineJoin = "round"
     ctx.lineCap = "round"
     for (let i = 0; i < data.length; i++) {
-      if (i === 0) ctx.moveTo(xFor(i), yFor(data[i].ms || 0))
-      else ctx.lineTo(xFor(i), yFor(data[i].ms || 0))
+      if (i === 0) {
+        ctx.moveTo(xFor(i), yFor(data[i].ms || 0))
+      } else {
+        ctx.lineTo(xFor(i), yFor(data[i].ms || 0))
+      }
     }
     ctx.stroke()
 
