@@ -44,12 +44,7 @@
   <td class="px-6 py-4 text-sm text-gray-500">
     <%= monitor.last_checked_at ? time_ago_in_words(monitor.last_checked_at) + " ago" : "Never" %>
   </td>
-  <td class="px-6 py-4 text-right text-sm space-x-2">
-    <% if monitor.paused? %>
-      <%= button_to "Resume", resume_uptime_monitor_path(monitor), method: :post, class: "text-green-600 hover:text-green-800" %>
-    <% else %>
-      <%= button_to "Pause", pause_uptime_monitor_path(monitor), method: :post, class: "text-yellow-600 hover:text-yellow-800" %>
-    <% end %>
+  <td class="px-6 py-4 text-right text-sm">
     <%= link_to "Edit", edit_uptime_monitor_path(monitor), class: "text-indigo-600 hover:text-indigo-800" %>
   </td>
 </tr>
