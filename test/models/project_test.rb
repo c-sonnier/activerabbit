@@ -297,10 +297,10 @@ class ProjectTest < ActiveSupport::TestCase
 
   # ---- Auto AI Summary settings ----
 
-  test "auto_ai_summary_enabled? defaults to true when settings are empty" do
+  test "auto_ai_summary_enabled? defaults to false when settings are empty" do
     project = projects(:default)
     project.settings = {}
-    assert project.auto_ai_summary_enabled?
+    refute project.auto_ai_summary_enabled?
   end
 
   test "auto_ai_summary_enabled? returns true when explicitly enabled" do

@@ -133,7 +133,7 @@ class Project < ApplicationRecord
 
   # ---- Auto AI Summary ----
   def auto_ai_summary_enabled?
-    settings.dig("auto_ai_summary", "enabled") != false
+    settings.dig("auto_ai_summary", "enabled") == true
   end
 
   def auto_ai_summary_severity_levels

@@ -139,6 +139,9 @@ class ErrorIngestJobTest < ActiveSupport::TestCase
   test "auto-enqueues AiSummaryJob for new issue when account is eligible" do
     Sidekiq::Worker.clear_all
 
+    # Enable auto AI summary (disabled by default)
+    @project.update!(settings: { "auto_ai_summary" => { "enabled" => true, "severity_levels" => %w[critical high medium low] } })
+
     payload = {
       exception_class: "BrandNewAutoAIError",
       message: "AI summary should be auto-generated for new issues",
