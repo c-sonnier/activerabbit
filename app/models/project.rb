@@ -189,6 +189,37 @@ class Project < ApplicationRecord
     settings.dig("notifications", "channels", "discord") != false
   end
 
+  # ---- Auto-fix (opt-in) ----
+  # Disabled by default. User enables it in Project Settings.
+  #
+  # settings["auto_fix"]:
+  #   "enabled"       => true/false
+  #   "auto_merge"    => true/false
+  #   "skip_ci"       => true/false
+  #   "min_severity"  => "low"|"medium"|"high"|"critical"
+
+  def auto_fix_enabled?
+    return false unless github_repo_full_name.present?
+
+    settings&.dig("auto_fix", "enabled") == true
+  end
+
+  def auto_merge_enabled?
+    return false unless auto_fix_enabled?
+
+    settings&.dig("auto_fix", "auto_merge") == true
+  end
+
+  def auto_merge_skip_ci?
+    return false unless auto_merge_enabled?
+
+    settings&.dig("auto_fix", "skip_ci") == true
+  end
+
+  def auto_fix_min_severity
+    settings&.dig("auto_fix", "min_severity") || "medium"
+  end
+
   def notification_pref_for(alert_type)
     notification_preferences.find_by(alert_type: alert_type)
   end

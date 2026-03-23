@@ -15,6 +15,22 @@ class Issue < ApplicationRecord
 
   SEVERITIES = %w[low medium high critical].freeze
 
+  AUTO_FIX_STATUSES = %w[
+    creating_pr
+    pr_created
+    pr_created_review_needed
+    ci_pending
+    ci_passed
+    ci_failed
+    ci_timeout
+    merged
+    merge_failed
+    failed
+    monitor_error
+  ].freeze
+
+  validates :auto_fix_status, inclusion: { in: AUTO_FIX_STATUSES }, allow_nil: true
+
   # severity_score = impact + frequency + business + regression + data_risk - mitigation
   # Score 0-100 → mapped to severity level
   SEVERITY_SCORE_THRESHOLDS = { critical: 80, high: 55, medium: 25 }.freeze
@@ -224,6 +240,22 @@ class Issue < ApplicationRecord
 
   def source_location
     "#{controller_action} (#{top_frame})"
+  end
+
+  def auto_fix_in_progress?
+    %w[creating_pr pr_created pr_created_review_needed ci_pending ci_passed].include?(auto_fix_status)
+  end
+
+  def auto_fix_completed?
+    auto_fix_status == "merged"
+  end
+
+  def auto_fix_failed?
+    %w[failed ci_failed ci_timeout merge_failed monitor_error].include?(auto_fix_status)
+  end
+
+  def auto_fix_eligible?
+    auto_fix_status.nil? && status == "open" && ai_summary.present?
   end
 
   def events_last_24h

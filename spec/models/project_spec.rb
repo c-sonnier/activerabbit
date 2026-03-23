@@ -48,4 +48,88 @@ RSpec.describe Project, type: :model do
       expect(project.api_token).to be_present
     end
   end
+
+  describe '#auto_fix_enabled?' do
+    before { project.save! }
+
+    it 'returns false by default' do
+      expect(project.auto_fix_enabled?).to be false
+    end
+
+    it 'returns false without github_repo' do
+      project.update!(settings: { "auto_fix" => { "enabled" => true } })
+      expect(project.auto_fix_enabled?).to be false
+    end
+
+    it 'returns true when enabled with github_repo' do
+      project.update!(settings: {
+        "github_repo" => "owner/repo",
+        "auto_fix" => { "enabled" => true }
+      })
+      expect(project.auto_fix_enabled?).to be true
+    end
+  end
+
+  describe '#auto_merge_enabled?' do
+    before { project.save! }
+
+    it 'returns false when auto_fix is disabled' do
+      project.update!(settings: {
+        "github_repo" => "owner/repo",
+        "auto_fix" => { "enabled" => false, "auto_merge" => true }
+      })
+      expect(project.auto_merge_enabled?).to be false
+    end
+
+    it 'returns true when both auto_fix and auto_merge are enabled' do
+      project.update!(settings: {
+        "github_repo" => "owner/repo",
+        "auto_fix" => { "enabled" => true, "auto_merge" => true }
+      })
+      expect(project.auto_merge_enabled?).to be true
+    end
+
+    it 'returns false when auto_merge not explicitly enabled' do
+      project.update!(settings: {
+        "github_repo" => "owner/repo",
+        "auto_fix" => { "enabled" => true }
+      })
+      expect(project.auto_merge_enabled?).to be false
+    end
+  end
+
+  describe '#auto_merge_skip_ci?' do
+    before { project.save! }
+
+    it 'returns false when auto_merge is disabled' do
+      project.update!(settings: {
+        "github_repo" => "owner/repo",
+        "auto_fix" => { "enabled" => true, "auto_merge" => false, "skip_ci" => true }
+      })
+      expect(project.auto_merge_skip_ci?).to be false
+    end
+
+    it 'returns true when all three are enabled' do
+      project.update!(settings: {
+        "github_repo" => "owner/repo",
+        "auto_fix" => { "enabled" => true, "auto_merge" => true, "skip_ci" => true }
+      })
+      expect(project.auto_merge_skip_ci?).to be true
+    end
+  end
+
+  describe '#auto_fix_min_severity' do
+    before { project.save! }
+
+    it 'defaults to medium' do
+      expect(project.auto_fix_min_severity).to eq("medium")
+    end
+
+    it 'returns configured value' do
+      project.update!(settings: {
+        "auto_fix" => { "min_severity" => "high" }
+      })
+      expect(project.auto_fix_min_severity).to eq("high")
+    end
+  end
 end

@@ -616,7 +616,7 @@ class ErrorsController < ApplicationController
       project_app_id: settings["github_app_id"],
       project_app_pk: settings["github_app_pk"],
       env_app_id: ENV["AR_GH_APP_ID"],
-      env_app_pk: ENV["AR_GH_APP_PK"]
+      env_app_pk: Github::TokenManager.resolve_env_private_key
     )
 
     token = token_manager.get_token

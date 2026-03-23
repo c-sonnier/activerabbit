@@ -22,6 +22,18 @@ module Github
       (@project_pat.present? || @installation_id.present? || @env_pat.present?)
     end
 
+    # Resolve GitHub App private key from environment variables.
+    # Supports: AR_GH_APP_PK_FILE (path), AR_GH_APP_PK_BASE64, AR_GH_APP_PK (raw PEM)
+    def self.resolve_env_private_key
+      if ENV["AR_GH_APP_PK_FILE"].present? && File.exist?(ENV["AR_GH_APP_PK_FILE"])
+        File.read(ENV["AR_GH_APP_PK_FILE"])
+      elsif ENV["AR_GH_APP_PK_BASE64"].present?
+        Base64.decode64(ENV["AR_GH_APP_PK_BASE64"])
+      elsif ENV["AR_GH_APP_PK"].present?
+        ENV["AR_GH_APP_PK"].gsub('\n', "\n")
+      end
+    end
+
     private
 
     def generate_installation_token
