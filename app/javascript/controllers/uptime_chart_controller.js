@@ -140,9 +140,9 @@ export default class extends Controller {
   _setupHover() {
     const container = this.canvasTarget.parentElement
 
-    // Create transparent overlay canvas for hover graphics
+    // Create transparent overlay canvas matching main canvas exactly
     this._overlay = document.createElement("canvas")
-    this._overlay.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:auto;cursor:crosshair;"
+    this._overlay.style.cssText = "position:absolute;top:0;left:0;pointer-events:auto;cursor:crosshair;"
     container.appendChild(this._overlay)
 
     this._mouseMoveHandler = (e) => this._onHover(e)
@@ -154,16 +154,19 @@ export default class extends Controller {
   _onHover(e) {
     if (!this._layout) return
 
-    const rect = this._overlay.getBoundingClientRect()
-    const mouseX = e.clientX - rect.left
     const { padding, chartH, data, xFor, yFor, width, height } = this._layout
 
-    // Size overlay to match
+    // Size overlay to match main canvas exactly
     const dpr = window.devicePixelRatio || 1
     this._overlay.width = width * dpr
     this._overlay.height = height * dpr
     this._overlay.style.width = width + "px"
     this._overlay.style.height = height + "px"
+
+    // Use main canvas rect for mouse position so coordinates match chart exactly
+    const canvasRect = this.canvasTarget.getBoundingClientRect()
+    const mouseX = e.clientX - canvasRect.left
+
     const ctx = this._overlay.getContext("2d")
     ctx.clearRect(0, 0, this._overlay.width, this._overlay.height)
     ctx.scale(dpr, dpr)
@@ -192,7 +195,7 @@ export default class extends Controller {
     ctx.stroke()
     ctx.setLineDash([])
 
-    // Dot
+    // Dot on the line
     ctx.beginPath()
     ctx.fillStyle = d.ok ? "#6366f1" : "#ef4444"
     ctx.arc(x, y, 5, 0, Math.PI * 2)
@@ -201,7 +204,7 @@ export default class extends Controller {
     ctx.lineWidth = 2
     ctx.stroke()
 
-    // Tooltip
+    // Tooltip — positioned relative to chart container, aligned with dot
     if (this.hasTooltipTarget) {
       const time = new Date(d.t)
       const tooltip = this.tooltipTarget
@@ -212,8 +215,7 @@ export default class extends Controller {
       const tw = 140
       let left = x - tw / 2
       left = Math.max(4, Math.min(left, width - tw - 4))
-      // Position tooltip just below the dot
-      const tooltipTop = Math.min(y + 12, height - 44)
+      const tooltipTop = Math.min(y + 14, height - 44)
       tooltip.style.left = left + "px"
       tooltip.style.top = tooltipTop + "px"
       tooltip.style.display = "block"
