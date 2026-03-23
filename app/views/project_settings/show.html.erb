@@ -805,8 +805,123 @@
     </div>
   <% end %>
 
-<<<<<<< Updated upstream
-=======
+  <!-- AI Auto-Summary Settings Card -->
+  <%= form_with model: @project,
+                url: project_settings_path(@project),
+                method: :patch,
+                local: true do |f| %>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-10 overflow-hidden"
+         data-controller="auto-ai-summary">
+      <div class="px-6 py-5 bg-gradient-to-r from-violet-50 to-white border-b border-gray-100">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 w-10 h-10 bg-violet-100 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-lg font-semibold text-gray-900">AI Auto-Summary</h3>
+            <p class="text-sm text-gray-500">Automatically generate AI analysis for new errors</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6 space-y-6">
+        <!-- Master toggle -->
+        <div class="flex items-center justify-between">
+          <div>
+            <label class="text-sm font-medium text-gray-900">Enable auto AI summary</label>
+            <p class="text-sm text-gray-500">
+              Automatically generate AI root-cause analysis when new errors are detected
+            </p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="hidden"
+                   name="project[auto_ai_summary][enabled]"
+                   value="0">
+            <input type="checkbox"
+                   name="project[auto_ai_summary][enabled]"
+                   value="1"
+                   class="sr-only peer"
+                   data-auto-ai-summary-target="master"
+                   data-action="auto-ai-summary#toggle"
+                   <%= "checked" if @project.auto_ai_summary_enabled? %>>
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer
+                        peer-checked:bg-violet-600
+                        after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+                        after:bg-white after:border-gray-300 after:border after:rounded-full
+                        after:h-5 after:w-5 after:transition-all
+                        peer-checked:after:translate-x-full">
+            </div>
+          </label>
+        </div>
+
+        <!-- Severity level selection -->
+        <div data-auto-ai-summary-target="severityGroup"
+             class="<%= 'opacity-50 pointer-events-none' unless @project.auto_ai_summary_enabled? %>">
+          <div class="border-t border-gray-200 pt-5">
+            <p class="text-sm font-medium text-gray-900 mb-1">Severity levels</p>
+            <p class="text-sm text-gray-500 mb-4">
+              Select which error severity levels should trigger auto AI summary
+            </p>
+
+            <% selected_levels = @project.auto_ai_summary_severity_levels %>
+            <div class="space-y-4">
+              <% [
+                ["critical", "Critical", "Crashes, infrastructure failures, security issues", "red"],
+                ["high",     "High",     "Request failures, 500 errors, timeouts", "orange"],
+                ["medium",   "Medium",   "Partial failures, validation errors", "yellow"],
+                ["low",      "Low",      "Routing errors, cosmetic issues", "gray"]
+              ].each do |value, label, description, color| %>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full mr-3
+                                 <%= case color
+                                     when 'red' then 'bg-red-500'
+                                     when 'orange' then 'bg-orange-500'
+                                     when 'yellow' then 'bg-yellow-500'
+                                     else 'bg-gray-400'
+                                     end %>"></span>
+                    <div>
+                      <label class="text-sm font-medium text-gray-900"><%= label %></label>
+                      <p class="text-sm text-gray-500"><%= description %></p>
+                    </div>
+                  </div>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="hidden"
+                           name="project[auto_ai_summary][severity_levels][]"
+                           value="">
+                    <input type="checkbox"
+                           name="project[auto_ai_summary][severity_levels][]"
+                           value="<%= value %>"
+                           class="sr-only peer"
+                           data-auto-ai-summary-target="severity"
+                           <%= "checked" if selected_levels.include?(value) %>>
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer
+                                peer-checked:bg-violet-600
+                                after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+                                after:bg-white after:border-gray-300 after:border after:rounded-full
+                                after:h-5 after:w-5 after:transition-all
+                                peer-checked:after:translate-x-full">
+                    </div>
+                  </label>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+          <p class="text-xs text-gray-400">
+            Uses your plan's AI summary quota
+          </p>
+          <%= f.submit "Save AI Summary Settings",
+              class: "inline-flex items-center px-5 py-2.5 rounded-lg bg-violet-600 text-white text-sm font-medium shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 transition-all duration-200" %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
   <!-- AI Auto-Summary Settings Card -->
   <%= form_with model: @project,
                 url: project_settings_path(@project),
@@ -924,7 +1039,6 @@
     </div>
   <% end %>
 
->>>>>>> Stashed changes
   <!-- Fizzy Integration Card -->
   <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-10 overflow-hidden">
     <div class="px-6 py-5 bg-gradient-to-r from-orange-50 to-white border-b border-gray-100">

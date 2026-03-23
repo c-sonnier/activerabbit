@@ -33,6 +33,7 @@ class ProjectSettingsController < ApplicationController
     ok &&= copy_github_from_project if params[:project]&.dig(:copy_github_from_project_id).present?
     ok &&= update_github_settings if github_params_present?
     ok &&= update_fizzy_settings if fizzy_params_present?
+    ok &&= update_auto_ai_summary_settings if params[:project]&.dig(:auto_ai_summary)
     ok &&= update_notification_preferences if params[:preferences].present?
 
     if ok
@@ -347,6 +348,26 @@ class ProjectSettingsController < ApplicationController
   def update_project_details
     permitted = params.require(:project).permit(:name, :environment, :slug, :url, :tech_stack, :description)
     @project.update(permitted)
+  end
+
+  def update_auto_ai_summary_settings
+    ai_params = params.require(:project).fetch(:auto_ai_summary, {})
+                      .permit(:enabled, severity_levels: [])
+    return true if ai_params.blank?
+
+    settings = @project.settings || {}
+    settings["auto_ai_summary"] ||= {}
+    settings["auto_ai_summary"]["enabled"] = ai_params[:enabled] == "1"
+
+    if ai_params[:severity_levels].present?
+      settings["auto_ai_summary"]["severity_levels"] =
+        ai_params[:severity_levels].select { |l| Issue::SEVERITIES.include?(l) }
+    else
+      settings["auto_ai_summary"]["severity_levels"] = []
+    end
+
+    @project.settings = settings
+    @project.save
   end
 
   def update_fizzy_settings

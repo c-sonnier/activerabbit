@@ -15,3 +15,6 @@ application.register("sidebar", SidebarController)
 
 import QuotaNotificationController from "controllers/quota_notification_controller"
 application.register("quota-notification", QuotaNotificationController)
+
+import AutoAiSummaryController from "controllers/auto_ai_summary_controller"
+application.register("auto-ai-summary", AutoAiSummaryController)
