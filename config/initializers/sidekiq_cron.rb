@@ -99,6 +99,28 @@ if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present? && !ActiveModel::Type::B
       "cron" => "0 9 * * 1",  # Every Monday at 9:00 AM PST
       "class" => "WeeklyReportJob",
       "cron_timezone" => "America/Los_Angeles"
+    },
+
+    # ========================================
+    # Uptime Monitoring
+    # ========================================
+
+    "uptime_scheduler" => {
+      "cron" => "* * * * *",
+      "class" => "UptimeSchedulerJob",
+      "cron_timezone" => "America/Los_Angeles"
+    },
+
+    "uptime_daily_rollup" => {
+      "cron" => "30 2 * * *",
+      "class" => "UptimeDailyRollupJob",
+      "cron_timezone" => "America/Los_Angeles"
+    },
+
+    "uptime_ssl_expiry_check" => {
+      "cron" => "0 9 * * *",
+      "class" => "UptimeSslExpiryCheckJob",
+      "cron_timezone" => "America/Los_Angeles"
     }
   }
 

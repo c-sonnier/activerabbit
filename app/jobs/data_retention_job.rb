@@ -31,8 +31,9 @@ class DataRetentionJob < ApplicationJob
 
         events_deleted = delete_old_events_for_accounts(free_cutoff, free_account_ids)
         perf_deleted = delete_old_performance_events_for_accounts(free_cutoff, free_account_ids)
+        uptime_deleted = delete_old_uptime_checks_for_accounts(free_cutoff, free_account_ids)
 
-        Rails.logger.info "[DataRetention] Free plan completed: deleted #{events_deleted} events, #{perf_deleted} performance events"
+        Rails.logger.info "[DataRetention] Free plan completed: deleted #{events_deleted} events, #{perf_deleted} performance events, #{uptime_deleted} uptime checks"
       end
 
       # Phase 2: Delete old data for ALL accounts (31 days global max)
@@ -41,8 +42,9 @@ class DataRetentionJob < ApplicationJob
 
       events_deleted = delete_old_events(global_cutoff)
       perf_deleted = delete_old_performance_events(global_cutoff)
+      uptime_deleted = delete_old_uptime_checks(global_cutoff)
 
-      Rails.logger.info "[DataRetention] Global completed: deleted #{events_deleted} events, #{perf_deleted} performance events"
+      Rails.logger.info "[DataRetention] Global completed: deleted #{events_deleted} events, #{perf_deleted} performance events, #{uptime_deleted} uptime checks"
     end
   end
 
@@ -69,6 +71,14 @@ class DataRetentionJob < ApplicationJob
 
   def delete_old_performance_events_for_accounts(cutoff_date, account_ids)
     delete_in_batches_for_accounts("performance_events", cutoff_date, account_ids)
+  end
+
+  def delete_old_uptime_checks(cutoff_date)
+    delete_uptime_in_batches(cutoff_date)
+  end
+
+  def delete_old_uptime_checks_for_accounts(cutoff_date, account_ids)
+    delete_uptime_in_batches(cutoff_date, account_ids)
   end
 
   def delete_in_batches(table_name, cutoff_date)
@@ -124,6 +134,35 @@ class DataRetentionJob < ApplicationJob
       break if deleted_count == 0
 
       Rails.logger.info "[DataRetention] Deleted batch of #{deleted_count} #{table_name} for free accounts (total: #{total_deleted})"
+      sleep(0.1) if deleted_count == BATCH_SIZE
+    end
+
+    total_deleted
+  end
+
+  def delete_uptime_in_batches(cutoff_date, account_ids = nil)
+    total_deleted = 0
+    conn = ActiveRecord::Base.connection
+
+    loop do
+      if account_ids
+        sql = ActiveRecord::Base.sanitize_sql_array([
+          "DELETE FROM uptime_checks WHERE ctid IN (SELECT ctid FROM uptime_checks WHERE created_at < ? AND account_id IN (?) LIMIT ?)",
+          cutoff_date.utc, account_ids, BATCH_SIZE
+        ])
+      else
+        sql = ActiveRecord::Base.sanitize_sql_array([
+          "DELETE FROM uptime_checks WHERE ctid IN (SELECT ctid FROM uptime_checks WHERE created_at < ? LIMIT ?)",
+          cutoff_date.utc, BATCH_SIZE
+        ])
+      end
+
+      result = conn.execute(sql)
+      deleted_count = result.cmd_tuples
+      total_deleted += deleted_count
+
+      break if deleted_count == 0
+      Rails.logger.info "[DataRetention] Deleted batch of #{deleted_count} uptime_checks (total: #{total_deleted})"
       sleep(0.1) if deleted_count == BATCH_SIZE
     end
 
