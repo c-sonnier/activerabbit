@@ -2,21 +2,18 @@ import { Controller } from "@hotwired/stimulus"
 
 // Connects to data-controller="sidebar"
 export default class extends Controller {
-  static targets = ["sidebar", "content", "toggleButton", "toggleTooltip", "brandText", "navText", "promoBox", "trialBox", "quotaBox"]
+  static targets = ["sidebar", "content", "toggleButton", "toggleTooltip", "brandText", "navText", "promoBox", "trialBox", "quotaBox", "mobileOverlay"]
   static values = { accountId: String }
 
   connect() {
-    // The inline <script> in admin.html.erb already applies collapsed classes
-    // before this controller connects (via turbo:before-render and DOMContentLoaded).
-    // We just need to ensure internal state is consistent.
     const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true'
     if (isCollapsed && !this.sidebarTarget.classList.contains('sidebar-collapsed')) {
-      // Fallback: apply collapsed state if the inline script didn't run
       this.collapse(false)
     }
 
-    // Setup tooltip hover events
     this.setupTooltips()
+    this._onResize = this._handleResize.bind(this)
+    window.addEventListener('resize', this._onResize)
   }
   
   setupTooltips() {
@@ -62,10 +59,34 @@ export default class extends Controller {
   }
   
   disconnect() {
-    // Clean up tooltip
     if (this.tooltip) {
       this.tooltip.remove()
     }
+    window.removeEventListener('resize', this._onResize)
+  }
+
+  _handleResize() {
+    if (window.innerWidth >= 1024 && this.hasMobileOverlayTarget) {
+      this.closeMobile()
+    }
+  }
+
+  openMobile() {
+    this.sidebarTarget.classList.remove('-translate-x-full')
+    this.sidebarTarget.classList.add('translate-x-0')
+    if (this.hasMobileOverlayTarget) {
+      this.mobileOverlayTarget.classList.remove('hidden')
+    }
+    document.body.classList.add('overflow-hidden', 'lg:overflow-auto')
+  }
+
+  closeMobile() {
+    this.sidebarTarget.classList.add('-translate-x-full')
+    this.sidebarTarget.classList.remove('translate-x-0')
+    if (this.hasMobileOverlayTarget) {
+      this.mobileOverlayTarget.classList.add('hidden')
+    }
+    document.body.classList.remove('overflow-hidden', 'lg:overflow-auto')
   }
 
   toggle() {
@@ -95,9 +116,9 @@ export default class extends Controller {
       nav.classList.add('overflow-visible')
     }
     
-    // Update main content margin
-    content.classList.remove('ml-64')
-    content.classList.add('ml-16')
+    // Update main content margin (desktop only, mobile stays ml-0)
+    content.classList.remove('lg:ml-64')
+    content.classList.add('lg:ml-16')
     
     // Hide text elements
     this.brandTextTargets.forEach(el => el.classList.add('hidden'))
@@ -141,9 +162,9 @@ export default class extends Controller {
       nav.classList.add('overflow-y-auto')
     }
     
-    // Update main content margin
-    content.classList.remove('ml-16')
-    content.classList.add('ml-64')
+    // Update main content margin (desktop only, mobile stays ml-0)
+    content.classList.remove('lg:ml-16')
+    content.classList.add('lg:ml-64')
     
     // Show text elements
     this.brandTextTargets.forEach(el => el.classList.remove('hidden'))

@@ -3,13 +3,13 @@
 <% end %>
 
 <!-- Page Header -->
-<div class="flex items-center justify-between mb-8">
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
   <div>
     <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
     <p class="text-gray-600 mt-1">Overview of your ActiveRabbit monitoring</p>
   </div>
 
-  <div class="flex items-center space-x-4">
+  <div class="flex items-center">
     <%= link_to new_project_path,
         class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" do %>
       <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -21,45 +21,45 @@
 </div>
 
 <!-- Account Stats Grid -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-  <div class="bg-white rounded-lg shadow p-6">
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-8">
+  <div class="bg-white rounded-lg shadow p-4 sm:p-6">
     <div class="flex items-center">
-      <div class="p-3 rounded-full bg-blue-100 text-blue-600">
-        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="p-2 sm:p-3 rounded-full bg-blue-100 text-blue-600 shrink-0">
+        <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
         </svg>
       </div>
-      <div class="ml-4">
-        <p class="text-sm font-medium text-gray-600">Total Projects</p>
-        <p class="text-2xl font-semibold text-gray-900"><%= number_with_delimiter(@stats[:total_projects]) %></p>
+      <div class="ml-3 sm:ml-4 min-w-0">
+        <p class="text-xs sm:text-sm font-medium text-gray-600">Total Projects</p>
+        <p class="text-xl sm:text-2xl font-semibold text-gray-900"><%= number_with_delimiter(@stats[:total_projects]) %></p>
       </div>
     </div>
   </div>
 
-  <div class="bg-white rounded-lg shadow p-6">
+  <div class="bg-white rounded-lg shadow p-4 sm:p-6">
     <div class="flex items-center">
-      <div class="p-3 rounded-full bg-red-100 text-red-600">
-        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="p-2 sm:p-3 rounded-full bg-red-100 text-red-600 shrink-0">
+        <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.268 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
         </svg>
       </div>
-      <div class="ml-4">
-        <p class="text-sm font-medium text-gray-600">Open Issues</p>
-        <p class="text-2xl font-semibold text-gray-900"><%= number_with_delimiter(@stats[:open_issues]) %></p>
+      <div class="ml-3 sm:ml-4 min-w-0">
+        <p class="text-xs sm:text-sm font-medium text-gray-600">Open Issues</p>
+        <p class="text-xl sm:text-2xl font-semibold text-gray-900"><%= number_with_delimiter(@stats[:open_issues]) %></p>
       </div>
     </div>
   </div>
 
-  <div class="bg-white rounded-lg shadow p-6 relative overflow-hidden">
+  <div class="bg-white rounded-lg shadow p-4 sm:p-6 relative overflow-hidden">
     <div class="flex items-center">
-      <div class="p-3 rounded-full bg-gradient-to-br from-violet-100 to-indigo-100 text-violet-600">
-        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="p-2 sm:p-3 rounded-full bg-gradient-to-br from-violet-100 to-indigo-100 text-violet-600 shrink-0">
+        <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
         </svg>
       </div>
-      <div class="ml-4">
-        <p class="text-sm font-medium text-gray-600">AI Summaries</p>
-        <p class="text-2xl font-semibold text-gray-900"><%= number_with_delimiter(@stats[:ai_summaries]) %></p>
+      <div class="ml-3 sm:ml-4 min-w-0">
+        <p class="text-xs sm:text-sm font-medium text-gray-600">AI Summaries</p>
+        <p class="text-xl sm:text-2xl font-semibold text-gray-900"><%= number_with_delimiter(@stats[:ai_summaries]) %></p>
       </div>
     </div>
     <% if @stats[:ai_summaries] > 0 %>
@@ -71,16 +71,16 @@
     <% end %>
   </div>
 
-  <div class="bg-white rounded-lg shadow p-6">
+  <div class="bg-white rounded-lg shadow p-4 sm:p-6">
     <div class="flex items-center">
-      <div class="p-3 rounded-full bg-green-100 text-green-600">
-        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="p-2 sm:p-3 rounded-full bg-green-100 text-green-600 shrink-0">
+        <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
         </svg>
       </div>
-      <div class="ml-4">
-        <p class="text-sm font-medium text-gray-600">Events (Last 30 Days)</p>
-        <p class="text-2xl font-semibold text-gray-900"><%= number_with_delimiter(@stats[:events_last_30_days]) %></p>
+      <div class="ml-3 sm:ml-4 min-w-0">
+        <p class="text-xs sm:text-sm font-medium text-gray-600 truncate">Events (30 Days)</p>
+        <p class="text-xl sm:text-2xl font-semibold text-gray-900"><%= number_with_delimiter(@stats[:events_last_30_days]) %></p>
       </div>
     </div>
   </div>
@@ -106,24 +106,24 @@
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <% (@projects || []).each do |project| %>
       <% stats = @project_stats[project.id] %>
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
         <!-- Project Header -->
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+        <div class="flex items-start justify-between gap-2 mb-4">
+          <div class="flex items-center space-x-3 min-w-0">
+            <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center shrink-0">
               <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
               </svg>
             </div>
-            <div>
+            <div class="min-w-0">
               <% dot_class = stats[:issues_count].to_i > 0 ? 'bg-green-500' : 'bg-gray-300' %>
               <div class="flex items-center space-x-2">
-                <h3 class="text-lg font-semibold">
+                <h3 class="text-base sm:text-lg font-semibold truncate">
                   <%= link_to project.name,
                               project_slug_errors_path(project.slug),
                               class: "text-indigo-600 hover:text-indigo-800 transition-colors" %>
                 </h3>
-                <span class="inline-block w-2 h-2 rounded-full <%= dot_class %>"></span>
+                <span class="inline-block w-2 h-2 rounded-full shrink-0 <%= dot_class %>"></span>
               </div>
               <div class="text-sm text-gray-500">
                 <div><%= project.environment %></div>
@@ -131,14 +131,8 @@
             </div>
           </div>
 
-          <!-- Health Status + Edit button -->
-          <% health_color = case stats[:health_status]
-                           when 'healthy' then 'text-green-600'
-                           when 'warning' then 'text-yellow-600'
-                           when 'critical' then 'text-red-600'
-                           else 'text-gray-400'
-                           end %>
-          <div class="flex items-center space-x-2">
+          <!-- Edit button -->
+          <div class="shrink-0">
             <%= link_to project_settings_path(project),
                 class: "inline-flex items-center space-x-1 bg-gray-100 text-gray-700 py-1 px-2 rounded-md text-xs hover:bg-gray-200 transition-colors" do %>
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,7 +144,7 @@
         </div>
 
         <!-- Project Stats -->
-        <div class="space-y-3 mb-6">
+        <div class="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
           <div class="flex justify-between items-center">
             <span class="text-sm text-gray-600">Open Issues</span>
             <span class="text-sm font-medium text-gray-900"><%= stats[:issues_count] %></span>
@@ -198,41 +192,37 @@
           <p class="text-sm text-gray-600 mb-4"><%= truncate(project.description, length: 100) %></p>
         <% end %>
 
-        <!-- Actions -->
-        <div class="space-y-2">
+        <!-- Quick Access Links -->
+        <div class="flex flex-wrap gap-2">
+          <%= link_to project_errors_path(project),
+              class: "flex-1 min-w-[5rem] bg-red-50 text-red-700 text-center py-2 px-2 sm:px-3 rounded-md text-xs sm:text-sm hover:bg-red-100 transition-colors border border-red-200" do %>
+            <div class="flex items-center justify-center">
+              <svg class="w-4 h-4 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.268 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+              </svg>
+              Errors
+            </div>
+          <% end %>
 
-                    <!-- Quick Access Links Row -->
-          <div class="flex space-x-2">
-            <%= link_to project_errors_path(project),
-                class: "flex-1 bg-red-50 text-red-700 text-center py-2 px-3 rounded-md text-sm hover:bg-red-100 transition-colors border border-red-200" do %>
-              <div class="flex items-center justify-center">
-                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.268 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                </svg>
-                Errors
-              </div>
-            <% end %>
+          <%= link_to project_performance_path(project),
+              class: "flex-1 min-w-[5rem] bg-blue-50 text-blue-700 text-center py-2 px-2 sm:px-3 rounded-md text-xs sm:text-sm hover:bg-blue-100 transition-colors border border-blue-200" do %>
+            <div class="flex items-center justify-center">
+              <svg class="w-4 h-4 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              </svg>
+              Performance
+            </div>
+          <% end %>
 
-            <%= link_to project_performance_path(project),
-                class: "flex-1 bg-blue-50 text-blue-700 text-center py-2 px-3 rounded-md text-sm hover:bg-blue-100 transition-colors border border-blue-200" do %>
-              <div class="flex items-center justify-center">
-                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                </svg>
-                Performance
-              </div>
-            <% end %>
-
-            <%= link_to project_slug_errors_path(project.slug, filter: "ai"),
-                class: "flex-1 bg-violet-50 text-violet-700 text-center py-2 px-3 rounded-md text-sm hover:bg-violet-100 transition-colors border border-violet-200" do %>
-              <div class="flex items-center justify-center">
-                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                </svg>
-                AI Summaries
-              </div>
-            <% end %>
-          </div>
+          <%= link_to project_slug_errors_path(project.slug, filter: "ai"),
+              class: "flex-1 min-w-[5rem] bg-violet-50 text-violet-700 text-center py-2 px-2 sm:px-3 rounded-md text-xs sm:text-sm hover:bg-violet-100 transition-colors border border-violet-200" do %>
+            <div class="flex items-center justify-center">
+              <svg class="w-4 h-4 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+              </svg>
+              <span class="whitespace-nowrap">AI Summaries</span>
+            </div>
+          <% end %>
         </div>
       </div>
     <% end %>
