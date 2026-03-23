@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe UptimePingJob, type: :job do
+RSpec.describe Uptime::PingJob, type: :job do
   let(:account) { @test_account }
   let(:user) { create(:user, account: account) }
   let(:project) { create(:project, account: account, user: user, tech_stack: "ruby") }
@@ -22,12 +22,12 @@ RSpec.describe UptimePingJob, type: :job do
           .to_return(status: 200, body: "OK", headers: {})
       end
 
-      it "creates a successful UptimeCheck" do
+      it "creates a successful Uptime::Check" do
         expect {
           described_class.new.perform(monitor.id)
-        }.to change { UptimeCheck.count }.by(1)
+        }.to change { Uptime::Check.count }.by(1)
 
-        check = UptimeCheck.last
+        check = Uptime::Check.last
         expect(check.success).to be true
         expect(check.status_code).to eq(200)
       end
@@ -47,9 +47,9 @@ RSpec.describe UptimePingJob, type: :job do
           .to_return(status: 500, body: "Error")
       end
 
-      it "creates a failed UptimeCheck" do
+      it "creates a failed check" do
         described_class.new.perform(monitor.id)
-        check = UptimeCheck.last
+        check = Uptime::Check.last
         expect(check.success).to be false
         expect(check.status_code).to eq(500)
       end
@@ -67,7 +67,7 @@ RSpec.describe UptimePingJob, type: :job do
 
       it "creates a failed check with error message" do
         described_class.new.perform(monitor.id)
-        check = UptimeCheck.last
+        check = Uptime::Check.last
         expect(check.success).to be false
         expect(check.error_message).to be_present
       end
@@ -80,8 +80,8 @@ RSpec.describe UptimePingJob, type: :job do
           .to_return(status: 500, body: "Error")
       end
 
-      it "enqueues UptimeAlertJob on status transition" do
-        expect(UptimeAlertJob).to receive(:perform_async).with(monitor.id, "down", anything)
+      it "enqueues Uptime::AlertJob on status transition" do
+        expect(Uptime::AlertJob).to receive(:perform_async).with(monitor.id, "down", anything)
         described_class.new.perform(monitor.id)
       end
     end
@@ -94,7 +94,7 @@ RSpec.describe UptimePingJob, type: :job do
       end
 
       it "enqueues recovery alert" do
-        expect(UptimeAlertJob).to receive(:perform_async).with(monitor.id, "up", anything)
+        expect(Uptime::AlertJob).to receive(:perform_async).with(monitor.id, "up", anything)
         described_class.new.perform(monitor.id)
       end
     end

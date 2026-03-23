@@ -107,19 +107,19 @@ if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present? && !ActiveModel::Type::B
 
     "uptime_scheduler" => {
       "cron" => "* * * * *",
-      "class" => "UptimeSchedulerJob",
+      "class" => "Uptime::SchedulerJob",
       "cron_timezone" => "America/Los_Angeles"
     },
 
     "uptime_daily_rollup" => {
       "cron" => "30 2 * * *",
-      "class" => "UptimeDailyRollupJob",
+      "class" => "Uptime::DailyRollupJob",
       "cron_timezone" => "America/Los_Angeles"
     },
 
     "uptime_ssl_expiry_check" => {
       "cron" => "0 9 * * *",
-      "class" => "UptimeSslExpiryCheckJob",
+      "class" => "Uptime::SslExpiryCheckJob",
       "cron_timezone" => "America/Los_Angeles"
     }
   }

@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe UptimeMonitor, type: :model do
+RSpec.describe Uptime::Monitor, type: :model do
   let(:account) { @test_account }
   let(:user) { create(:user, account: account) }
   let(:project) { create(:project, account: account, user: user, tech_stack: "ruby") }
@@ -34,8 +34,8 @@ RSpec.describe UptimeMonitor, type: :model do
       ActsAsTenant.with_tenant(account) do
         active = create(:uptime_monitor, project: project, status: 'up')
         paused = create(:uptime_monitor, project: project, status: 'paused')
-        expect(UptimeMonitor.active).to include(active)
-        expect(UptimeMonitor.active).not_to include(paused)
+        expect(Uptime::Monitor.active).to include(active)
+        expect(Uptime::Monitor.active).not_to include(paused)
       end
     end
 
@@ -47,7 +47,7 @@ RSpec.describe UptimeMonitor, type: :model do
                          last_checked_at: 1.minute.ago, interval_seconds: 300)
         never_checked = create(:uptime_monitor, project: project, status: 'pending',
                                last_checked_at: nil)
-        results = UptimeMonitor.due_for_check
+        results = Uptime::Monitor.due_for_check
         expect(results).to include(due, never_checked)
         expect(results).not_to include(not_due)
       end

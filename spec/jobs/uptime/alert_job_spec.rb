@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe UptimeAlertJob, type: :job do
+RSpec.describe Uptime::AlertJob, type: :job do
   let(:account) { @test_account }
   let(:user) { create(:user, account: account) }
   let(:project) { create(:project, account: account, user: user, tech_stack: "ruby") }

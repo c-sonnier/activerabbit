@@ -1,5 +1,5 @@
 FactoryBot.define do
-  factory :uptime_monitor do
+  factory :uptime_monitor, class: "Uptime::Monitor" do
     association :account
     association :project
     name { "Test Monitor" }

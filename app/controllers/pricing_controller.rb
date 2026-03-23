@@ -98,7 +98,7 @@ class PricingController < ApplicationController
     # Uptime Monitors usage (use real count, not cached Healthcheck count)
     @uptime_monitors_quota = plan_quotas[:uptime_monitors][:quota]
     ActsAsTenant.without_tenant do
-      @uptime_monitors_used = UptimeMonitor.where(account_id: @account.id).count
+      @uptime_monitors_used = Uptime::Monitor.where(account_id: @account.id).count
     end
     @uptime_monitors_remaining = [@uptime_monitors_quota - @uptime_monitors_used, 0].max
 

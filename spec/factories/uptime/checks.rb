@@ -1,7 +1,7 @@
 FactoryBot.define do
-  factory :uptime_check do
+  factory :uptime_check, class: "Uptime::Check" do
     association :account
-    association :uptime_monitor
+    association :monitor, factory: :uptime_monitor
     status_code { 200 }
     response_time_ms { 150 }
     success { true }
