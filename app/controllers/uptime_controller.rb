@@ -70,8 +70,11 @@ class UptimeController < ApplicationController
     @monitor.project = @current_project || @project
     authorize @monitor
 
-    unless current_account.within_quota?(:uptime_monitors)
-      flash[:alert] = "You've reached your uptime monitor limit. Please upgrade your plan."
+    # Count real UptimeMonitor records (not cached Healthcheck count)
+    monitor_count = UptimeMonitor.where(account: current_account).count
+    monitor_quota = current_account.uptime_monitors_quota
+    unless monitor_count < monitor_quota
+      flash.now[:alert] = "You've reached your uptime monitor limit (#{monitor_count}/#{monitor_quota}). Please upgrade your plan."
       render :new, status: :unprocessable_entity
       return
     end

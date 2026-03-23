@@ -1,6 +1,44 @@
-<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-  <h1 class="text-2xl font-bold text-gray-900 mb-6">Edit Monitor: <%= @monitor.name %></h1>
-  <div class="bg-white rounded-lg shadow p-6">
-    <%= render "form" %>
+<!-- Page Header -->
+<div class="mb-8">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">Edit Monitor</h1>
+    <p class="text-gray-600 mt-1"><%= @monitor.name %> &mdash; <%= @monitor.url %></p>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+  <div class="lg:col-span-2">
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-lg font-medium text-gray-900 mb-6">Monitor Configuration</h2>
+      <%= render "form" %>
+    </div>
+  </div>
+
+  <div class="lg:col-span-1">
+    <div class="bg-white rounded-lg shadow p-6">
+      <h3 class="text-sm font-medium text-gray-900 mb-4">Current Status</h3>
+      <div class="space-y-3">
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-500">Status</span>
+          <span class="font-medium <%= @monitor.up? ? 'text-green-600' : @monitor.down? ? 'text-red-600' : 'text-gray-600' %>"><%= @monitor.status.upcase %></span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-500">Last checked</span>
+          <span class="text-gray-900"><%= @monitor.last_checked_at ? time_ago_in_words(@monitor.last_checked_at) + " ago" : "Never" %></span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-500">Response time</span>
+          <span class="text-gray-900"><%= @monitor.last_response_time_ms ? "#{@monitor.last_response_time_ms}ms" : "—" %></span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-500">Consecutive failures</span>
+          <span class="text-gray-900"><%= @monitor.consecutive_failures %></span>
+        </div>
+      </div>
+      <div class="mt-6 pt-4 border-t border-gray-200">
+        <%= button_to "Delete Monitor", uptime_monitor_path(@monitor), method: :delete, data: { turbo_confirm: "Are you sure? This will delete all check history." }, class: "text-sm text-red-600 hover:text-red-800 font-medium" %>
+      </div>
+    </div>
   </div>
 </div>
