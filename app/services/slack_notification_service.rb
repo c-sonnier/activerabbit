@@ -34,6 +34,11 @@ class SlackNotificationService
     send_blocks(blocks: blocks, fallback_text: fallback)
   end
 
+  def send_uptime_alert(monitor, alert_type, payload)
+    blocks, fallback = build_uptime_alert_blocks(monitor, alert_type, payload)
+    send_blocks(blocks: blocks, fallback_text: fallback)
+  end
+
   def send_custom_alert(title, message, color: "warning")
     blocks, fallback = build_custom_blocks(title, message, color)
     send_blocks(blocks: blocks, fallback_text: fallback)
@@ -241,6 +246,37 @@ class SlackNotificationService
       }
     ]
     [blocks, "#{title}: #{message}"]
+  end
+
+  def build_uptime_alert_blocks(monitor, alert_type, payload)
+    emoji = alert_type == "up" ? ":white_check_mark:" : ":red_circle:"
+    status_text = alert_type == "up" ? "RECOVERED" : "DOWN"
+
+    blocks = [
+      {
+        type: "header",
+        text: { type: "plain_text", text: "#{emoji} Uptime #{status_text}: #{monitor.name}", emoji: true }
+      },
+      {
+        type: "section",
+        fields: [
+          { type: "mrkdwn", text: "*URL:*\n#{monitor.url}" },
+          { type: "mrkdwn", text: "*Status:*\n#{status_text}" },
+          { type: "mrkdwn", text: "*Response Time:*\n#{monitor.last_response_time_ms || 'N/A'}ms" },
+          { type: "mrkdwn", text: "*Region:*\n#{monitor.region}" }
+        ]
+      }
+    ]
+
+    if alert_type == "down" && payload["consecutive_failures"]
+      blocks << {
+        type: "section",
+        text: { type: "mrkdwn", text: ":warning: *#{payload['consecutive_failures']} consecutive failures*" }
+      }
+    end
+
+    fallback = "Uptime #{status_text}: #{monitor.name} (#{monitor.url})"
+    [blocks, fallback]
   end
 
   def build_error_frequency_message(issue, payload)

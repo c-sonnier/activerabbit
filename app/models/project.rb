@@ -18,6 +18,7 @@ class Project < ApplicationRecord
   has_many :alert_notifications, dependent: :destroy
   has_many :deploys, dependent: :destroy
   has_many :notification_preferences, dependent: :destroy
+  has_many :uptime_monitors, dependent: :destroy
 
   validates :name, presence: true
   validates_uniqueness_to_tenant :name
