@@ -13,18 +13,17 @@ export default class extends Controller {
 
   disconnect() {
     window.removeEventListener("resize", this._onResize)
-    if (this._overlay) {
-      this._overlay.removeEventListener("mousemove", this._mouseMoveHandler)
-      this._overlay.removeEventListener("mouseleave", this._mouseLeaveHandler)
-    }
+    this.canvasTarget.removeEventListener("mousemove", this._mouseMoveHandler)
+    this.canvasTarget.removeEventListener("mouseleave", this._mouseLeaveHandler)
   }
 
   draw() {
-    this.drawResponseChart()
+    this._drawChart()
+    this._cacheImage()
     this.drawStatusBar()
   }
 
-  drawResponseChart() {
+  _drawChart() {
     const canvas = this.canvasTarget
     const container = canvas.parentElement
     const data = this.dataValue
@@ -48,61 +47,59 @@ export default class extends Controller {
       return
     }
 
-    const padding = { top: 20, right: 20, bottom: 30, left: 55 }
-    const chartW = width - padding.left - padding.right
-    const chartH = height - padding.top - padding.bottom
+    const pad = { top: 20, right: 20, bottom: 30, left: 55 }
+    const cw = width - pad.left - pad.right
+    const ch = height - pad.top - pad.bottom
 
     const times = data.map(d => new Date(d.t).getTime())
     const values = data.map(d => d.ms || 0)
     const maxMs = Math.ceil((Math.max(...values) * 1.15) / 50) * 50 || 100
-    const minTime = Math.min(...times)
-    const maxTime = Math.max(...times)
-    const timeRange = maxTime - minTime || 1
+    const minT = Math.min(...times)
+    const range = (Math.max(...times) - minT) || 1
 
-    const xFor = (i) => padding.left + ((times[i] - minTime) / timeRange) * chartW
-    const yFor = (ms) => padding.top + chartH - (ms / maxMs) * chartH
+    const xFor = (i) => pad.left + ((times[i] - minT) / range) * cw
+    const yFor = (ms) => pad.top + ch - (ms / maxMs) * ch
 
-    // Grid lines
+    // Grid
     ctx.strokeStyle = "#f3f4f6"
     ctx.lineWidth = 1
     for (let i = 0; i <= 4; i++) {
-      const y = padding.top + (chartH * (4 - i) / 4)
+      const y = pad.top + (ch * (4 - i) / 4)
       ctx.beginPath()
-      ctx.moveTo(padding.left, y)
-      ctx.lineTo(width - padding.right, y)
+      ctx.moveTo(pad.left, y)
+      ctx.lineTo(width - pad.right, y)
       ctx.stroke()
     }
 
-    // Y-axis labels
+    // Y labels
     ctx.fillStyle = "#9ca3af"
     ctx.font = "11px -apple-system, BlinkMacSystemFont, sans-serif"
     ctx.textAlign = "right"
     for (let i = 0; i <= 4; i++) {
-      const y = padding.top + (chartH * (4 - i) / 4)
-      ctx.fillText(`${Math.round(maxMs * i / 4)}ms`, padding.left - 8, y + 4)
+      const y = pad.top + (ch * (4 - i) / 4)
+      ctx.fillText(`${Math.round(maxMs * i / 4)}ms`, pad.left - 8, y + 4)
     }
 
-    // X-axis time labels
+    // X labels
     ctx.textAlign = "center"
-    ctx.fillStyle = "#9ca3af"
-    const labelCount = Math.min(6, data.length)
-    for (let i = 0; i < labelCount; i++) {
-      const idx = Math.floor(i * (data.length - 1) / (labelCount - 1 || 1))
-      const time = new Date(data[idx].t)
-      ctx.fillText(time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), xFor(idx), height - 8)
+    const n = Math.min(6, data.length)
+    for (let i = 0; i < n; i++) {
+      const idx = Math.floor(i * (data.length - 1) / (n - 1 || 1))
+      const t = new Date(data[idx].t)
+      ctx.fillText(t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), xFor(idx), height - 8)
     }
 
     // Area fill
     ctx.beginPath()
     ctx.moveTo(xFor(0), yFor(values[0]))
-    data.forEach((d, i) => { if (i > 0) ctx.lineTo(xFor(i), yFor(d.ms || 0)) })
-    ctx.lineTo(xFor(data.length - 1), padding.top + chartH)
-    ctx.lineTo(xFor(0), padding.top + chartH)
+    for (let i = 1; i < data.length; i++) ctx.lineTo(xFor(i), yFor(data[i].ms || 0))
+    ctx.lineTo(xFor(data.length - 1), pad.top + ch)
+    ctx.lineTo(xFor(0), pad.top + ch)
     ctx.closePath()
-    const gradient = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartH)
-    gradient.addColorStop(0, "rgba(99, 102, 241, 0.15)")
-    gradient.addColorStop(1, "rgba(99, 102, 241, 0.01)")
-    ctx.fillStyle = gradient
+    const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + ch)
+    grad.addColorStop(0, "rgba(99, 102, 241, 0.15)")
+    grad.addColorStop(1, "rgba(99, 102, 241, 0.01)")
+    ctx.fillStyle = grad
     ctx.fill()
 
     // Line
@@ -111,69 +108,55 @@ export default class extends Controller {
     ctx.lineWidth = 2.5
     ctx.lineJoin = "round"
     ctx.lineCap = "round"
-    data.forEach((d, i) => {
-      const x = xFor(i)
-      const y = yFor(d.ms || 0)
-      if (i === 0) ctx.moveTo(x, y) else ctx.lineTo(x, y)
-    })
+    for (let i = 0; i < data.length; i++) {
+      if (i === 0) ctx.moveTo(xFor(i), yFor(data[i].ms || 0))
+      else ctx.lineTo(xFor(i), yFor(data[i].ms || 0))
+    }
     ctx.stroke()
 
-    // Failed markers
+    // Fail markers
     data.forEach((d, i) => {
       if (!d.ok) {
-        const x = xFor(i)
-        const y = d.ms ? yFor(d.ms) : padding.top + chartH
+        const x = xFor(i), y = d.ms ? yFor(d.ms) : pad.top + ch
         ctx.beginPath()
         ctx.fillStyle = "#ef4444"
         ctx.arc(x, y, 4, 0, Math.PI * 2)
         ctx.fill()
-        ctx.strokeStyle = "#ffffff"
+        ctx.strokeStyle = "#fff"
         ctx.lineWidth = 1.5
         ctx.stroke()
       }
     })
 
-    // Store for hover
-    this._layout = { padding, chartW, chartH, maxMs, width, height, xFor, yFor, data, times }
+    this._layout = { pad, cw, ch, maxMs, width, height, xFor, yFor, data, times }
+  }
+
+  _cacheImage() {
+    // Save the clean chart so we can restore it on each hover without full redraw
+    const canvas = this.canvasTarget
+    this._imageData = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height)
   }
 
   _setupHover() {
-    const container = this.canvasTarget.parentElement
-
-    // Create transparent overlay canvas matching main canvas exactly
-    this._overlay = document.createElement("canvas")
-    this._overlay.style.cssText = "position:absolute;top:0;left:0;pointer-events:auto;cursor:crosshair;"
-    container.appendChild(this._overlay)
-
     this._mouseMoveHandler = (e) => this._onHover(e)
     this._mouseLeaveHandler = () => this._clearHover()
-    this._overlay.addEventListener("mousemove", this._mouseMoveHandler)
-    this._overlay.addEventListener("mouseleave", this._mouseLeaveHandler)
+    this.canvasTarget.addEventListener("mousemove", this._mouseMoveHandler)
+    this.canvasTarget.addEventListener("mouseleave", this._mouseLeaveHandler)
+    this.canvasTarget.style.cursor = "crosshair"
   }
 
   _onHover(e) {
-    if (!this._layout) return
+    if (!this._layout || !this._imageData) return
 
-    const { padding, chartH, data, xFor, yFor, width, height } = this._layout
-
-    // Size overlay to match main canvas exactly
+    const canvas = this.canvasTarget
+    const ctx = canvas.getContext("2d")
+    const rect = canvas.getBoundingClientRect()
+    const mouseX = e.clientX - rect.left
+    const { pad, ch, data, xFor, yFor, width, height } = this._layout
     const dpr = window.devicePixelRatio || 1
-    this._overlay.width = width * dpr
-    this._overlay.height = height * dpr
-    this._overlay.style.width = width + "px"
-    this._overlay.style.height = height + "px"
-
-    // Use main canvas rect for mouse position so coordinates match chart exactly
-    const canvasRect = this.canvasTarget.getBoundingClientRect()
-    const mouseX = e.clientX - canvasRect.left
-
-    const ctx = this._overlay.getContext("2d")
-    ctx.clearRect(0, 0, this._overlay.width, this._overlay.height)
-    ctx.scale(dpr, dpr)
 
     // Find nearest point
-    let nearest = 0
-    let nearestDist = Infinity
+    let nearest = 0, nearestDist = Infinity
     data.forEach((d, i) => {
       const dist = Math.abs(xFor(i) - mouseX)
       if (dist < nearestDist) { nearestDist = dist; nearest = i }
@@ -181,30 +164,38 @@ export default class extends Controller {
 
     if (nearestDist > 40) { this._clearHover(); return }
 
+    // Restore clean chart
+    ctx.putImageData(this._imageData, 0, 0)
+    // Re-apply scale for drawing hover elements
+    ctx.save()
+    ctx.scale(dpr, dpr)
+
     const d = data[nearest]
     const x = xFor(nearest)
-    const y = d.ms ? yFor(d.ms) : padding.top + chartH
+    const y = d.ms ? yFor(d.ms) : pad.top + ch
 
-    // Dashed vertical line
+    // Vertical dashed line
     ctx.beginPath()
     ctx.strokeStyle = "#d1d5db"
     ctx.lineWidth = 1
     ctx.setLineDash([4, 4])
-    ctx.moveTo(x, padding.top)
-    ctx.lineTo(x, padding.top + chartH)
+    ctx.moveTo(x, pad.top)
+    ctx.lineTo(x, pad.top + ch)
     ctx.stroke()
     ctx.setLineDash([])
 
-    // Dot on the line
+    // Highlighted dot
     ctx.beginPath()
     ctx.fillStyle = d.ok ? "#6366f1" : "#ef4444"
-    ctx.arc(x, y, 5, 0, Math.PI * 2)
+    ctx.arc(x, y, 6, 0, Math.PI * 2)
     ctx.fill()
-    ctx.strokeStyle = "#ffffff"
+    ctx.strokeStyle = "#fff"
     ctx.lineWidth = 2
     ctx.stroke()
 
-    // Tooltip — positioned relative to chart container, aligned with dot
+    ctx.restore()
+
+    // Tooltip
     if (this.hasTooltipTarget) {
       const time = new Date(d.t)
       const tooltip = this.tooltipTarget
@@ -215,17 +206,16 @@ export default class extends Controller {
       const tw = 140
       let left = x - tw / 2
       left = Math.max(4, Math.min(left, width - tw - 4))
-      const tooltipTop = Math.min(y + 14, height - 44)
+      const top = Math.min(y + 14, height - 44)
       tooltip.style.left = left + "px"
-      tooltip.style.top = tooltipTop + "px"
+      tooltip.style.top = top + "px"
       tooltip.style.display = "block"
     }
   }
 
   _clearHover() {
-    if (this._overlay) {
-      const ctx = this._overlay.getContext("2d")
-      ctx.clearRect(0, 0, this._overlay.width, this._overlay.height)
+    if (this._imageData) {
+      this.canvasTarget.getContext("2d").putImageData(this._imageData, 0, 0)
     }
     if (this.hasTooltipTarget) {
       this.tooltipTarget.style.display = "none"
@@ -251,9 +241,7 @@ export default class extends Controller {
 
     for (let i = 0; i < slotCount; i++) {
       const start = i * bucketSize
-      const end = Math.min(start + bucketSize, data.length)
-      const bucket = data.slice(start, end)
-
+      const bucket = data.slice(start, Math.min(start + bucketSize, data.length))
       const allOk = bucket.every(d => d.ok)
       const anyFail = bucket.some(d => !d.ok)
 
@@ -261,10 +249,10 @@ export default class extends Controller {
       dot.className = "inline-block rounded-sm cursor-pointer transition-opacity hover:opacity-80"
       dot.style.cssText = `width:3px;height:24px;margin-right:1px;background:${allOk ? "#22c55e" : (anyFail && bucket.some(d => d.ok)) ? "#f59e0b" : "#ef4444"}`
 
-      const firstTime = new Date(bucket[0].t)
+      const t = new Date(bucket[0].t)
       const avgMs = Math.round(bucket.filter(d => d.ms).reduce((s, d) => s + d.ms, 0) / (bucket.filter(d => d.ms).length || 1))
       const okCount = bucket.filter(d => d.ok).length
-      dot.title = `${firstTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} — ${okCount}/${bucket.length} OK, avg ${avgMs}ms`
+      dot.title = `${t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} — ${okCount}/${bucket.length} OK, avg ${avgMs}ms`
 
       fragment.appendChild(dot)
     }
