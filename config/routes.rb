@@ -92,6 +92,18 @@ Rails.application.routes.draw do
   # Top-level Logs route (no /admin)
   get "logs", to: "logs#index", as: "logs"
 
+  # Top-level Uptime routes (no /admin)
+  get "uptime", to: "uptime#index", as: "uptime_index"
+  get "uptime/new", to: "uptime#new", as: "new_uptime"
+  post "uptime", to: "uptime#create", as: "uptime_monitors"
+  get "uptime/:id", to: "uptime#show", as: "uptime_monitor"
+  get "uptime/:id/edit", to: "uptime#edit", as: "edit_uptime_monitor"
+  patch "uptime/:id", to: "uptime#update"
+  delete "uptime/:id", to: "uptime#destroy"
+  post "uptime/:id/pause", to: "uptime#pause", as: "pause_uptime_monitor"
+  post "uptime/:id/resume", to: "uptime#resume", as: "resume_uptime_monitor"
+  post "uptime/:id/check_now", to: "uptime#check_now", as: "check_now_uptime_monitor"
+
   # Project-scoped Errors routes (no /admin)
   get "projects/:project_id/errors", to: "errors#index", as: "project_errors"
   get "projects/:project_id/errors/all", to: "errors#all_errors", as: "project_all_errors"
@@ -145,6 +157,8 @@ Rails.application.routes.draw do
   get "projects/:project_id/security", to: "security#index", as: "project_security"
   get "projects/:project_id/logs", to: "logs#index", as: "project_logs"
   get "projects/:project_id/deploys", to: "deploys#index", as: "project_deploys"
+  get "projects/:project_id/uptime", to: "uptime#index", as: "project_uptime"
+  get "projects/:project_id/uptime/:id", to: "uptime#show", as: "project_uptime_monitor"
 
   # Sidekiq Web UI with Basic Auth (hardcoded for now)
   Sidekiq::Web.use Rack::Auth::Basic do |u, p|
@@ -275,6 +289,8 @@ Rails.application.routes.draw do
   get ":project_slug/performance/:id", to: "performance#show", as: "project_slug_performance_issue"
   get ":project_slug/performance/actions/:target", to: "performance#action_detail", as: "project_slug_performance_action_detail", constraints: { target: /[^\/]+/ }, format: false
   get ":project_slug/deploys", to: "deploys#index", as: "project_slug_deploys"
+  get ":project_slug/uptime", to: "uptime#index", as: "project_slug_uptime"
+  get ":project_slug/uptime/:id", to: "uptime#show", as: "project_slug_uptime_monitor"
   get ":project_slug/settings", to: "project_settings#show", as: "project_slug_settings"
 
   # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
