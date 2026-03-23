@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_25_000000) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_22_000003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -537,6 +537,68 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_25_000000) do
     t.index ["total_count"], name: "index_sql_fingerprints_on_total_count"
   end
 
+  create_table "uptime_checks", force: :cascade do |t|
+    t.bigint "uptime_monitor_id", null: false
+    t.bigint "account_id", null: false
+    t.integer "status_code"
+    t.integer "response_time_ms"
+    t.boolean "success", default: false, null: false
+    t.text "error_message"
+    t.string "region", default: "us-east"
+    t.integer "dns_time_ms"
+    t.integer "connect_time_ms"
+    t.integer "tls_time_ms"
+    t.integer "ttfb_ms"
+    t.datetime "created_at", null: false
+    t.index ["account_id", "created_at"], name: "index_uptime_checks_on_account_id_and_created_at"
+    t.index ["uptime_monitor_id", "created_at"], name: "index_uptime_checks_on_uptime_monitor_id_and_created_at"
+  end
+
+  create_table "uptime_daily_summaries", force: :cascade do |t|
+    t.bigint "uptime_monitor_id", null: false
+    t.bigint "account_id", null: false
+    t.date "date", null: false
+    t.integer "total_checks", default: 0, null: false
+    t.integer "successful_checks", default: 0, null: false
+    t.decimal "uptime_percentage", precision: 5, scale: 2
+    t.integer "avg_response_time_ms"
+    t.integer "p95_response_time_ms"
+    t.integer "p99_response_time_ms"
+    t.integer "min_response_time_ms"
+    t.integer "max_response_time_ms"
+    t.integer "incidents_count", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "date"], name: "index_uptime_daily_summaries_on_account_id_and_date"
+    t.index ["uptime_monitor_id", "date"], name: "index_uptime_daily_summaries_on_uptime_monitor_id_and_date", unique: true
+  end
+
+  create_table "uptime_monitors", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "project_id"
+    t.string "name", null: false
+    t.string "url", null: false
+    t.string "http_method", default: "GET", null: false
+    t.integer "expected_status_code", default: 200, null: false
+    t.integer "interval_seconds", default: 300, null: false
+    t.integer "timeout_seconds", default: 30, null: false
+    t.jsonb "headers", default: {}
+    t.text "body"
+    t.string "region", default: "us-east"
+    t.string "status", default: "pending", null: false
+    t.datetime "last_checked_at"
+    t.integer "last_status_code"
+    t.integer "last_response_time_ms"
+    t.integer "consecutive_failures", default: 0, null: false
+    t.integer "alert_threshold", default: 3, null: false
+    t.datetime "ssl_expiry"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_uptime_monitors_on_account_id"
+    t.index ["project_id"], name: "index_uptime_monitors_on_project_id"
+    t.index ["status", "last_checked_at"], name: "index_uptime_monitors_on_status_and_last_checked_at"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
@@ -621,6 +683,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_25_000000) do
   add_foreign_key "releases", "projects"
   add_foreign_key "sql_fingerprints", "accounts"
   add_foreign_key "sql_fingerprints", "projects"
+  add_foreign_key "uptime_checks", "accounts"
+  add_foreign_key "uptime_checks", "uptime_monitors"
+  add_foreign_key "uptime_daily_summaries", "accounts"
+  add_foreign_key "uptime_daily_summaries", "uptime_monitors"
+  add_foreign_key "uptime_monitors", "accounts"
+  add_foreign_key "uptime_monitors", "projects"
   add_foreign_key "users", "accounts"
   add_foreign_key "users", "users", column: "invited_by_id"
 end
