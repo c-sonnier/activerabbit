@@ -30,12 +30,12 @@
   <!-- Bento Box Grid -->
   <% if @issues_with_sizes.any? %>
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-      <%# 12 columns everywhere so small spans (2–3) show many tiles per row, not a 2-column look %>
-      <div class="grid grid-cols-12 gap-2 sm:gap-3 md:gap-4" style="grid-auto-flow: dense;">
+      <%# 20 columns to support sizes up to 20x20 %>
+      <div class="grid gap-2 sm:gap-3 md:gap-4" style="grid-template-columns: repeat(20, minmax(0, 1fr)); grid-auto-flow: dense;">
         <% @issues_with_sizes.each do |item| %>
           <% issue = item[:issue] %>
-          <% cols = item[:cols].to_i.clamp(1, 12) %>
-          <% size_class = item[:size_class] %>
+          <% cols = item[:cols].to_i.clamp(1, 20) %>
+          <% span = item[:span].to_i.clamp(1, 20) %>
           
           <% error_url = if @current_project
                           "/#{@current_project.slug}/errors/#{issue.id}"
@@ -55,148 +55,85 @@
           <% colors = sev_colors.fetch(sev, sev_colors['low']) %>
           
           <% 
-            padding = case size_class
-            when 'huge' then 'p-8'
-            when 'xlarge' then 'p-7'
-            when 'large' then 'p-6'
-            when 'medium-large' then 'p-5'
-            when 'medium', 'medium-small' then 'p-4'
-            when 'small' then 'p-3'
-            else 'p-2.5'
+            # Dynamic font size based on span
+            count_size = case span
+            when 15..20 then 'text-6xl'
+            when 12..14 then 'text-5xl'
+            when 9..11 then 'text-4xl'
+            when 6..8 then 'text-3xl'
+            when 4..5 then 'text-2xl'
+            when 3 then 'text-xl'
+            when 2 then 'text-lg'
+            else 'text-base'
+            end
+            name_size = case span
+            when 15..20 then 'text-2xl'
+            when 12..14 then 'text-xl'
+            when 9..11 then 'text-lg'
+            when 6..8 then 'text-base'
+            when 4..5 then 'text-sm'
+            else 'text-xs'
+            end
+            padding = case span
+            when 15..20 then 'p-8'
+            when 12..14 then 'p-6'
+            when 9..11 then 'p-5'
+            when 6..8 then 'p-4'
+            when 4..5 then 'p-3'
+            when 3 then 'p-2.5'
+            when 2 then 'p-2'
+            else 'p-1.5'
             end
           %>
-          <% grid_span_style = "grid-column: span #{cols};" %>
-          <%= link_to error_url, 
-              class: "group relative min-w-0 aspect-square rounded-xl border-2 #{colors[:border]} #{colors[:bg]} #{colors[:hover]} transition-all duration-200 hover:shadow-lg hover:scale-[1.02] #{padding} flex flex-col justify-between overflow-hidden",
-              style: grid_span_style do %>
-            
-            <!-- Decorative gradient overlay -->
-            <div class="absolute inset-0 opacity-5 bg-gradient-to-br from-indigo-400 via-purple-400 to-pink-400 pointer-events-none"></div>
-            
-            <!-- Content -->
-            <div class="relative z-10 flex flex-col h-full">
-              <!-- Header with severity and count -->
-              <div class="flex items-start justify-between mb-2">
-                <div class="flex items-center gap-2">
-                  <span class="w-2.5 h-2.5 rounded-full <%= colors[:dot] %> flex-shrink-0"></span>
-                  <% if size_class != 'tiny' && size_class != 'small' %>
-                    <span class="text-xs font-semibold <%= colors[:text] %> uppercase tracking-wide">
-                      <%= sev %>
-                    </span>
-                  <% end %>
+          <% grid_span_style = "grid-column: span #{cols}; grid-row: span #{cols};" %>
+          
+          <div class="relative group" style="<%= grid_span_style %>">
+            <%= link_to error_url, 
+                class: "relative min-w-0 aspect-square rounded-xl border-2 #{colors[:border]} #{colors[:bg]} #{colors[:hover]} transition-all duration-200 hover:shadow-xl hover:z-20 #{padding} flex flex-col items-center justify-center overflow-hidden h-full",
+                style: "position: relative;" do %>
+              
+              <!-- Only show name and count -->
+              <div class="text-center">
+                <div class="<%= count_size %> font-bold text-gray-900 mb-2">
+                  <%= number_with_delimiter(issue.count) %>
                 </div>
-                <div class="text-right">
-                  <% 
-                    count_size = case size_class
-                    when 'huge' then 'text-4xl'
-                    when 'xlarge' then 'text-3xl'
-                    when 'large' then 'text-2xl'
-                    when 'medium-large' then 'text-xl'
-                    when 'medium', 'medium-small' then 'text-lg'
-                    when 'small' then 'text-base'
-                    else 'text-sm'
-                    end
-                  %>
-                  <div class="<%= count_size %> font-bold text-gray-900"><%= number_with_delimiter(issue.count) %></div>
-                  <% if size_class != 'tiny' && size_class != 'small' %>
-                    <div class="text-xs text-gray-500">occurrences</div>
-                  <% end %>
-                </div>
-              </div>
-
-              <!-- Exception class -->
-              <div class="mb-2">
-                <% 
-                  title_size = case size_class
-                  when 'huge' then 'text-xl'
-                  when 'xlarge' then 'text-lg'
-                  when 'large' then 'text-base'
-                  when 'medium-large' then 'text-sm'
-                  when 'medium', 'medium-small' then 'text-xs'
-                  else 'text-xs'
-                  end
-                  title_clamp = case size_class
-                  when 'huge' then 'line-clamp-4'
-                  when 'xlarge' then 'line-clamp-4'
-                  when 'large' then 'line-clamp-3'
-                  when 'medium-large' then 'line-clamp-2'
-                  else 'line-clamp-1'
-                  end
-                %>
-                <h3 class="<%= title_size %> font-bold text-gray-900 <%= title_clamp %> group-hover:text-indigo-600 transition-colors">
-                  <%= issue.exception_class %>
+                <h3 class="<%= name_size %> font-semibold text-gray-900 line-clamp-2 leading-tight">
+                  <%= truncate(issue.exception_class, length: span > 5 ? 50 : 30) %>
                 </h3>
               </div>
-
-              <!-- Message/description -->
-              <div class="flex-1 mb-3">
-                <% desc = error_explanation(issue.exception_class) %>
-                <% short_text = desc.presence || issue.sample_message.presence || issue.controller_action %>
-                <% 
-                  line_clamp = case size_class
-                  when 'huge' then 'line-clamp-8'
-                  when 'xlarge' then 'line-clamp-7'
-                  when 'large' then 'line-clamp-6'
-                  when 'medium-large' then 'line-clamp-4'
-                  when 'medium' then 'line-clamp-3'
-                  when 'medium-small' then 'line-clamp-2'
-                  else 'line-clamp-1'
-                  end
-                  truncate_length = case size_class
-                  when 'huge' then 400
-                  when 'xlarge' then 350
-                  when 'large' then 300
-                  when 'medium-large' then 200
-                  when 'medium' then 150
-                  when 'medium-small' then 100
-                  when 'small' then 60
-                  else 40
-                  end
-                %>
-                <p class="text-xs text-gray-600 <%= line_clamp %>">
-                  <%= truncate(short_text.to_s, length: truncate_length) %>
-                </p>
+            <% end %>
+            
+            <!-- Tooltip on hover -->
+            <div class="absolute left-1/2 bottom-full mb-2 transform -translate-x-1/2 z-50 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 w-80" style="position: absolute;">
+              <div class="bg-gray-900 text-white text-xs rounded-lg shadow-2xl p-4 border border-gray-700">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="w-2 h-2 rounded-full <%= colors[:dot] %>"></span>
+                  <span class="font-semibold text-white uppercase"><%= sev %></span>
+                  <span class="ml-auto text-gray-400"><%= issue.status.upcase %></span>
+                </div>
+                <div class="font-bold text-base mb-2 text-white"><%= issue.exception_class %></div>
+                <div class="space-y-1.5 text-gray-300">
+                  <div><strong class="text-white">Count:</strong> <%= number_with_delimiter(issue.count) %> occurrences</div>
+                  <div><strong class="text-white">Controller:</strong> <%= truncate(issue.controller_action, length: 40) %></div>
+                  <div><strong class="text-white">Last seen:</strong> <%= last_seen_short(issue.last_seen_at) %></div>
+                  <div><strong class="text-white">First seen:</strong> <%= issue.first_seen_at ? issue.first_seen_at.strftime("%Y-%m-%d %H:%M") : "—" %></div>
+                  <% if issue.sample_message.present? %>
+                    <div class="mt-2 pt-2 border-t border-gray-700">
+                      <strong class="text-white">Message:</strong>
+                      <div class="text-gray-400 mt-1 text-xs"><%= truncate(issue.sample_message, length: 150) %></div>
+                    </div>
+                  <% end %>
+                  <% if issue.project %>
+                    <div><strong class="text-white">Project:</strong> <%= issue.project.name %></div>
+                  <% end %>
+                </div>
+                <!-- Tooltip arrow -->
+                <div class="absolute left-1/2 top-full transform -translate-x-1/2 -mt-1">
+                  <div class="border-4 border-transparent border-t-gray-900"></div>
+                </div>
               </div>
-
-              <!-- Footer with controller action and last seen -->
-              <% if size_class != 'tiny' %>
-                <div class="flex items-center justify-between text-xs text-gray-500 border-t border-gray-200 pt-2 mt-auto">
-                  <div class="flex items-center gap-1.5 min-w-0">
-                    <% if size_class != 'small' %>
-                      <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                      </svg>
-                    <% end %>
-                    <span class="truncate"><%= truncate(issue.controller_action, length: size_class == 'small' ? 15 : 25) %></span>
-                  </div>
-                  <div class="flex items-center gap-1.5 flex-shrink-0">
-                    <% if size_class != 'small' %>
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                      </svg>
-                    <% end %>
-                    <span><%= last_seen_short(issue.last_seen_at) %></span>
-                  </div>
-                </div>
-              <% end %>
-
-              <!-- Project badge (if applicable) -->
-              <% if issue.project && size_class != 'tiny' && size_class != 'small' %>
-                <div class="mt-2">
-                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-white/60 text-gray-700 border border-gray-200">
-                    <%= truncate(issue.project.name, length: 20) %>
-                  </span>
-                </div>
-              <% end %>
             </div>
-
-            <!-- Hover arrow indicator -->
-            <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-              <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-              </svg>
-            </div>
-          <% end %>
+          </div>
         <% end %>
       </div>
     </div>

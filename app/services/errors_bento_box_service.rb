@@ -1,11 +1,9 @@
 # frozen_string_literal: true
 
 class ErrorsBentoBoxService
-  # 12-column grid: square tiles use equal column + row span (1..12).
-  MAX_SPAN = 12
+  # 20-column grid: square tiles use equal column + row span (1..20).
+  MAX_SPAN = 20
   ISSUES_LIMIT = 300
-  # Favor smaller sizes for dense packing - only top errors get large boxes
-  SPAN_ORDER = [6, 4, 5, 3, 4, 3, 2, 2, 2, 1, 1, 1].freeze
 
   attr_reader :project_scope, :current_period, :retention_cutoff, :account
 
@@ -79,17 +77,18 @@ class ErrorsBentoBoxService
 
     span_by_group = assign_spans_to_count_groups(issues)
 
-    issues.map do |issue|
-      gkey = count_group_key(issue.count)
-      span = (span_by_group[gkey] || 1).clamp(1, MAX_SPAN)
+      issues.map do |issue|
+        gkey = count_group_key(issue.count)
+        span = (span_by_group[gkey] || 1).clamp(1, MAX_SPAN)
 
-      {
-        issue: issue,
-        cols: span,
-        rows: span,
-        size_class: span_to_size_class(span)
-      }
-    end
+        {
+          issue: issue,
+          cols: span,
+          rows: span,
+          size_class: span_to_size_class(span),
+          span: span
+        }
+      end
   end
 
   def assign_spans_to_count_groups(issues)
@@ -100,19 +99,41 @@ class ErrorsBentoBoxService
     span_by_group = {}
     
     distinct_groups.each_with_index do |group, idx|
-      # Top 3 errors get larger boxes, rest get progressively smaller
+      # Distribute sizes from 20x20 down to 1x1 based on rank
+      # Top errors get largest boxes, progressively smaller for lower ranks
       if idx == 0
-        span = 6  # Largest for top error
+        span = 20  # Largest for top error
       elsif idx == 1
-        span = 5  # Second largest
+        span = 18
       elsif idx == 2
-        span = 4  # Third largest
-      elsif idx < 10
-        # Next 7 get medium sizes (3x3, 2x2)
-        span = [3, 3, 2, 2, 2, 2, 2][idx - 3] || 2
+        span = 16
+      elsif idx == 3
+        span = 14
+      elsif idx == 4
+        span = 12
+      elsif idx == 5
+        span = 11
+      elsif idx == 6
+        span = 10
+      elsif idx == 7
+        span = 9
+      elsif idx == 8
+        span = 8
+      elsif idx == 9
+        span = 7
+      elsif idx == 10
+        span = 6
+      elsif idx == 11
+        span = 5
+      elsif idx == 12
+        span = 4
+      elsif idx == 13
+        span = 3
+      elsif idx == 14
+        span = 2
       else
-        # Everything else gets 1x1 or 2x2 for dense packing
-        span = (idx % 3 == 0) ? 2 : 1
+        # Everything else gets 1x1 for maximum density
+        span = 1
       end
 
       span_by_group[group] = span.clamp(1, MAX_SPAN)
