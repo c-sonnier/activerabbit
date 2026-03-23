@@ -5,7 +5,13 @@ export default class extends Controller {
   static values = { data: Array }
 
   connect() {
+    this._onResize = () => this.drawChart()
+    window.addEventListener("resize", this._onResize)
     this.drawChart()
+  }
+
+  disconnect() {
+    window.removeEventListener("resize", this._onResize)
   }
 
   drawChart() {
@@ -13,17 +19,21 @@ export default class extends Controller {
     const ctx = canvas.getContext("2d")
     const data = this.dataValue
 
+    const rect = canvas.parentElement.getBoundingClientRect()
+    const dpr = window.devicePixelRatio || 1
+    canvas.width = rect.width * dpr
+    canvas.height = 200 * dpr
+    canvas.style.width = rect.width + "px"
+    canvas.style.height = "200px"
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+
     if (!data || data.length === 0) {
       ctx.font = "14px sans-serif"
       ctx.fillStyle = "#9ca3af"
       ctx.textAlign = "center"
-      ctx.fillText("No data yet", canvas.width / 2, canvas.height / 2)
+      ctx.fillText("No data yet", rect.width / 2, 100)
       return
     }
-
-    const rect = canvas.parentElement.getBoundingClientRect()
-    canvas.width = rect.width
-    canvas.height = 200
 
     const padding = { top: 20, right: 20, bottom: 30, left: 50 }
     const chartWidth = canvas.width - padding.left - padding.right
