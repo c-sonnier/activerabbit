@@ -7,6 +7,7 @@ class UptimePingJob
 
   LOCK_TTL_BUFFER = 10
   MAX_REDIRECTS = 5
+  CHECK_REGION = ENV.fetch("UPTIME_CHECK_REGION", "US West (Los Angeles)").freeze
 
   def perform(monitor_id)
     monitor = ActsAsTenant.without_tenant { UptimeMonitor.find_by(id: monitor_id) }
@@ -35,7 +36,7 @@ class UptimePingJob
 
   def perform_http_check(monitor)
     uri = URI.parse(monitor.url)
-    result = { region: monitor.region }
+    result = { region: CHECK_REGION }
 
     start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
