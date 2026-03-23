@@ -238,8 +238,8 @@ export default class extends Controller {
       return
     }
 
-    // Always use a fixed number of slots to fill the full width
-    const slotCount = 90
+    // Use enough slots to fill the width, but never more than data points
+    const slotCount = Math.min(90, data.length)
     const bucketSize = Math.max(1, Math.ceil(data.length / slotCount))
     const fragment = document.createDocumentFragment()
 
