@@ -238,65 +238,60 @@ export default class extends Controller {
       return
     }
 
-    // Use enough slots to fill the width, but never more than data points
-    const slotCount = Math.min(90, data.length)
-    const bucketSize = Math.max(1, Math.ceil(data.length / slotCount))
-    const fragment = document.createDocumentFragment()
-
-    // Use flex to stretch bars across full width
     bar.style.display = "flex"
     bar.style.gap = "1px"
 
+    const total = data.length
+    const slotCount = Math.min(90, total)
+    const fragment = document.createDocumentFragment()
+
     for (let i = 0; i < slotCount; i++) {
-      const start = i * bucketSize
-      const bucket = data.slice(start, Math.min(start + bucketSize, data.length))
+      const start = Math.floor(i * total / slotCount)
+      const end = Math.floor((i + 1) * total / slotCount)
+      const bucket = data.slice(start, end)
 
       const dot = document.createElement("div")
       dot.style.cssText = "flex:1;height:28px;border-radius:2px;cursor:pointer;transition:opacity 0.15s;"
 
-      let tooltipHtml = ""
-      let statusColor = "#e5e7eb"
-
       if (bucket.length === 0) {
-        statusColor = "#e5e7eb"
-        tooltipHtml = '<span style="color:#9ca3af">No data</span>'
-      } else {
-        const allOk = bucket.every(d => d.ok)
-        const anyFail = bucket.some(d => !d.ok)
-        const anyOk = bucket.some(d => d.ok)
-
-        if (allOk) {
-          statusColor = "#22c55e"
-        } else if (anyFail && anyOk) {
-          statusColor = "#f59e0b"
-        } else {
-          statusColor = "#ef4444"
-        }
-
-        const t0 = new Date(bucket[0].t)
-        const t1 = new Date(bucket[bucket.length - 1].t)
-        const avgMs = Math.round(bucket.filter(d => d.ms).reduce((s, d) => s + d.ms, 0) / (bucket.filter(d => d.ms).length || 1))
-        const okCount = bucket.filter(d => d.ok).length
-        const statusLabel = allOk ? "Operational" : (anyOk ? "Degraded" : "Down")
-        const statusDotColor = allOk ? "#22c55e" : (anyOk ? "#f59e0b" : "#ef4444")
-
-        tooltipHtml = `
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-            <span style="width:8px;height:8px;border-radius:50%;background:${statusDotColor};display:inline-block;"></span>
-            <strong>${statusLabel}</strong>
-          </div>
-          <div style="color:#d1d5db;">${t0.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} – ${t1.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
-          <div style="margin-top:3px;">${okCount}/${bucket.length} checks OK · avg ${avgMs}ms</div>
-        `
+        dot.style.background = "#e5e7eb"
+        fragment.appendChild(dot)
+        continue
       }
 
-      dot.style.background = statusColor
+      const allOk = bucket.every(d => d.ok)
+      const anyFail = bucket.some(d => !d.ok)
+      const anyOk = bucket.some(d => d.ok)
 
-      dot.onmouseenter = (e) => {
+      if (allOk) {
+        dot.style.background = "#22c55e"
+      } else if (anyFail && anyOk) {
+        dot.style.background = "#f59e0b"
+      } else {
+        dot.style.background = "#ef4444"
+      }
+
+      const t0 = new Date(bucket[0].t)
+      const t1 = new Date(bucket[bucket.length - 1].t)
+      const avgMs = Math.round(bucket.filter(d => d.ms).reduce((s, d) => s + d.ms, 0) / (bucket.filter(d => d.ms).length || 1))
+      const okCount = bucket.filter(d => d.ok).length
+      const statusLabel = allOk ? "Operational" : (anyOk ? "Degraded" : "Down")
+      const dotColor = allOk ? "#22c55e" : (anyOk ? "#f59e0b" : "#ef4444")
+
+      const html = `
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:${dotColor};display:inline-block;"></span>
+          <strong>${statusLabel}</strong>
+        </div>
+        <div style="color:#d1d5db;">${t0.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} – ${t1.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
+        <div style="margin-top:3px;">${okCount}/${bucket.length} checks OK · avg ${avgMs}ms</div>
+      `
+
+      dot.onmouseenter = () => {
         dot.style.opacity = "0.7"
         if (this.hasBarTooltipTarget) {
           const tip = this.barTooltipTarget
-          tip.innerHTML = tooltipHtml
+          tip.innerHTML = html
           const dotRect = dot.getBoundingClientRect()
           const barRect = bar.getBoundingClientRect()
           let left = dotRect.left - barRect.left + dotRect.width / 2 - 75
