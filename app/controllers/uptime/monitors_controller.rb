@@ -11,10 +11,10 @@ module Uptime
       project_scope = @current_project || @project
 
       base_scope = if project_scope
-                     project_scope.uptime_monitors
-                   else
-                     Uptime::Monitor.where(account: current_account)
-                   end
+        project_scope.uptime_monitors
+      else
+        Uptime::Monitor.where(account: current_account)
+      end
 
       @monitors = base_scope.order(created_at: :desc)
 

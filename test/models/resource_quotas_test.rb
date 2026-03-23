@@ -35,8 +35,8 @@ class ResourceQuotasTest < ActiveSupport::TestCase
     assert_equal false, ResourceQuotas::PLAN_QUOTAS[:free][:slack_notifications]
   end
 
-  test "free plan has 0 uptime monitors" do
-    assert_equal 0, ResourceQuotas::PLAN_QUOTAS[:free][:uptime_monitors]
+  test "free plan has 1 uptime monitor" do
+    assert_equal 1, ResourceQuotas::PLAN_QUOTAS[:free][:uptime_monitors]
   end
 
   test "free plan has 0 status pages" do

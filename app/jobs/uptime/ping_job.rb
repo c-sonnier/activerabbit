@@ -72,7 +72,7 @@ module Uptime
           redirect_count = 0
           while response.is_a?(Net::HTTPRedirection) && redirect_count < MAX_REDIRECTS
             redirect_count += 1
-            redirect_uri = URI.parse(response['location'])
+            redirect_uri = URI.parse(response["location"])
             redirect_uri = URI.join(uri, redirect_uri) unless redirect_uri.host
             request = Net::HTTP::Get.new(redirect_uri)
             response = conn.request(request)
