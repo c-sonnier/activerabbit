@@ -37,8 +37,22 @@ module Uptime
     end
 
     def show
-      @pagy, @recent_checks = pagy(@monitor.checks.recent, limit: 25)
-      @daily_summaries = @monitor.daily_summaries.recent.limit(30)
+      # Time period filter
+      @period = params[:period] || "24h"
+      @period_hours = case @period
+                      when "1h" then 1
+                      when "6h" then 6
+                      when "24h" then 24
+                      when "7d" then 168
+                      when "30d" then 720
+                      else 24
+                      end
+      @period_start = @period_hours.hours.ago
+
+      checks_scope = @monitor.checks.where("created_at > ?", @period_start)
+      @pagy, @recent_checks = pagy(checks_scope.recent, limit: 25)
+
+      @daily_summaries = @monitor.daily_summaries.recent.limit([@period_hours / 24, 30].max)
 
       @retention_days = current_account.data_retention_days
 
@@ -47,8 +61,8 @@ module Uptime
       @avg_response = @daily_summaries.any? ?
         @daily_summaries.filter_map(&:avg_response_time_ms).sum.to_f / @daily_summaries.filter_map(&:avg_response_time_ms).size : nil
 
-      @chart_checks = @monitor.checks
-        .where("created_at > ?", 24.hours.ago)
+      # Chart data for selected period
+      @chart_checks = checks_scope
         .order(:created_at)
         .pluck(:created_at, :response_time_ms, :success)
     end

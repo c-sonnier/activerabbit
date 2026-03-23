@@ -37,6 +37,33 @@
           </div>
         </div>
         <div class="flex flex-wrap items-center gap-2 shrink-0">
+          <!-- Time Period Dropdown -->
+          <%
+            period_labels = { "1h" => "Last hour", "6h" => "Last 6 hours", "24h" => "Last 24 hours", "7d" => "Last 7 days", "30d" => "Last 30 days" }
+            current_label = period_labels[@period] || "Last 24 hours"
+          %>
+          <div class="relative" data-controller="dropdown">
+            <button data-action="click->dropdown#toggle" class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-300 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+              <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span><%= current_label %></span>
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            <div data-dropdown-target="menu" class="hidden absolute right-0 mt-2 w-44 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+              <div class="py-1">
+                <% period_labels.each do |key, label| %>
+                  <%= link_to uptime_monitor_path(@monitor, period: key),
+                      class: "block px-4 py-2 text-sm #{@period == key ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700 hover:bg-gray-100'}" do %>
+                    <%= label %>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
           <%= button_to "Check Now", check_now_uptime_monitor_path(@monitor), method: :post, class: "bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50 text-sm" %>
           <% if @monitor.paused? %>
             <%= button_to "Resume", resume_uptime_monitor_path(@monitor), method: :post, class: "bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 text-sm" %>
@@ -79,7 +106,8 @@
   <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6 overflow-hidden"
        data-controller="uptime-chart"
        data-uptime-chart-data-value="<%= @chart_checks.map { |c| { t: c[0].iso8601, ms: c[1], ok: c[2] } }.to_json %>">
-    <h2 class="text-base sm:text-lg font-semibold text-gray-900 mb-4">Response Time (24h)</h2>
+    <% chart_label = { "1h" => "1h", "6h" => "6h", "24h" => "24h", "7d" => "7d", "30d" => "30d" }[@period] || "24h" %>
+    <h2 class="text-base sm:text-lg font-semibold text-gray-900 mb-4">Response Time (<%= chart_label %>)</h2>
     <div class="w-full" style="position: relative; height: 200px;">
       <canvas data-uptime-chart-target="canvas"></canvas>
       <div data-uptime-chart-target="tooltip"
@@ -90,7 +118,7 @@
     <!-- Uptime Status Bar -->
     <div class="mt-4 pt-3 border-t border-gray-100">
       <div class="flex items-center justify-between mb-2">
-        <span class="text-xs text-gray-500">Uptime (24h)</span>
+        <span class="text-xs text-gray-500">Uptime (<%= chart_label %>)</span>
         <div class="flex items-center gap-3 text-xs text-gray-400">
           <span class="flex items-center gap-1"><span class="inline-block w-2 h-2 rounded-sm bg-green-500"></span> Up</span>
           <span class="flex items-center gap-1"><span class="inline-block w-2 h-2 rounded-sm bg-yellow-500"></span> Degraded</span>
