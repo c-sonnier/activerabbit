@@ -31,4 +31,16 @@ module ApplicationHelper
       errors_path(options)
     end
   end
+
+  # Unified helper for all errors (bento box) path that respects project scoping
+  def all_errors_path(options = {})
+    if defined?(@current_project) && @current_project
+      project_slug_all_errors_path(@current_project.slug, options)
+    elsif defined?(@project) && @project
+      project_all_errors_path(@project, options)
+    else
+      # Use the route helper directly to avoid recursion
+      Rails.application.routes.url_helpers.all_errors_path(options)
+    end
+  end
 end

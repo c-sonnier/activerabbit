@@ -28,6 +28,7 @@ Rails.application.routes.draw do
   get "dashboard", to: "dashboard#index", as: "dashboard"
   get "deploys", to: "deploys#index", as: "deploys"
   get "errors", to: "errors#index", as: "errors"
+  get "errors/all", to: "errors#all_errors", as: "all_errors"
   resources :errors, only: [:show, :update, :destroy] do
     member do
       post :regenerate_ai_summary
@@ -93,6 +94,7 @@ Rails.application.routes.draw do
 
   # Project-scoped Errors routes (no /admin)
   get "projects/:project_id/errors", to: "errors#index", as: "project_errors"
+  get "projects/:project_id/errors/all", to: "errors#all_errors", as: "project_all_errors"
   get "projects/:project_id/errors/:id", to: "errors#show", as: "project_error"
   patch "projects/:project_id/errors/:id", to: "errors#update"
   delete "projects/:project_id/errors/:id", to: "errors#destroy"
@@ -263,6 +265,7 @@ Rails.application.routes.draw do
   # These must come after other specific routes to avoid conflicts
   get ":project_slug", to: "dashboard#project_dashboard", as: "project_dashboard"
   get ":project_slug/errors", to: "errors#index", as: "project_slug_errors"
+  get ":project_slug/errors/all", to: "errors#all_errors", as: "project_slug_all_errors"
   get ":project_slug/errors/:id", to: "errors#show", as: "project_slug_error"
   patch ":project_slug/errors/:id", to: "errors#update"
   post ":project_slug/errors/:id/create_pr", to: "errors#create_pr", as: "project_slug_error_create_pr"

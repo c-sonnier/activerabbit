@@ -200,6 +200,26 @@ class ErrorsController < ApplicationController
     end
   end
 
+  def all_errors
+    project_scope = @current_project || @project
+
+    service = ErrorsBentoBoxService.new(
+      project_scope: project_scope,
+      period: params[:period],
+      retention_cutoff: retention_cutoff,
+      account: current_account
+    )
+
+    result = service.call
+
+    @issues = result[:issues]
+    @issues_with_sizes = result[:issues_with_sizes]
+    @current_period = result[:current_period]
+    @total_errors = result[:total_errors]
+    @open_errors = result[:open_errors]
+    @resolved_errors = result[:resolved_errors]
+  end
+
   def show
     project_scope = @current_project || @project
     @issue = (project_scope ? project_scope.issues : Issue).find(params[:id])
