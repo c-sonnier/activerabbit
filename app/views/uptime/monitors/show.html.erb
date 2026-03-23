@@ -82,6 +82,24 @@
     <h2 class="text-base sm:text-lg font-semibold text-gray-900 mb-4">Response Time (24h)</h2>
     <div class="w-full" style="position: relative; height: 200px;">
       <canvas data-uptime-chart-target="canvas"></canvas>
+      <div data-uptime-chart-target="tooltip"
+           class="absolute bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 pointer-events-none z-10"
+           style="display: none; min-width: 120px;"></div>
+    </div>
+
+    <!-- Uptime Status Bar -->
+    <div class="mt-4 pt-3 border-t border-gray-100">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs text-gray-500">Uptime (24h)</span>
+        <div class="flex items-center gap-3 text-xs text-gray-400">
+          <span class="flex items-center gap-1"><span class="inline-block w-2 h-2 rounded-sm bg-green-500"></span> Up</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-2 h-2 rounded-sm bg-yellow-500"></span> Degraded</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-2 h-2 rounded-sm bg-red-500"></span> Down</span>
+        </div>
+      </div>
+      <div data-uptime-chart-target="statusBar"
+           class="w-full flex items-end"
+           style="height: 24px;"></div>
     </div>
   </div>
 
