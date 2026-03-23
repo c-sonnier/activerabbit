@@ -95,10 +95,12 @@ class PricingController < ApplicationController
     @pull_requests_used = plan_quotas[:pull_requests][:used]
     @pull_requests_remaining = plan_quotas[:pull_requests][:remaining]
 
-    # Uptime Monitors usage
+    # Uptime Monitors usage (use real count, not cached Healthcheck count)
     @uptime_monitors_quota = plan_quotas[:uptime_monitors][:quota]
-    @uptime_monitors_used = plan_quotas[:uptime_monitors][:used]
-    @uptime_monitors_remaining = plan_quotas[:uptime_monitors][:remaining]
+    ActsAsTenant.without_tenant do
+      @uptime_monitors_used = UptimeMonitor.where(account_id: @account.id).count
+    end
+    @uptime_monitors_remaining = [@uptime_monitors_quota - @uptime_monitors_used, 0].max
 
     # Status Pages usage
     @status_pages_quota = plan_quotas[:status_pages][:quota]

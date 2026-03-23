@@ -251,6 +251,61 @@
             <% end %>
           </div>
         </div>
+        <!-- Uptime Monitoring -->
+        <%
+          uptime_pct = @uptime_monitors_quota.to_i > 0 ? ((@uptime_monitors_used.to_f / @uptime_monitors_quota) * 100).round(1) : 0
+          uptime_over = uptime_pct >= 100
+        %>
+        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 <%= uptime_over ? 'border-red-500 ring-2 ring-red-200' : 'border-emerald-500' %>">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+              <h3 class="text-lg font-semibold text-gray-900">Uptime Monitoring</h3>
+            </div>
+            <% if uptime_over %>
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">LIMIT REACHED</span>
+            <% end %>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Active monitors:</span>
+              <span class="font-bold <%= uptime_over ? 'text-red-600' : 'text-gray-900' %>"><%= @uptime_monitors_used %></span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Quota:</span>
+              <span class="font-medium text-gray-700"><%= @uptime_monitors_quota %></span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Remaining:</span>
+              <span class="font-medium <%= @uptime_monitors_remaining > 0 ? 'text-green-600' : 'text-red-600' %>"><%= @uptime_monitors_remaining %></span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3 mt-2">
+              <div class="<%= uptime_over ? 'bg-red-500' : 'bg-emerald-500' %> h-3 rounded-full transition-all" style="width: <%= [uptime_pct, 100].min %>%"></div>
+            </div>
+            <div class="text-right text-sm font-bold <%= uptime_over ? 'text-red-600' : (uptime_pct >= 90 ? 'text-orange-500' : uptime_pct >= 80 ? 'text-yellow-500' : 'text-green-500') %>">
+              <%= uptime_pct %>%
+            </div>
+            <div class="flex items-center gap-2 text-xs text-gray-500 mt-1">
+              <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Check data retained for <%= @data_retention_days %> days
+            </div>
+            <div class="flex items-center justify-between mt-2">
+              <%= link_to uptime_index_path, class: "text-xs text-indigo-600 hover:text-indigo-800 font-medium" do %>
+                View monitors &rarr;
+              <% end %>
+              <% if uptime_over %>
+                <a href="<%= plan_path %>" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md shadow hover:from-indigo-700 hover:to-violet-700 transition-all">
+                  Upgrade for more
+                </a>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
         <!-- Requests Total (last 30 days, all sources incl. performance) -->
         <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 border-gray-500">
           <div class="flex items-center justify-between mb-3">
