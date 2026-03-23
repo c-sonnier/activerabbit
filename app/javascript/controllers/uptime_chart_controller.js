@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["canvas", "statusBar", "tooltip"]
+  static targets = ["canvas", "statusBar", "tooltip", "barTooltip"]
   static values = { data: Array }
 
   connect() {
@@ -253,30 +253,63 @@ export default class extends Controller {
 
       const dot = document.createElement("div")
       dot.style.cssText = "flex:1;height:28px;border-radius:2px;cursor:pointer;transition:opacity 0.15s;"
-      dot.onmouseenter = () => { dot.style.opacity = "0.7" }
-      dot.onmouseleave = () => { dot.style.opacity = "1" }
+
+      let tooltipHtml = ""
+      let statusColor = "#e5e7eb"
 
       if (bucket.length === 0) {
-        // No data for this slot — gray
-        dot.style.background = "#e5e7eb"
-        dot.title = "No data"
+        statusColor = "#e5e7eb"
+        tooltipHtml = '<span style="color:#9ca3af">No data</span>'
       } else {
         const allOk = bucket.every(d => d.ok)
         const anyFail = bucket.some(d => !d.ok)
         const anyOk = bucket.some(d => d.ok)
 
         if (allOk) {
-          dot.style.background = "#22c55e"
+          statusColor = "#22c55e"
         } else if (anyFail && anyOk) {
-          dot.style.background = "#f59e0b"
+          statusColor = "#f59e0b"
         } else {
-          dot.style.background = "#ef4444"
+          statusColor = "#ef4444"
         }
 
-        const t = new Date(bucket[0].t)
+        const t0 = new Date(bucket[0].t)
+        const t1 = new Date(bucket[bucket.length - 1].t)
         const avgMs = Math.round(bucket.filter(d => d.ms).reduce((s, d) => s + d.ms, 0) / (bucket.filter(d => d.ms).length || 1))
         const okCount = bucket.filter(d => d.ok).length
-        dot.title = `${t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} — ${okCount}/${bucket.length} OK, avg ${avgMs}ms`
+        const statusLabel = allOk ? "Operational" : (anyOk ? "Degraded" : "Down")
+        const statusDotColor = allOk ? "#22c55e" : (anyOk ? "#f59e0b" : "#ef4444")
+
+        tooltipHtml = `
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:${statusDotColor};display:inline-block;"></span>
+            <strong>${statusLabel}</strong>
+          </div>
+          <div style="color:#d1d5db;">${t0.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} – ${t1.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
+          <div style="margin-top:3px;">${okCount}/${bucket.length} checks OK · avg ${avgMs}ms</div>
+        `
+      }
+
+      dot.style.background = statusColor
+
+      dot.onmouseenter = (e) => {
+        dot.style.opacity = "0.7"
+        if (this.hasBarTooltipTarget) {
+          const tip = this.barTooltipTarget
+          tip.innerHTML = tooltipHtml
+          const dotRect = dot.getBoundingClientRect()
+          const barRect = bar.getBoundingClientRect()
+          let left = dotRect.left - barRect.left + dotRect.width / 2 - 75
+          left = Math.max(0, Math.min(left, barRect.width - 160))
+          tip.style.left = left + "px"
+          tip.style.display = "block"
+        }
+      }
+      dot.onmouseleave = () => {
+        dot.style.opacity = "1"
+        if (this.hasBarTooltipTarget) {
+          this.barTooltipTarget.style.display = "none"
+        }
       }
 
       fragment.appendChild(dot)
