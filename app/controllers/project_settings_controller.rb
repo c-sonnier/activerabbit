@@ -215,7 +215,7 @@ class ProjectSettingsController < ApplicationController
     notif_params = params
       .require(:project)
       .fetch(:notifications, {})
-      .permit(:enabled, channels: [:slack, :discord, :email])
+      .permit(:enabled, channels: [:slack, :discord, :email], uptime: [:downtime, :recovery, :ssl_expiry])
 
     settings = @project.settings || {}
     settings["notifications"] ||= {}
@@ -228,6 +228,15 @@ class ProjectSettingsController < ApplicationController
       "discord" => notif_params.dig(:channels, :discord) == "1",
       "email"   => notif_params.dig(:channels, :email) == "1"
     }
+
+    # Uptime alert preferences
+    if notif_params[:uptime].present?
+      settings["notifications"]["uptime"] = {
+        "downtime"   => notif_params.dig(:uptime, :downtime) == "1",
+        "recovery"   => notif_params.dig(:uptime, :recovery) == "1",
+        "ssl_expiry" => notif_params.dig(:uptime, :ssl_expiry) == "1"
+      }
+    end
 
     @project.settings = settings
     @project.save

@@ -21,6 +21,19 @@ class UptimeAlertJob
     account = monitor.account
     project = monitor.project
 
+    # Check project-level uptime notification preferences
+    if project
+      uptime_prefs = project.settings&.dig("notifications", "uptime") || {}
+      case alert_type
+      when "down"
+        return if uptime_prefs["downtime"] == false
+      when "up"
+        return if uptime_prefs["recovery"] == false
+      when "ssl_expiry"
+        return if uptime_prefs["ssl_expiry"] == false
+      end
+    end
+
     ActsAsTenant.with_tenant(account) do
       # Email: always send to confirmed account users (no project required)
       send_email_alert(account, project, monitor, alert_type, payload)
