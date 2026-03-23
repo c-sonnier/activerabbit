@@ -140,6 +140,28 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_22_000003) do
     t.index ["token"], name: "index_api_tokens_on_token", unique: true
   end
 
+  create_table "check_ins", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.bigint "account_id", null: false
+    t.string "identifier", null: false
+    t.string "kind", default: "cron", null: false
+    t.string "schedule_cron"
+    t.integer "max_run_time_seconds"
+    t.integer "heartbeat_interval_seconds"
+    t.string "timezone", default: "UTC"
+    t.text "description"
+    t.boolean "enabled", default: true, null: false
+    t.datetime "last_seen_at"
+    t.string "last_status", default: "success"
+    t.datetime "last_alerted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "last_status"], name: "index_check_ins_on_account_id_and_last_status"
+    t.index ["account_id"], name: "index_check_ins_on_account_id"
+    t.index ["project_id", "identifier"], name: "index_check_ins_on_project_id_and_identifier", unique: true
+    t.index ["project_id"], name: "index_check_ins_on_project_id"
+  end
+
   create_table "daily_event_counts", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.date "day", null: false
@@ -264,8 +286,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_22_000003) do
     t.datetime "ai_summary_generated_at"
     t.boolean "is_job_failure", default: false, null: false
     t.string "severity"
+    t.string "auto_fix_status"
+    t.string "auto_fix_pr_url"
+    t.integer "auto_fix_pr_number"
+    t.string "auto_fix_branch"
+    t.datetime "auto_fix_attempted_at"
+    t.datetime "auto_fix_merged_at"
+    t.text "auto_fix_error"
     t.index ["account_id", "status", "last_seen_at"], name: "idx_issues_account_status_last_seen"
     t.index ["account_id"], name: "index_issues_on_account_id"
+    t.index ["auto_fix_status"], name: "index_issues_on_auto_fix_status", where: "(auto_fix_status IS NOT NULL)"
     t.index ["closed_at"], name: "index_issues_on_closed_at"
     t.index ["exception_class"], name: "index_issues_on_exception_class"
     t.index ["is_job_failure"], name: "index_issues_on_is_job_failure", where: "(is_job_failure = true)"
@@ -649,6 +679,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_22_000003) do
   add_foreign_key "alert_rules", "projects"
   add_foreign_key "api_tokens", "accounts"
   add_foreign_key "api_tokens", "projects"
+  add_foreign_key "check_ins", "accounts"
+  add_foreign_key "check_ins", "projects"
   add_foreign_key "daily_event_counts", "accounts"
   add_foreign_key "daily_resource_usages", "accounts"
   add_foreign_key "deploys", "accounts"

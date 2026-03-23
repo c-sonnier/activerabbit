@@ -6,22 +6,7 @@ module Github
     def initialize(installation_id)
       @installation_id = installation_id
       @app_id = ENV["AR_GH_APP_ID"]
-      @app_pk = load_private_key
-    end
-
-    # Load private key from multiple sources (in order of priority):
-    # 1. AR_GH_APP_PK_FILE - path to .pem file (best for local dev)
-    # 2. AR_GH_APP_PK_BASE64 - base64 encoded key (best for production/Kamal)
-    # 3. AR_GH_APP_PK - raw PEM content with escaped newlines
-    def load_private_key
-      if ENV["AR_GH_APP_PK_FILE"].present? && File.exist?(ENV["AR_GH_APP_PK_FILE"])
-        File.read(ENV["AR_GH_APP_PK_FILE"])
-      elsif ENV["AR_GH_APP_PK_BASE64"].present?
-        Base64.decode64(ENV["AR_GH_APP_PK_BASE64"])
-      elsif ENV["AR_GH_APP_PK"].present?
-        # Handle escaped newlines from env var
-        ENV["AR_GH_APP_PK"].gsub('\n', "\n")
-      end
+      @app_pk = Github::TokenManager.resolve_env_private_key
     end
 
     def fetch_installation_info

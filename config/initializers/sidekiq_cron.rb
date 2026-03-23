@@ -102,6 +102,16 @@ if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present? && !ActiveModel::Type::B
     },
 
     # ========================================
+    # Auto-fix Pipeline Cleanup
+    # ========================================
+
+    "auto_fix_stale_cleanup" => {
+      "cron" => "0 */4 * * *",  # Every 4 hours - mark stale auto-fix jobs as timed out
+      "class" => "AutoFixCleanupJob",
+      "cron_timezone" => "America/Los_Angeles"
+    },
+
+    # ========================================
     # Uptime Monitoring
     # ========================================
 

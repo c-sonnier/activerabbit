@@ -7,10 +7,10 @@
     needs_payment = @account.needs_payment_method_warning? || @account.trial_expired_without_payment?
     plan_display = @account.effective_plan_name
   %>
-  <div class="<%= needs_payment ? 'bg-red-50 border-red-300' : 'bg-indigo-50 border-indigo-200' %> border rounded-lg p-4 mb-6 mx-auto" style="width: 85%">
-    <div class="flex items-center justify-between mb-4">
+  <div class="<%= needs_payment ? 'bg-red-50 border-red-300' : 'bg-indigo-50 border-indigo-200' %> border rounded-lg p-4 mb-6 mx-auto w-full lg:w-[85%]">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
       <div>
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-2">
           <h2 class="text-lg font-semibold <%= needs_payment ? 'text-red-900' : 'text-indigo-900' %>">
             Current Plan: <%= @account.effective_plan_name %>
             <% if @account.on_trial? %>
@@ -42,7 +42,7 @@
           </p>
         <% end %>
       </div>
-      <div class="flex space-x-2">
+      <div class="flex flex-wrap gap-2">
         <%= link_to "Choose Plan", plan_path, class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white #{needs_payment ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'}" %>
         <% if @account.active_subscription? %>
           <%= button_to "View Invoices", billing_portal_index_path,
@@ -55,7 +55,7 @@
   </div>
 <% end %>
 
-<div class="space-y-8 mx-auto" style="width: 85%">
+<div class="space-y-8 mx-auto w-full lg:w-[85%]">
   <!-- Current Usage Box -->
   <% if @account %>
     <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-8 border-2 border-indigo-200 shadow-lg mb-12">

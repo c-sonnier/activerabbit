@@ -31,31 +31,34 @@
     </script>
 
     <style>
-      /* CSS-driven collapsed sidebar state — applied instantly, no JS flash */
-      html.sidebar-is-collapsed [data-sidebar-target="sidebar"] {
-        width: 4rem !important;
-        padding: 0.5rem !important;
-      }
-      html.sidebar-is-collapsed [data-sidebar-target="content"] {
-        margin-left: 4rem !important;
-      }
-      html.sidebar-is-collapsed [data-sidebar-target="navText"],
-      html.sidebar-is-collapsed [data-sidebar-target="brandText"],
-      html.sidebar-is-collapsed [data-sidebar-target="promoBox"],
-      html.sidebar-is-collapsed [data-sidebar-target="trialBox"],
-      html.sidebar-is-collapsed [data-sidebar-target="quotaBox"] {
-        display: none !important;
-      }
-      html.sidebar-is-collapsed .sidebar-nav-item {
-        justify-content: center !important;
-        padding-left: 0.5rem !important;
-        padding-right: 0.5rem !important;
-      }
-      html.sidebar-is-collapsed .sidebar-nav-item svg {
-        margin-right: 0 !important;
-      }
-      html.sidebar-is-collapsed .flex.items-center.mb-6 a {
-        justify-content: center !important;
+      /* CSS-driven collapsed sidebar state — only on desktop (lg+) */
+      @media (min-width: 1024px) {
+        html.sidebar-is-collapsed [data-sidebar-target="sidebar"] {
+          width: 4rem !important;
+          padding: 0.5rem !important;
+        }
+        html.sidebar-is-collapsed [data-sidebar-target="content"] {
+          margin-left: 4rem !important;
+        }
+        /* Keep ml-0 on mobile even when collapsed class is present */
+        html.sidebar-is-collapsed [data-sidebar-target="navText"],
+        html.sidebar-is-collapsed [data-sidebar-target="brandText"],
+        html.sidebar-is-collapsed [data-sidebar-target="promoBox"],
+        html.sidebar-is-collapsed [data-sidebar-target="trialBox"],
+        html.sidebar-is-collapsed [data-sidebar-target="quotaBox"] {
+          display: none !important;
+        }
+        html.sidebar-is-collapsed .sidebar-nav-item {
+          justify-content: center !important;
+          padding-left: 0.5rem !important;
+          padding-right: 0.5rem !important;
+        }
+        html.sidebar-is-collapsed .sidebar-nav-item svg {
+          margin-right: 0 !important;
+        }
+        html.sidebar-is-collapsed .flex.items-center.mb-6 a {
+          justify-content: center !important;
+        }
       }
     </style>
 
@@ -103,15 +106,27 @@
   <body class="bg-gray-50">
     <div id="flash_messages"></div>
     <div class="h-screen flex overflow-hidden" data-controller="sidebar" data-sidebar-account-id-value="<%= current_account&.id %>">
+      <!-- Mobile overlay -->
+      <div class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden"
+           data-sidebar-target="mobileOverlay"
+           data-action="click->sidebar#closeMobile"></div>
+
       <!-- Sidebar -->
-      <div class="fixed inset-y-0 left-0 bg-gray-900 text-white w-64 p-4 flex flex-col transition-all duration-300 ease-in-out" data-sidebar-target="sidebar">
-        <div class="flex items-center mb-6">
+      <div class="fixed inset-y-0 left-0 bg-gray-900 text-white w-64 p-4 flex flex-col transition-all duration-300 ease-in-out z-50 -translate-x-full lg:translate-x-0" data-sidebar-target="sidebar">
+        <div class="flex items-center justify-between mb-6">
           <%= link_to root_path, class: "flex items-center space-x-2" do %>
             <div class="rounded-lg p-1.5">
               <%= render "shared/logo", size: 28, variant: 'admin' %>
             </div>
             <span class="text-xl font-bold text-white" data-sidebar-target="brandText">ActiveRabbit</span>
           <% end %>
+          <!-- Mobile close button -->
+          <button class="lg:hidden p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-gray-800"
+                  data-action="click->sidebar#closeMobile">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
         </div>
 
         <nav class="space-y-2 flex-1 overflow-y-auto pr-1">
@@ -308,12 +323,12 @@
           <% end %>
         <% end %>
 
-        <!-- Sidebar Toggle Button -->
+        <!-- Sidebar Toggle Button (desktop only) -->
         <button 
           type="button"
           data-sidebar-target="toggleButton"
           data-action="click->sidebar#toggle"
-          class="sidebar-nav-item group relative mt-3 flex items-center px-4 py-3 text-gray-400 rounded-lg hover:bg-gray-800 hover:text-white transition-colors w-full"
+          class="sidebar-nav-item group relative mt-3 hidden lg:flex items-center px-4 py-3 text-gray-400 rounded-lg hover:bg-gray-800 hover:text-white transition-colors w-full"
         >
           <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
@@ -324,7 +339,7 @@
       </div>
 
       <!-- Main Content -->
-      <div class="flex-1 flex flex-col ml-64 overflow-y-auto transition-all duration-300 ease-in-out" data-sidebar-target="content">
+      <div class="flex-1 flex flex-col ml-0 lg:ml-64 overflow-y-auto transition-all duration-300 ease-in-out" data-sidebar-target="content">
         <%# Super Admin Viewing Banner %>
         <% if viewing_as_super_admin? %>
           <div class="bg-yellow-500 text-yellow-900 px-4 py-2 flex items-center justify-between">
@@ -352,7 +367,15 @@
 
         <!-- Top Navigation -->
         <header class="bg-white shadow-sm border-b border-gray-200">
-          <div class="flex items-center px-6 py-3 gap-4">
+          <div class="flex items-center px-3 sm:px-6 py-3 gap-2 sm:gap-4 flex-wrap">
+            <!-- Mobile hamburger -->
+            <button class="lg:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                    data-action="click->sidebar#openMobile">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+              </svg>
+            </button>
+
             <div class="flex items-center shrink-0">
               <%
 =begin%>
@@ -424,7 +447,7 @@
               %>
 
               <!-- Time Filter Dropdown -->
-              <div class="relative shrink-0" data-controller="dropdown">
+              <div class="relative shrink-0 hidden sm:block" data-controller="dropdown">
                 <%
                   period_labels = { nil => "All time", "1h" => "Last hour", "1d" => "Last 24 hours", "7d" => "Last 7 days", "30d" => "Last 30 days" }
                   current_label = period_labels[current_period] || "All time"
@@ -461,7 +484,7 @@
               </div>
 
               <!-- Status & Severity Filter Dropdown -->
-              <div class="relative shrink-0" data-controller="dropdown">
+              <div class="relative shrink-0 hidden md:block" data-controller="dropdown">
                 <%
                   sev_keys = %w[critical high medium low]
                   filter_labels = { nil => "All Errors", "open" => "WIP", "closed" => "Closed", "ai" => "AI Summaries",
@@ -529,8 +552,8 @@
                 </div>
               </div>
 
-              <!-- List/Analytics/Bento View Toggle -->
-              <div class="flex items-center gap-1 shrink-0">
+              <!-- List/Analytics View Toggle -->
+              <div class="flex items-center gap-1 shrink-0 hidden md:flex">
                 <%
                   list_url = errors_index_path(params.permit(:period, :filter, :q).to_h.except(:tab, :range))
                   graph_url = errors_index_path(params.permit(:period, :filter, :q).to_h.merge(tab: 'graph', range: (params[:range] || '7D')))
@@ -560,7 +583,7 @@
               </div>
 
               <!-- Global Search (Sentry-style) -->
-              <div class="flex-1 min-w-0" data-controller="global-search">
+              <div class="flex-1 min-w-0 hidden sm:block" data-controller="global-search">
                 <div class="relative group">
                   <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg class="h-4 w-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -589,10 +612,10 @@
             <% end %>
 
             <!-- User Menu -->
-            <div class="flex items-center gap-3 shrink-0">
+            <div class="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
               <!-- Subscription CTA -->
               <%= link_to "Subscription", plan_path,
-                  class: "px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700" %>
+                  class: "hidden sm:inline-flex px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700" %>
 
               <!-- User Avatar and Menu -->
               <div class="relative" data-controller="dropdown">

@@ -33,6 +33,17 @@ class AiSummaryJob
     ai = AiSummaryService.new(issue: issue, sample_event: event, github_client: github_client).call
     if ai[:summary].present?
       issue.update(ai_summary: ai[:summary], ai_summary_generated_at: Time.current)
+
+      # Trigger auto-fix pipeline (on by default when GitHub connected)
+      if project.auto_fix_enabled?
+        severity_ok = Issue::SEVERITIES.index(issue.calculated_severity).to_i >=
+                      Issue::SEVERITIES.index(project.auto_fix_min_severity).to_i
+        if severity_ok
+          AutoFixJob.perform_async(issue.id, project.id)
+        else
+          Rails.logger.info "[AiSummaryJob] Auto-fix skipped for issue ##{issue.id}: severity #{issue.calculated_severity} < #{project.auto_fix_min_severity}"
+        end
+      end
     end
 
   rescue ActiveRecord::RecordNotFound => e
@@ -60,7 +71,7 @@ class AiSummaryJob
       project_app_id: settings["github_app_id"],
       project_app_pk: settings["github_app_pk"],
       env_app_id: ENV["AR_GH_APP_ID"],
-      env_app_pk: ENV["AR_GH_APP_PK"]
+      env_app_pk: Github::TokenManager.resolve_env_private_key
     )
 
     token = token_manager.get_token

@@ -294,4 +294,62 @@ class ProjectTest < ActiveSupport::TestCase
     project.settings = {}
     refute project.notify_via_discord?
   end
+
+  # ---- Auto AI Summary settings ----
+
+  test "auto_ai_summary_enabled? defaults to false when settings are empty" do
+    project = projects(:default)
+    project.settings = {}
+    refute project.auto_ai_summary_enabled?
+  end
+
+  test "auto_ai_summary_enabled? returns true when explicitly enabled" do
+    project = projects(:default)
+    project.settings = { "auto_ai_summary" => { "enabled" => true } }
+    assert project.auto_ai_summary_enabled?
+  end
+
+  test "auto_ai_summary_enabled? returns false when explicitly disabled" do
+    project = projects(:default)
+    project.settings = { "auto_ai_summary" => { "enabled" => false } }
+    refute project.auto_ai_summary_enabled?
+  end
+
+  test "auto_ai_summary_severity_levels defaults to all severities when not configured" do
+    project = projects(:default)
+    project.settings = {}
+    assert_equal %w[low medium high critical], project.auto_ai_summary_severity_levels
+  end
+
+  test "auto_ai_summary_severity_levels returns configured levels" do
+    project = projects(:default)
+    project.settings = { "auto_ai_summary" => { "severity_levels" => %w[critical high] } }
+    assert_equal %w[critical high], project.auto_ai_summary_severity_levels
+  end
+
+  test "auto_ai_summary_for_severity? returns true for matching severity" do
+    project = projects(:default)
+    project.settings = { "auto_ai_summary" => { "enabled" => true, "severity_levels" => %w[critical high] } }
+    assert project.auto_ai_summary_for_severity?("critical")
+    assert project.auto_ai_summary_for_severity?("high")
+  end
+
+  test "auto_ai_summary_for_severity? returns false for non-matching severity" do
+    project = projects(:default)
+    project.settings = { "auto_ai_summary" => { "enabled" => true, "severity_levels" => %w[critical high] } }
+    refute project.auto_ai_summary_for_severity?("medium")
+    refute project.auto_ai_summary_for_severity?("low")
+  end
+
+  test "auto_ai_summary_for_severity? returns false when disabled regardless of severity" do
+    project = projects(:default)
+    project.settings = { "auto_ai_summary" => { "enabled" => false, "severity_levels" => %w[critical high medium low] } }
+    refute project.auto_ai_summary_for_severity?("critical")
+  end
+
+  test "auto_ai_summary_for_severity? handles nil severity" do
+    project = projects(:default)
+    project.settings = { "auto_ai_summary" => { "enabled" => true, "severity_levels" => %w[critical high] } }
+    refute project.auto_ai_summary_for_severity?(nil)
+  end
 end
