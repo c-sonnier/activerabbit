@@ -114,9 +114,9 @@ class ResourceQuotasTest < ActiveSupport::TestCase
   # uptime_monitors_quota
   # ==========================================================================
 
-  test "uptime_monitors_quota returns 0 for free plan" do
+  test "uptime_monitors_quota returns 1 for free plan" do
     account = Account.new(current_plan: "free")
-    assert_equal 0, account.uptime_monitors_quota
+    assert_equal 1, account.uptime_monitors_quota
   end
 
   test "uptime_monitors_quota returns 20 for trial plan" do
@@ -312,10 +312,10 @@ class ResourceQuotasTest < ActiveSupport::TestCase
     assert account.within_quota?(:pull_requests)
   end
 
-  test "within_quota? for uptime_monitors on free plan is always false" do
+  test "within_quota? for uptime_monitors on free plan allows 1" do
     account = Account.new(current_plan: "free", cached_uptime_monitors_used: 0)
-    # Free plan has 0 uptime_monitors quota, so 0 < 0 is false
-    assert_not account.within_quota?(:uptime_monitors)
+    # Free plan has 1 uptime_monitors quota, so 0 < 1 is true
+    assert account.within_quota?(:uptime_monitors)
   end
 
   test "within_quota? for uptime_monitors on team plan with usage" do
@@ -460,10 +460,10 @@ class ResourceQuotasTest < ActiveSupport::TestCase
     assert_equal 150.0, account.usage_percentage(:events)
   end
 
-  test "usage_percentage returns 0.0 when quota is zero" do
-    account = Account.new(current_plan: "free", cached_uptime_monitors_used: 5)
-    # Free plan has 0 uptime_monitors quota
-    assert_equal 0.0, account.usage_percentage(:uptime_monitors)
+  test "usage_percentage returns correct value for free plan uptime monitors" do
+    account = Account.new(current_plan: "free", cached_uptime_monitors_used: 1)
+    # Free plan has 1 uptime_monitors quota, 1 used = 100%
+    assert_equal 100.0, account.usage_percentage(:uptime_monitors)
   end
 
   test "usage_percentage returns 0.0 for unknown resource type" do

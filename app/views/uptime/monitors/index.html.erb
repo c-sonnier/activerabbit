@@ -1,0 +1,58 @@
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="text-2xl font-bold text-gray-900">Uptime Monitoring</h1>
+    <%= link_to "Add Monitor", new_uptime_path, class: "bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium" %>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white rounded-lg shadow p-4">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">Total</p>
+      <p class="text-2xl font-bold text-gray-900"><%= @total_count %></p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">Up</p>
+      <p class="text-2xl font-bold text-green-600"><%= @up_count %></p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">Down</p>
+      <p class="text-2xl font-bold text-red-600"><%= @down_count %></p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">Paused</p>
+      <p class="text-2xl font-bold text-gray-400"><%= @paused_count %></p>
+    </div>
+  </div>
+
+  <% if @monitors.any? %>
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+      <table class="w-full">
+        <thead>
+          <tr class="bg-gray-50 border-b border-gray-200">
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Region</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Uptime (30d)</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg Response</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Check</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <% @monitors.each do |monitor| %>
+            <%= render "monitor_row", monitor: monitor, uptimes: @uptimes %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <div class="bg-white rounded-lg shadow p-12 text-center">
+      <svg class="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+      </svg>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">No monitors yet</h3>
+      <p class="text-gray-500 mb-6">Add a URL to start monitoring uptime and response times.</p>
+      <%= link_to "Add Your First Monitor", new_uptime_path, class: "bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700" %>
+    </div>
+  <% end %>
+</div>

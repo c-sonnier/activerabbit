@@ -46,6 +46,11 @@ class DiscordNotificationService
     send_webhook(embeds: [embed])
   end
 
+  def send_uptime_alert(monitor, alert_type, payload)
+    embed = build_uptime_alert_embed(monitor, alert_type, payload)
+    send_webhook(embeds: [embed])
+  end
+
   def send_incident_open(incident)
     embed = build_incident_open_embed(incident)
     send_webhook(embeds: [embed])
@@ -232,6 +237,29 @@ class DiscordNotificationService
         { name: "Resolved p95", value: "#{incident.resolve_p95_ms&.round(0) || 'N/A'}ms", inline: true },
         { name: "Project",      value: "#{@project.name} (#{incident.environment})", inline: false }
       ],
+      footer: footer,
+      timestamp: Time.current.iso8601
+    }
+  end
+
+  def build_uptime_alert_embed(monitor, alert_type, payload)
+    emoji = alert_type == "up" ? "\u{2705}" : "\u{1F534}"
+    status_text = alert_type == "up" ? "RECOVERED" : "DOWN"
+
+    fields = [
+      { name: "URL", value: monitor.url, inline: true },
+      { name: "Status", value: status_text, inline: true },
+      { name: "Response Time", value: "#{monitor.last_response_time_ms || 'N/A'}ms", inline: true }
+    ]
+
+    if alert_type == "down" && payload["consecutive_failures"]
+      fields << { name: "Consecutive Failures", value: payload["consecutive_failures"].to_s, inline: true }
+    end
+
+    {
+      title: "#{emoji} Uptime #{status_text}: #{monitor.name}",
+      color: alert_type == "up" ? DISCORD_EMBED_COLOR_SUCCESS : DISCORD_EMBED_COLOR_DANGER,
+      fields: fields,
       footer: footer,
       timestamp: Time.current.iso8601
     }

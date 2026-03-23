@@ -31,7 +31,7 @@ module ResourceQuotas
       events: 5_000,
       ai_summaries: 0,
       pull_requests: 0,
-      uptime_monitors: 0,
+      uptime_monitors: 1,
       status_pages: 0,
       projects: 999_999,
       users: 1,
