@@ -103,7 +103,7 @@
   </div>
 
   <!-- Response Time Chart -->
-  <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6 overflow-hidden"
+  <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6"
        data-controller="uptime-chart"
        data-uptime-chart-data-value="<%= @chart_checks.map { |c| { t: c[0].iso8601, ms: c[1], ok: c[2] } }.to_json %>">
     <% chart_label = { "1h" => "1h", "6h" => "6h", "24h" => "24h", "7d" => "7d", "30d" => "30d" }[@period] || "24h" %>
@@ -131,7 +131,7 @@
              style="height: 28px;"></div>
         <div data-uptime-chart-target="barTooltip"
              class="absolute bg-gray-900 text-white rounded-lg shadow-lg px-3 py-2 pointer-events-none z-20 text-xs"
-             style="display: none; min-width: 150px; bottom: 36px;"></div>
+             style="display: none; min-width: 150px; top: -70px;"></div>
       </div>
     </div>
   </div>
