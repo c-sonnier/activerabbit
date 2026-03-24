@@ -4,7 +4,7 @@ class ErrorsBentoBoxService
   # 12-column grid: square tiles use equal column + row span (1..6).
   GRID_COLS = 12
   MAX_SPAN  = 6
-  ISSUES_LIMIT = 300
+  ISSUES_LIMIT = 50
 
   attr_reader :project_scope, :current_period, :retention_cutoff, :account
 
