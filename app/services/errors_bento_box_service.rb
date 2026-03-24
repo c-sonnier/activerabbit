@@ -100,13 +100,13 @@ class ErrorsBentoBoxService
 
     distinct_groups.each_with_index do |group, idx|
       span = case idx
-             when 0    then 6
-             when 1    then 5
-             when 2    then 4
-             when 3..4 then 3
-             when 5..7 then 2
-             else           1
-             end
+      when 0    then 6
+      when 1    then 5
+      when 2    then 4
+      when 3..4 then 3
+      when 5..7 then 2
+      else           1
+      end
 
       span_by_group[group] = span.clamp(1, MAX_SPAN)
     end
