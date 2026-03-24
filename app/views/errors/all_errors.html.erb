@@ -6,7 +6,7 @@
   <!-- Title -->
   <div>
     <h1 class="text-2xl font-bold text-gray-900">All Errors</h1>
-    <p class="text-sm text-gray-500 mt-1">Square tiles on a 12-column grid — box size follows frequency; similar occurrence counts share the same size.</p>
+    <p class="text-sm text-gray-500 mt-1">Bento grid — tile size reflects error frequency; similar counts share the same size.</p>
   </div>
 
   <!-- Header with time period filter -->
@@ -30,12 +30,11 @@
   <!-- Bento Box Grid -->
   <% if @issues_with_sizes.any? %>
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-      <%# 20 columns to support sizes up to 20x20 %>
-      <div class="grid gap-2 sm:gap-3 md:gap-4" style="grid-template-columns: repeat(20, minmax(0, 1fr)); grid-auto-flow: dense;">
+      <div class="grid gap-2 sm:gap-3 md:gap-4" style="grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); grid-auto-flow: dense;">
         <% @issues_with_sizes.each do |item| %>
           <% issue = item[:issue] %>
-          <% cols = item[:cols].to_i.clamp(1, 20) %>
-          <% span = item[:span].to_i.clamp(1, 20) %>
+          <% cols = item[:cols].to_i.clamp(1, 6) %>
+          <% span = item[:span].to_i.clamp(1, 6) %>
           
           <% error_url = if @current_project
                           "/#{@current_project.slug}/errors/#{issue.id}"
@@ -54,33 +53,27 @@
           } %>
           <% colors = sev_colors.fetch(sev, sev_colors['low']) %>
           
-          <% 
-            # Dynamic font size based on span
+          <%
             count_size = case span
-            when 15..20 then 'text-6xl'
-            when 12..14 then 'text-5xl'
-            when 9..11 then 'text-4xl'
-            when 6..8 then 'text-3xl'
-            when 4..5 then 'text-2xl'
-            when 3 then 'text-xl'
+            when 6 then 'text-5xl'
+            when 5 then 'text-4xl'
+            when 4 then 'text-3xl'
+            when 3 then 'text-2xl'
             when 2 then 'text-lg'
             else 'text-base'
             end
             name_size = case span
-            when 15..20 then 'text-2xl'
-            when 12..14 then 'text-xl'
-            when 9..11 then 'text-lg'
-            when 6..8 then 'text-base'
-            when 4..5 then 'text-sm'
+            when 6 then 'text-xl'
+            when 5 then 'text-lg'
+            when 4 then 'text-base'
+            when 3 then 'text-sm'
             else 'text-xs'
             end
             padding = case span
-            when 15..20 then 'p-8'
-            when 12..14 then 'p-6'
-            when 9..11 then 'p-5'
-            when 6..8 then 'p-4'
-            when 4..5 then 'p-3'
-            when 3 then 'p-2.5'
+            when 6 then 'p-6'
+            when 5 then 'p-5'
+            when 4 then 'p-4'
+            when 3 then 'p-3'
             when 2 then 'p-2'
             else 'p-1.5'
             end

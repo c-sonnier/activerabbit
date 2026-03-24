@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 class ErrorsBentoBoxService
-  # 20-column grid: square tiles use equal column + row span (1..20).
-  MAX_SPAN = 20
+  # 12-column grid: square tiles use equal column + row span (1..6).
+  GRID_COLS = 12
+  MAX_SPAN  = 6
   ISSUES_LIMIT = 300
 
   attr_reader :project_scope, :current_period, :retention_cutoff, :account
@@ -93,48 +94,19 @@ class ErrorsBentoBoxService
 
   def assign_spans_to_count_groups(issues)
     keys = issues.map { |i| count_group_key(i.count) }
-    # Highest occurrence groups first → larger boxes; tie-break by key
     distinct_groups = keys.uniq.sort_by { |k| [-max_count_for_group(issues, k), -k] }
 
     span_by_group = {}
 
     distinct_groups.each_with_index do |group, idx|
-      # Distribute sizes from 20x20 down to 1x1 based on rank
-      # Top errors get largest boxes, progressively smaller for lower ranks
-      if idx == 0
-        span = 20  # Largest for top error
-      elsif idx == 1
-        span = 18
-      elsif idx == 2
-        span = 16
-      elsif idx == 3
-        span = 14
-      elsif idx == 4
-        span = 12
-      elsif idx == 5
-        span = 11
-      elsif idx == 6
-        span = 10
-      elsif idx == 7
-        span = 9
-      elsif idx == 8
-        span = 8
-      elsif idx == 9
-        span = 7
-      elsif idx == 10
-        span = 6
-      elsif idx == 11
-        span = 5
-      elsif idx == 12
-        span = 4
-      elsif idx == 13
-        span = 3
-      elsif idx == 14
-        span = 2
-      else
-        # Everything else gets 1x1 for maximum density
-        span = 1
-      end
+      span = case idx
+             when 0    then 6
+             when 1    then 5
+             when 2    then 4
+             when 3..4 then 3
+             when 5..7 then 2
+             else           1
+             end
 
       span_by_group[group] = span.clamp(1, MAX_SPAN)
     end
@@ -148,13 +120,12 @@ class ErrorsBentoBoxService
 
   def span_to_size_class(span)
     case span
-    when 10.. then "huge"
-    when 8..9 then "xlarge"
-    when 6..7 then "large"
-    when 4..5 then "medium-large"
-    when 3 then "medium"
-    when 2 then "medium-small"
-    else "tiny"
+    when 6    then "huge"
+    when 5    then "xlarge"
+    when 4    then "large"
+    when 3    then "medium"
+    when 2    then "small"
+    else           "tiny"
     end
   end
 
