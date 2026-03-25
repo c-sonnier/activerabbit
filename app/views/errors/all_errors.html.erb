@@ -2,23 +2,20 @@
   All Errors - Bento Box View
 <% end %>
 
-<div class="space-y-8">
-  <!-- Title -->
-  <div>
-    <h1 class="text-2xl font-bold text-gray-900">All Errors</h1>
-    <p class="text-sm text-gray-500 mt-1">Square tiles on a 12-column grid — box size follows frequency; similar occurrence counts share the same size.</p>
-  </div>
-
-  <!-- Header with time period filter -->
-  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-    <!-- Time period filter -->
+<div class="flex flex-col h-screen overflow-x-hidden p-4 gap-3">
+  <!-- Header: title + filter in one compact row -->
+  <div class="flex-shrink-0 flex items-center justify-between bg-white rounded-xl shadow-sm border border-gray-200 px-5 py-3">
+    <div>
+      <h1 class="text-lg font-bold text-gray-900">All Errors</h1>
+      <p class="text-xs text-gray-500">Tile size reflects error frequency</p>
+    </div>
     <div class="flex items-center gap-2">
-      <span class="text-sm text-gray-500">Period:</span>
+      <span class="text-xs text-gray-500">Period:</span>
       <div class="inline-flex bg-gray-100 p-1 rounded-lg">
         <% %w[all 1h 1d 7d 30d].each do |period| %>
           <% period_labels = { "all" => "All time", "1h" => "1 hour", "1d" => "24 hours", "7d" => "7 days", "30d" => "30 days" } %>
           <% active = @current_period == period %>
-          <%= link_to all_errors_path(period: (period == "all" ? nil : period)), 
+          <%= link_to all_errors_path(period: (period == "all" ? nil : period)),
               class: "px-3 py-1.5 rounded-md text-xs font-medium transition-colors #{active ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'}" do %>
             <%= period_labels[period] %>
           <% end %>
@@ -29,14 +26,13 @@
 
   <!-- Bento Box Grid -->
   <% if @issues_with_sizes.any? %>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-      <%# 20 columns to support sizes up to 20x20 %>
-      <div class="grid gap-2 sm:gap-3 md:gap-4" style="grid-template-columns: repeat(20, minmax(0, 1fr)); grid-auto-flow: dense;">
+    <div class="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-gray-200 p-3">
+      <div class="bento-grid h-full grid gap-2" style="grid-template-columns: repeat(12, 1fr); grid-template-rows: repeat(12, 1fr); grid-auto-flow: dense;">
         <% @issues_with_sizes.each do |item| %>
           <% issue = item[:issue] %>
-          <% cols = item[:cols].to_i.clamp(1, 20) %>
-          <% span = item[:span].to_i.clamp(1, 20) %>
-          
+          <% cols = item[:cols].to_i.clamp(1, 6) %>
+          <% span = item[:span].to_i.clamp(1, 6) %>
+
           <% error_url = if @current_project
                           "/#{@current_project.slug}/errors/#{issue.id}"
                         elsif @project
@@ -44,7 +40,7 @@
                         else
                           error_path(issue)
                         end %>
-          
+
           <% sev = (issue.severity || 'low').to_s.downcase %>
           <% sev_colors = {
             'critical' => { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', dot: 'bg-red-500', hover: 'hover:bg-red-100' },
@@ -53,48 +49,39 @@
             'low'      => { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-600', dot: 'bg-gray-300', hover: 'hover:bg-gray-100' }
           } %>
           <% colors = sev_colors.fetch(sev, sev_colors['low']) %>
-          
-          <% 
-            # Dynamic font size based on span
+
+          <%
             count_size = case span
-            when 15..20 then 'text-6xl'
-            when 12..14 then 'text-5xl'
-            when 9..11 then 'text-4xl'
-            when 6..8 then 'text-3xl'
-            when 4..5 then 'text-2xl'
-            when 3 then 'text-xl'
+            when 6 then 'text-5xl'
+            when 5 then 'text-4xl'
+            when 4 then 'text-3xl'
+            when 3 then 'text-2xl'
             when 2 then 'text-lg'
             else 'text-base'
             end
             name_size = case span
-            when 15..20 then 'text-2xl'
-            when 12..14 then 'text-xl'
-            when 9..11 then 'text-lg'
-            when 6..8 then 'text-base'
-            when 4..5 then 'text-sm'
+            when 6 then 'text-xl'
+            when 5 then 'text-lg'
+            when 4 then 'text-base'
+            when 3 then 'text-sm'
             else 'text-xs'
             end
             padding = case span
-            when 15..20 then 'p-8'
-            when 12..14 then 'p-6'
-            when 9..11 then 'p-5'
-            when 6..8 then 'p-4'
-            when 4..5 then 'p-3'
-            when 3 then 'p-2.5'
+            when 6 then 'p-6'
+            when 5 then 'p-5'
+            when 4 then 'p-4'
+            when 3 then 'p-3'
             when 2 then 'p-2'
             else 'p-1.5'
             end
           %>
-          <% grid_span_style = "grid-column: span #{cols}; grid-row: span #{cols};" %>
-          
-          <div class="relative group" style="<%= grid_span_style %>">
-            <%= link_to error_url, 
-                class: "relative min-w-0 aspect-square rounded-xl border-2 #{colors[:border]} #{colors[:bg]} #{colors[:hover]} transition-all duration-200 hover:shadow-xl hover:z-20 #{padding} flex flex-col items-center justify-center overflow-hidden h-full",
+
+          <div class="relative group" style="grid-column: span <%= cols %>; grid-row: span <%= cols %>; min-width: 0; min-height: 0;">
+            <%= link_to error_url,
+                class: "relative rounded-xl border-2 #{colors[:border]} #{colors[:bg]} #{colors[:hover]} transition-all duration-200 hover:shadow-xl hover:z-20 #{padding} flex flex-col items-center justify-center overflow-hidden w-full h-full",
                 style: "position: relative;" do %>
-              
-              <!-- Only show name and count -->
               <div class="text-center">
-                <div class="<%= count_size %> font-bold text-gray-900 mb-2">
+                <div class="<%= count_size %> font-bold text-gray-900 mb-1 leading-none">
                   <%= number_with_delimiter(issue.count) %>
                 </div>
                 <h3 class="<%= name_size %> font-semibold text-gray-900 line-clamp-2 leading-tight">
@@ -102,32 +89,29 @@
                 </h3>
               </div>
             <% end %>
-            
+
             <!-- Tooltip on hover -->
-            <div class="absolute left-1/2 bottom-full mb-2 transform -translate-x-1/2 z-50 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 w-80" style="position: absolute;">
-              <div class="bg-gray-900 text-white text-xs rounded-lg shadow-2xl p-4 border border-gray-700">
-                <div class="flex items-center gap-2 mb-2">
+            <div class="absolute left-1/2 bottom-full mb-2 transform -translate-x-1/2 z-50 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 w-72" style="position: absolute;">
+              <div class="bg-gray-900 text-white text-xs rounded-lg shadow-2xl p-3 border border-gray-700">
+                <div class="flex items-center gap-2 mb-1.5">
                   <span class="w-2 h-2 rounded-full <%= colors[:dot] %>"></span>
-                  <span class="font-semibold text-white uppercase"><%= sev %></span>
-                  <span class="ml-auto text-gray-400"><%= issue.status.upcase %></span>
+                  <span class="font-semibold text-white uppercase text-[10px]"><%= sev %></span>
+                  <span class="ml-auto text-gray-400 text-[10px]"><%= issue.status.upcase %></span>
                 </div>
-                <div class="font-bold text-base mb-2 text-white"><%= issue.exception_class %></div>
-                <div class="space-y-1.5 text-gray-300">
-                  <div><strong class="text-white">Count:</strong> <%= number_with_delimiter(issue.count) %> occurrences</div>
-                  <div><strong class="text-white">Controller:</strong> <%= truncate(issue.controller_action, length: 40) %></div>
+                <div class="font-bold text-sm mb-1.5 text-white"><%= issue.exception_class %></div>
+                <div class="space-y-1 text-gray-300 text-[11px]">
+                  <div><strong class="text-white">Count:</strong> <%= number_with_delimiter(issue.count) %></div>
+                  <div><strong class="text-white">Controller:</strong> <%= truncate(issue.controller_action, length: 35) %></div>
                   <div><strong class="text-white">Last seen:</strong> <%= last_seen_short(issue.last_seen_at) %></div>
-                  <div><strong class="text-white">First seen:</strong> <%= issue.first_seen_at ? issue.first_seen_at.strftime("%Y-%m-%d %H:%M") : "—" %></div>
                   <% if issue.sample_message.present? %>
-                    <div class="mt-2 pt-2 border-t border-gray-700">
-                      <strong class="text-white">Message:</strong>
-                      <div class="text-gray-400 mt-1 text-xs"><%= truncate(issue.sample_message, length: 150) %></div>
+                    <div class="mt-1 pt-1 border-t border-gray-700">
+                      <div class="text-gray-400 text-[10px]"><%= truncate(issue.sample_message, length: 100) %></div>
                     </div>
                   <% end %>
                   <% if issue.project %>
                     <div><strong class="text-white">Project:</strong> <%= issue.project.name %></div>
                   <% end %>
                 </div>
-                <!-- Tooltip arrow -->
                 <div class="absolute left-1/2 top-full transform -translate-x-1/2 -mt-1">
                   <div class="border-4 border-transparent border-t-gray-900"></div>
                 </div>
@@ -138,62 +122,30 @@
       </div>
     </div>
   <% else %>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-      <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-        </svg>
+    <div class="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-gray-200 flex items-center justify-center">
+      <div class="text-center">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+          <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No errors found</h3>
+        <p class="text-sm text-gray-500 mb-4">No errors match the current filter and time period.</p>
+        <%= link_to errors_index_path, class: "text-sm text-indigo-600 hover:text-indigo-800 font-medium" do %>
+          &larr; View all errors
+        <% end %>
       </div>
-      <h3 class="text-lg font-medium text-gray-900 mb-2">No errors found</h3>
-      <p class="text-sm text-gray-500 mb-4">No errors match the current filter and time period.</p>
-      <%= link_to errors_index_path, class: "text-sm text-indigo-600 hover:text-indigo-800 font-medium" do %>
-        &larr; View all errors
-      <% end %>
     </div>
   <% end %>
 </div>
 
 <style>
-  /* Custom line-clamp utilities for different sizes */
+  .bento-grid > * {
+    overflow: visible;
+  }
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .line-clamp-3 {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .line-clamp-4 {
-    display: -webkit-box;
-    -webkit-line-clamp: 4;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .line-clamp-5 {
-    display: -webkit-box;
-    -webkit-line-clamp: 5;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .line-clamp-6 {
-    display: -webkit-box;
-    -webkit-line-clamp: 6;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .line-clamp-7 {
-    display: -webkit-box;
-    -webkit-line-clamp: 7;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .line-clamp-8 {
-    display: -webkit-box;
-    -webkit-line-clamp: 8;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
