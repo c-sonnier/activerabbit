@@ -118,26 +118,26 @@ if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present? && !ActiveModel::Type::B
     },
 
     # ========================================
-    # Uptime Monitoring
+    # Uptime Monitoring (TEMPORARILY DISABLED — server migration 2026-03-25)
     # ========================================
 
-    "uptime_scheduler" => {
-      "cron" => "* * * * *",
-      "class" => "Uptime::SchedulerJob",
-      "cron_timezone" => "America/Los_Angeles"
-    },
+    # "uptime_scheduler" => {
+    #   "cron" => "* * * * *",
+    #   "class" => "Uptime::SchedulerJob",
+    #   "cron_timezone" => "America/Los_Angeles"
+    # },
 
-    "uptime_daily_rollup" => {
-      "cron" => "30 2 * * *",
-      "class" => "Uptime::DailyRollupJob",
-      "cron_timezone" => "America/Los_Angeles"
-    },
+    # "uptime_daily_rollup" => {
+    #   "cron" => "30 2 * * *",
+    #   "class" => "Uptime::DailyRollupJob",
+    #   "cron_timezone" => "America/Los_Angeles"
+    # },
 
-    "uptime_ssl_expiry_check" => {
-      "cron" => "0 9 * * *",
-      "class" => "Uptime::SslExpiryCheckJob",
-      "cron_timezone" => "America/Los_Angeles"
-    }
+    # "uptime_ssl_expiry_check" => {
+    #   "cron" => "0 9 * * *",
+    #   "class" => "Uptime::SslExpiryCheckJob",
+    #   "cron_timezone" => "America/Los_Angeles"
+    # }
   }
 
   begin

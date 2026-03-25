@@ -51,6 +51,9 @@ gem "rack-attack"
 # HTTP client
 gem "faraday"
 
+# AWS S3/R2 storage
+gem "aws-sdk-s3"
+
 # GitHub App JWT
 gem "jwt", "~> 2.8"
 

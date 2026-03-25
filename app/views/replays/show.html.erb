@@ -1,0 +1,282 @@
+<% content_for :title, "Replay #{@replay.replay_id[0..7]}" %>
+
+<style>
+  .replayer-wrapper iframe { border: none !important; }
+</style>
+
+<!-- Back link + header -->
+<div class="mb-6">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <%= link_to project_replays_path(@project.slug), class: "text-gray-400 hover:text-gray-600" do %>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      <% end %>
+      <h1 class="text-2xl font-bold text-gray-900">Session Replay</h1>
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+        <%= @replay.status == 'ready' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' %>">
+        <%= @replay.status.capitalize %>
+      </span>
+    </div>
+    <div class="flex items-center gap-2">
+      <% if @prev_replay %>
+        <%= link_to project_replay_path(@project.slug, @prev_replay), class: "inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50" do %>
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          Prev
+        <% end %>
+      <% else %>
+        <span class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-300 bg-white border border-gray-200 rounded-md cursor-not-allowed">
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          Prev
+        </span>
+      <% end %>
+      <% if @next_replay %>
+        <%= link_to project_replay_path(@project.slug, @next_replay), class: "inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50" do %>
+          Next
+          <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <% end %>
+      <% else %>
+        <span class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-300 bg-white border border-gray-200 rounded-md cursor-not-allowed">
+          Next
+          <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </span>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- Player (full width) -->
+<div class="space-y-6">
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div id="replay-player" class="w-full rounded-lg" style="min-height: 200px; background: #111827; overflow: hidden; position: relative; border-radius: 8px;">
+        <div id="replay-loading" class="flex items-center justify-center text-gray-400" style="min-height: 200px;">
+          <p class="text-sm">Loading replay...</p>
+        </div>
+      </div>
+      <div id="replay-controls" class="hidden flex items-center gap-3 mt-3">
+        <button onclick="window._replayPlayer && window._replayPlayer.play()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700">Play</button>
+        <button onclick="window._replayPlayer && window._replayPlayer.pause()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-200 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-300">Pause</button>
+        <select onchange="window._replayPlayer && window._replayPlayer.setConfig({speed: parseInt(this.value)})" class="border border-gray-300 rounded-md text-sm py-1.5 px-2">
+          <option value="1">1x</option>
+          <option value="2">2x</option>
+          <option value="4" selected>4x</option>
+          <option value="8">8x</option>
+        </select>
+      </div>
+    </div>
+
+    <% if @replay_url %>
+    <script>
+    (function() {
+      var dataUrl = "<%= j @replay_url %>";
+      var container = document.getElementById('replay-player');
+      var loading = document.getElementById('replay-loading');
+      var controls = document.getElementById('replay-controls');
+
+      function waitForRrweb(cb, n) {
+        n = n || 0;
+        if (window.rrweb && window.rrweb.Replayer) { cb(); }
+        else if (n < 50) { setTimeout(function(){ waitForRrweb(cb, n+1); }, 200); }
+        else { loading.innerHTML = '<p class="text-sm text-red-400">rrweb player not loaded</p>'; }
+      }
+
+      async function decompressZlib(compressed) {
+        var data = new Uint8Array(compressed);
+        if (typeof DecompressionStream !== 'undefined') {
+          var fmts = ['deflate', 'raw'];
+          for (var i = 0; i < fmts.length; i++) {
+            try {
+              var ds = new DecompressionStream(fmts[i]);
+              var w = ds.writable.getWriter();
+              w.write(data); w.close();
+              var chunks = [], r = ds.readable.getReader();
+              while (true) { var res = await r.read(); if (res.done) break; chunks.push(res.value); }
+              var total = chunks.reduce(function(s,c){ return s+c.length; }, 0);
+              var merged = new Uint8Array(total);
+              var off = 0;
+              for (var j = 0; j < chunks.length; j++) { merged.set(chunks[j], off); off += chunks[j].length; }
+              return new TextDecoder().decode(merged);
+            } catch(e) {}
+          }
+        }
+        throw new Error('Could not decompress');
+      }
+
+      async function init() {
+        try {
+          var resp = await fetch(dataUrl);
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          var compressed = await resp.arrayBuffer();
+          var decompressed = await decompressZlib(compressed);
+          var events = JSON.parse(decompressed);
+
+          if (events.length < 2) {
+            loading.innerHTML = '<p class="text-sm text-yellow-400">Not enough events to replay</p>';
+            return;
+          }
+
+          waitForRrweb(function() {
+            // Get recorded viewport from meta event
+            var meta = events.find(function(e) { return e.type === 4; });
+            var recW = (meta && meta.data && meta.data.width) || 1920;
+            var recH = (meta && meta.data && meta.data.height) || 1080;
+
+            // Pre-size container before creating replayer
+            var containerW = container.clientWidth || 800;
+            var scale = (containerW / recW) * 0.8;
+            var scaledH = Math.ceil(recH * scale);
+
+            container.innerHTML = '';
+            container.style.position = 'relative';
+            container.style.height = scaledH + 'px';
+            container.style.overflow = 'hidden';
+            container.style.background = '#111827';
+
+            // Create a mount div that rrweb renders into, scaled to fit
+            var mount = document.createElement('div');
+            mount.style.width = recW + 'px';
+            mount.style.height = recH + 'px';
+            mount.style.transform = 'scale(' + scale + ')';
+            mount.style.transformOrigin = 'top left';
+            mount.style.position = 'absolute';
+            mount.style.top = '0';
+            mount.style.left = '0';
+            container.appendChild(mount);
+
+            window._replayPlayer = new window.rrweb.Replayer(events, {
+              root: mount,
+              skipInactive: true,
+              showWarning: false,
+              speed: 4
+            });
+
+            controls.classList.remove('hidden');
+          });
+        } catch(err) {
+          console.error('[ReplayPlayer]', err);
+          loading.innerHTML = '<p class="text-sm text-red-400">Failed to load: ' + err.message + '</p>';
+        }
+      }
+
+      init();
+    })();
+    </script>
+    <% end %>
+
+    <!-- Trigger info (if error-triggered) -->
+    <% if @replay.trigger_type.present? %>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">Trigger</h3>
+      <dl class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Type</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @replay.trigger_type %></dd>
+        </div>
+        <% if @replay.trigger_error_class.present? %>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Error</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @replay.trigger_error_class %></dd>
+        </div>
+        <% end %>
+        <% if @replay.trigger_error_short.present? %>
+        <div class="col-span-2">
+          <dt class="text-sm font-medium text-gray-500">Message</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @replay.trigger_error_short %></dd>
+        </div>
+        <% end %>
+        <% if @replay.trigger_offset_ms.present? %>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Error at</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= (@replay.trigger_offset_ms / 1000.0).round(1) %>s into session</dd>
+        </div>
+        <% end %>
+      </dl>
+    </div>
+    <% end %>
+
+  <!-- Info cards (side by side below player) -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Session Info card -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Session</h3>
+      <dl class="space-y-2">
+        <div class="flex justify-between">
+          <dt class="text-sm text-gray-500">Duration</dt>
+          <dd class="text-sm font-medium text-gray-900">
+            <% total_seconds = @replay.duration_ms / 1000 %>
+            <% minutes = total_seconds / 60 %>
+            <% seconds = total_seconds % 60 %>
+            <%= minutes > 0 ? "#{minutes}m #{seconds}s" : "#{seconds}s" %>
+          </dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-sm text-gray-500">Environment</dt>
+          <dd class="text-sm font-medium text-gray-900"><%= @replay.environment %></dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-sm text-gray-500">Viewport</dt>
+          <dd class="text-sm font-medium text-gray-900"><%= @replay.viewport_width %>&times;<%= @replay.viewport_height %></dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-sm text-gray-500">Started</dt>
+          <dd class="text-sm font-medium text-gray-900"><%= @replay.started_at.strftime("%b %d, %H:%M:%S") %></dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-sm text-gray-500">Captured</dt>
+          <dd class="text-sm font-medium text-gray-900"><%= time_ago_in_words(@replay.created_at) %> ago</dd>
+        </div>
+      </dl>
+    </div>
+
+    <!-- Page & Browser card -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Page</h3>
+      <dl class="space-y-2">
+        <div>
+          <dt class="text-sm text-gray-500">URL</dt>
+          <dd class="text-sm font-medium text-gray-900 truncate" title="<%= @replay.url %>"><%= @replay.url %></dd>
+        </div>
+        <div>
+          <dt class="text-sm text-gray-500 mt-2">Browser</dt>
+          <dd class="text-sm font-medium text-gray-900 truncate" title="<%= @replay.user_agent %>"><%= @replay.user_agent %></dd>
+        </div>
+        <% if @replay.issue.present? %>
+        <div class="pt-2 border-t border-gray-100">
+          <dt class="text-sm text-gray-500">Linked Issue</dt>
+          <dd class="mt-1">
+            <%= link_to project_issue_path(@project, @replay.issue), class: "text-sm text-indigo-600 hover:text-indigo-800 font-medium" do %>
+              <%= @replay.issue.title %>
+            <% end %>
+          </dd>
+        </div>
+        <% end %>
+      </dl>
+    </div>
+
+    <!-- Technical card -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Technical</h3>
+      <dl class="space-y-2">
+        <div class="flex justify-between">
+          <dt class="text-sm text-gray-500">Events</dt>
+          <dd class="text-sm font-medium text-gray-900"><%= @replay.event_count %></dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-sm text-gray-500">Size</dt>
+          <dd class="text-sm font-medium text-gray-900"><%= number_to_human_size(@replay.compressed_size || 0) %></dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-sm text-gray-500">SDK</dt>
+          <dd class="text-sm font-medium text-gray-900"><%= @replay.sdk_version %></dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-sm text-gray-500">rrweb</dt>
+          <dd class="text-sm font-medium text-gray-900"><%= @replay.rrweb_version %></dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-sm text-gray-500">Release</dt>
+          <dd class="text-sm font-medium text-gray-900"><%= @replay.release_version || "—" %></dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+</div>

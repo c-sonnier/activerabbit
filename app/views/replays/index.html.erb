@@ -1,0 +1,179 @@
+<% content_for :title, "Session Replays - #{@project.name}" %>
+
+<%
+  def format_duration_ms(ms)
+    return "0s" if ms.nil? || ms == 0
+    total_seconds = ms / 1000
+    minutes = total_seconds / 60
+    seconds = total_seconds % 60
+    minutes > 0 ? "#{minutes}m #{seconds}s" : "#{seconds}s"
+  end
+%>
+
+<div class="mb-8">
+  <div class="flex justify-between items-center">
+    <div>
+      <div class="flex items-center space-x-2 mb-2">
+        <%= link_to dashboard_path, class: "text-gray-500 hover:text-gray-700" do %>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        <% end %>
+        <h1 class="text-2xl font-bold text-gray-900">Session Replays</h1>
+      </div>
+      <p class="text-gray-600">Recorded user sessions for <%= @project.name %></p>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+      </div>
+      <div class="ml-4">
+        <p class="text-sm font-medium text-gray-500">Total Replays</p>
+        <p class="text-2xl font-semibold text-gray-900"><%= @stats[:total] %></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+          </svg>
+        </div>
+      </div>
+      <div class="ml-4">
+        <p class="text-sm font-medium text-gray-500">With Errors</p>
+        <p class="text-2xl font-semibold text-gray-900"><%= @stats[:with_errors] %></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+      </div>
+      <div class="ml-4">
+        <p class="text-sm font-medium text-gray-500">Avg Duration</p>
+        <p class="text-2xl font-semibold text-gray-900"><%= format_duration_ms(@stats[:avg_duration]) %></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Replays List -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200">
+  <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+    <h3 class="text-lg font-medium text-gray-900">Recent Replays</h3>
+
+    <!-- Filters inline -->
+    <%= form_with url: project_replays_path(@project.slug), method: :get, local: true, class: "flex items-center space-x-3" do |f| %>
+      <div class="relative">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <%= f.text_field :q, value: params[:q], placeholder: "Search URL…",
+              class: "w-48 pl-9 pr-3 py-1.5 border border-gray-300 rounded-md text-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+      </div>
+      <%= f.select :environment,
+            options_for_select([["All envs", ""], ["production", "production"], ["staging", "staging"]], params[:environment]),
+            {},
+            class: "border border-gray-300 rounded-md text-sm py-1.5 px-2 focus:border-indigo-500 focus:ring-indigo-500" %>
+      <label class="flex items-center space-x-1.5 text-sm text-gray-600">
+        <%= f.check_box :has_issue, checked: params[:has_issue] == "true", class: "h-3.5 w-3.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" %>
+        <span>Errors only</span>
+      </label>
+      <%= f.submit "Filter", class: "px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 cursor-pointer" %>
+      <% if params[:q].present? || params[:environment].present? || params[:has_issue].present? %>
+        <%= link_to "Clear", project_replays_path(@project.slug), class: "text-sm text-gray-500 hover:text-gray-700" %>
+      <% end %>
+    <% end %>
+  </div>
+
+  <% if @replays.any? %>
+    <div class="divide-y divide-gray-200">
+      <% @replays.each do |replay| %>
+        <div class="px-6 py-4 hover:bg-gray-50">
+          <div class="flex items-center justify-between">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center space-x-3">
+                <% if replay.issue_id.present? %>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-normal bg-red-100 text-red-800">
+                    Error
+                  </span>
+                <% else %>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-normal bg-indigo-100 text-indigo-800">
+                    Session
+                  </span>
+                <% end %>
+                <h4 class="text-sm font-medium text-gray-900 truncate">
+                  <%= link_to (replay.url.present? ? replay.url.truncate(80) : "Unknown URL"), project_replay_path(@project.slug, replay), class: "hover:text-indigo-600" %>
+                </h4>
+              </div>
+              <div class="mt-1 flex items-center space-x-4 text-sm text-gray-500">
+                <span><%= format_duration_ms(replay.duration_ms) %></span>
+                <span>&middot;</span>
+                <% if replay.viewport_width.present? && replay.viewport_height.present? %>
+                  <span><%= replay.viewport_width %>&times;<%= replay.viewport_height %></span>
+                  <span>&middot;</span>
+                <% end %>
+                <% if replay.event_count.present? %>
+                  <span><%= replay.event_count %> events</span>
+                  <span>&middot;</span>
+                <% end %>
+                <span>Last seen <%= time_ago_in_words(replay.created_at) %> ago</span>
+              </div>
+            </div>
+            <div class="flex items-center space-x-3">
+              <% if replay.environment.present? %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium <%= replay.environment == 'production' ? 'bg-green-100 text-green-800' : replay.environment == 'staging' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-700' %>">
+                  <%= replay.environment %>
+                </span>
+              <% end %>
+              <% if replay.compressed_size.present? %>
+                <span class="text-sm text-gray-500"><%= number_to_human_size(replay.compressed_size) %></span>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Pagination -->
+    <div class="px-6 py-4 border-t border-gray-200">
+      <%= paginate @replays if respond_to?(:paginate) %>
+    </div>
+  <% else %>
+    <div class="px-6 py-12 text-center">
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <h3 class="mt-2 text-sm font-medium text-gray-900">No session replays found</h3>
+      <p class="mt-1 text-sm text-gray-500">
+        <% if params[:q].present? || params[:environment].present? || params[:has_issue].present? %>
+          No replays match your current filters.
+        <% else %>
+          Session replays will appear here once recording is enabled.
+        <% end %>
+      </p>
+    </div>
+  <% end %>
+</div>

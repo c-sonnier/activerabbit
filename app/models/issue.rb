@@ -4,6 +4,7 @@ class Issue < ApplicationRecord
 
   belongs_to :project
   has_many :events, dependent: :destroy
+  has_many :replays
 
   validates :fingerprint, presence: true
   validates_uniqueness_to_tenant :fingerprint, scope: :project_id

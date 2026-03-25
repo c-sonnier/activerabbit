@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Replay Test v1</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/rrweb@1.1.3/dist/rrweb.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/rrweb@1.1.3/dist/rrweb.min.js"></script>
+  <style>
+    body { margin: 20px; font-family: sans-serif; background: #f0f0f0; }
+    #player { border: 2px solid #ccc; background: #fff; }
+    .replayer-wrapper iframe { border: none !important; }
+    button { margin: 10px 5px; padding: 8px 16px; cursor: pointer; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h2>Replay Test (rrweb 1.1.3)</h2>
+  <p id="status">Loading events...</p>
+  <div id="player"></div>
+  <br>
+  <button onclick="window._rp && window._rp.play()">Play</button>
+  <button onclick="window._rp && window._rp.pause()">Pause</button>
+  <script>
+    fetch('/replay_events.json')
+      .then(function(r) { return r.json(); })
+      .then(function(events) {
+        document.getElementById('status').textContent = 'Loaded ' + events.length + ' events.';
+        var container = document.getElementById('player');
+        try {
+          window._rp = new rrweb.Replayer(events, {
+            root: container,
+            skipInactive: true,
+            speed: 4
+          });
+          document.getElementById('status').textContent = 'Ready! Click Play. (' + events.length + ' events)';
+        } catch(e) {
+          document.getElementById('status').textContent = 'Error: ' + e.message;
+          console.error(e);
+        }
+      })
+      .catch(function(err) {
+        document.getElementById('status').textContent = 'Fetch error: ' + err.message;
+      });
+  </script>
+</body>
+</html>
