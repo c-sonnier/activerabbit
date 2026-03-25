@@ -59,6 +59,11 @@ Rails.application.routes.draw do
   get "support", to: "integrations#support", as: :support
   get "integrations/discord", to: "integrations#discord", as: :discord_integration
 
+  # CLI landing page and script downloads
+  get "cli", to: "cli#show", as: :cli
+  get "cli/install.sh", to: "cli#install_script", as: :cli_install_script
+  get "cli/activerabbit", to: "cli#cli_script", as: :cli_script
+
   # GitHub App installation callback and webhook
   get  "github/app/callback",   to: "github_app#callback"
   post "github/app/webhook",    to: "github_app#webhook"
@@ -89,8 +94,9 @@ Rails.application.routes.draw do
   get "projects/:project_id/performance/sql_fingerprints/:id", to: "performance#sql_fingerprint", as: "project_performance_sql_fingerprint"
   post "projects/:project_id/performance/sql_fingerprints/:id/create_pr", to: "performance#create_n_plus_one_pr", as: "project_performance_create_n_plus_one_pr"
 
-  # Top-level Logs route (no /admin)
+  # Top-level Logs routes (no /admin)
   get "logs", to: "logs#index", as: "logs"
+  get "logs/:id", to: "logs#show", as: "log_entry"
 
   # Top-level Uptime routes (no /admin)
   get "uptime", to: "uptime/monitors#index", as: "uptime_index"
@@ -212,6 +218,11 @@ Rails.application.routes.draw do
 
       resources :deploys, only: [:create]
 
+      resources :replay_sessions, only: [:create]
+
+      # Log ingestion endpoint
+      post "logs", to: "logs#create"
+
       # CLI API endpoints
       namespace :cli do
         # List all apps
@@ -292,6 +303,10 @@ Rails.application.routes.draw do
   get ":project_slug/uptime", to: "uptime/monitors#index", as: "project_slug_uptime"
   get ":project_slug/uptime/:id", to: "uptime/monitors#show", as: "project_slug_uptime_monitor"
   get ":project_slug/settings", to: "project_settings#show", as: "project_slug_settings"
+  get ":project_slug/logs", to: "logs#index", as: "project_slug_logs"
+  get ":project_slug/replays", to: "replays#index", as: "project_replays"
+  get ":project_slug/replays/:id", to: "replays#show", as: "project_replay"
+  get ":project_slug/replays/:id/data", to: "replays#data", as: "project_replay_data"
 
   # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest

@@ -2,32 +2,77 @@
   Logs
 <% end %>
 
-<div class="bg-white rounded-lg shadow">
-  <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-    <h3 class="text-lg font-medium text-gray-900">System Logs</h3>
-    <div class="flex space-x-2">
-      <button class="px-3 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">All</button>
-      <button class="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200">Errors</button>
-      <button class="px-3 py-1 text-xs font-medium text-yellow-700 bg-yellow-100 rounded-md hover:bg-yellow-200">Warnings</button>
-      <button class="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200">Info</button>
+<div class="space-y-4" data-controller="log-search log-stream" data-log-stream-project-id-value="<%= @project&.id || '' %>">
+  <!-- Search & Filters -->
+  <div class="bg-white rounded-lg shadow px-6 py-4">
+    <div class="flex items-center gap-4">
+      <%= form_tag(request.path, method: :get, class: "flex-1 flex items-center gap-3", data: { "log-search-target": "form" }) do %>
+        <div class="flex-1 relative">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <input type="text" name="q" value="<%= params[:q] %>" placeholder="Search logs... (e.g. level:error source:StripeService payment)"
+                 class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                 data-log-search-target="query"
+                 data-action="keydown.enter->log-search#search">
+        </div>
+
+        <select name="level" class="border border-gray-300 rounded-lg text-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500" data-action="change->log-search#search">
+          <option value="">All Levels</option>
+          <% LogEntry::LEVELS.each do |name, _value| %>
+            <option value="<%= name %>" <%= 'selected' if params[:level] == name.to_s %>><%= name.to_s.upcase %></option>
+          <% end %>
+        </select>
+
+        <select name="range" class="border border-gray-300 rounded-lg text-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500" data-action="change->log-search#search">
+          <option value="1h" <%= 'selected' if params[:range] == '1h' %>>Last 1h</option>
+          <option value="6h" <%= 'selected' if params[:range] == '6h' %>>Last 6h</option>
+          <option value="24h" <%= 'selected' if params[:range] == '24h' || params[:range].blank? %>>Last 24h</option>
+          <option value="7d" <%= 'selected' if params[:range] == '7d' %>>Last 7d</option>
+          <option value="30d" <%= 'selected' if params[:range] == '30d' %>>Last 30d</option>
+        </select>
+
+        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700">
+          Search
+        </button>
+      <% end %>
+
+      <!-- Live tail toggle -->
+      <% if @project %>
+        <button class="flex items-center gap-2 px-3 py-2 text-sm border rounded-lg transition-colors"
+                data-log-stream-target="toggleBtn"
+                data-action="click->log-stream#toggle"
+                data-log-stream-active="false">
+          <span class="w-2 h-2 rounded-full bg-gray-400" data-log-stream-target="indicator"></span>
+          <span data-log-stream-target="label">Live Tail</span>
+        </button>
+      <% end %>
     </div>
   </div>
-  <div class="p-6">
-    <div class="space-y-3">
-      <% @logs.each do |log| %>
-        <div class="flex items-start space-x-3 p-3 rounded-lg border border-gray-200">
-          <div class="flex-shrink-0">
-            <div class="w-2 h-2 rounded-full mt-2 <%= log[:level] == 'error' ? 'bg-red-400' : log[:level] == 'warn' ? 'bg-yellow-400' : 'bg-blue-400' %>"></div>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between">
-              <p class="text-sm font-medium text-gray-900"><%= log[:message] %></p>
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= log[:level] == 'error' ? 'bg-red-100 text-red-800' : log[:level] == 'warn' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800' %>">
-                <%= log[:level].upcase %>
-              </span>
-            </div>
-            <p class="text-sm text-gray-500"><%= time_ago_in_words(log[:timestamp]) %> ago</p>
-          </div>
+
+  <!-- Results count -->
+  <div class="flex items-center justify-between px-1">
+    <p class="text-sm text-gray-500">
+      Showing <%= @logs.size %><%= " of #{@total_count}" if @total_count > @logs.size %> log entries
+    </p>
+  </div>
+
+  <!-- Log entries -->
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div id="log-entries" class="divide-y divide-gray-100" data-log-stream-target="entries">
+      <% if @logs.any? %>
+        <% @logs.each do |log_entry| %>
+          <%= render "logs/log_entry_row", log_entry: log_entry %>
+        <% end %>
+      <% else %>
+        <div class="px-6 py-12 text-center">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No log entries found</h3>
+          <p class="mt-1 text-sm text-gray-500">
+            Start sending logs via <code class="bg-gray-100 px-1 rounded">POST /api/v1/logs</code>
+          </p>
         </div>
       <% end %>
     </div>

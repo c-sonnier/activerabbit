@@ -157,5 +157,9 @@
         <p class="text-sm text-gray-500">No related issues found.</p>
       <% end %>
     </div>
+
+    <%= render "issues/replays_card", issue: @issue %>
+
+    <%= render "issues/logs_tab", issue: @issue, project: @project %>
   </div>
 </div>

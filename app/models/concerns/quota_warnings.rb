@@ -30,7 +30,7 @@ module QuotaWarnings
         usage_percentage(resource_type) >= 80
       else
         # Check if any resource is over 80%
-        %i[events ai_summaries pull_requests uptime_monitors status_pages projects].any? do |type|
+        %i[events log_entries ai_summaries pull_requests uptime_monitors status_pages projects].any? do |type|
           usage_percentage(type) >= 80
         end
       end
@@ -40,7 +40,7 @@ module QuotaWarnings
     def resources_with_warnings
       warnings = []
 
-      %i[events ai_summaries pull_requests uptime_monitors status_pages projects].each do |resource_type|
+      %i[events log_entries ai_summaries pull_requests uptime_monitors status_pages projects].each do |resource_type|
         if show_quota_warning?(resource_type)
           warnings << {
             resource: resource_type,
@@ -92,6 +92,10 @@ module QuotaWarnings
 
     def pull_requests_used
       pull_requests_used_in_period
+    end
+
+    def log_entries_used
+      log_entries_used_in_period
     end
 
     def uptime_monitors_used

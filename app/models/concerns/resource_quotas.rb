@@ -29,6 +29,7 @@ module ResourceQuotas
   PLAN_QUOTAS = {
     free: {
       events: 5_000,
+      log_entries: 10_000,
       ai_summaries: 0,
       pull_requests: 0,
       uptime_monitors: 1,
@@ -40,6 +41,7 @@ module ResourceQuotas
     },
     trial: {
       events: 50_000,
+      log_entries: 100_000,
       ai_summaries: 20,
       pull_requests: 20,
       uptime_monitors: 20,
@@ -50,6 +52,7 @@ module ResourceQuotas
     },
     team: {
       events: 50_000,
+      log_entries: 100_000,
       ai_summaries: 20,
       pull_requests: 20,
       uptime_monitors: 20,
@@ -60,6 +63,7 @@ module ResourceQuotas
     },
     business: {
       events: 100_000,
+      log_entries: 500_000,
       ai_summaries: 100,
       pull_requests: 250,
       uptime_monitors: 5,
@@ -95,6 +99,22 @@ module ResourceQuotas
 
   def status_pages_quota
     quota_for_resource(:status_pages)
+  end
+
+  def log_entries_quota
+    quota_for_resource(:log_entries)
+  end
+
+  def replays_quota_remaining
+    replay_quota - cached_replays_used
+  end
+
+  def replay_quota_exceeded?
+    cached_replays_used >= replay_quota
+  end
+
+  def increment_replay_usage!
+    increment!(:cached_replays_used)
   end
 
   def projects_quota
@@ -211,6 +231,14 @@ module ResourceQuotas
     cached_projects_used || 0
   end
 
+  def log_entries_used_in_period
+    cached_log_entries_used || 0
+  end
+
+  def replays_used_in_period
+    cached_replays_used || 0
+  end
+
   # Check if usage data has been cached yet
   def usage_data_available?
     usage_cached_at.present?
@@ -270,7 +298,7 @@ module ResourceQuotas
       plan_key = effective_plan_key
       plan_quotas = PLAN_QUOTAS[plan_key] || PLAN_QUOTAS[DEFAULT_PLAN]
 
-      %i[events ai_summaries pull_requests uptime_monitors status_pages projects].each_with_object({}) do |resource, hash|
+      %i[events log_entries ai_summaries pull_requests uptime_monitors status_pages projects].each_with_object({}) do |resource, hash|
         quota = plan_quotas[resource] || 0
         used = usage_for_resource(resource)
 
@@ -314,6 +342,8 @@ module ResourceQuotas
       status_pages_used
     when :projects
       projects_used
+    when :log_entries
+      log_entries_used_in_period
     else
       0
     end
@@ -337,6 +367,8 @@ module ResourceQuotas
       status_pages_quota
     when :projects
       projects_quota
+    when :log_entries
+      log_entries_quota
     else
       0
     end

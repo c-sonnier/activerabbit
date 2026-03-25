@@ -54,28 +54,23 @@ class ApplicationController < ActionController::Base
   end
 
   def after_sign_in_path_for(resource)
-    begin
+    ActsAsTenant.without_tenant do
       if resource.needs_onboarding?
         new_project_path
       else
         stored_location_for(resource) || default_project_path_for(resource)
       end
-    rescue ActsAsTenant::Errors::NoTenantSet
-      has_projects = ActsAsTenant.without_tenant { resource.account&.projects&.exists? }
-      if has_projects
-        stored_location_for(resource) || default_project_path_for(resource)
-      else
-        stored_location_for(resource) || new_project_path
-      end
     end
   end
 
   def default_project_path_for(resource)
-    projects = ActsAsTenant.without_tenant { resource.account&.projects }
-    last_slug = cookies[:last_project_slug]
-    project = projects&.find_by(slug: last_slug) if last_slug.present?
-    project ||= projects&.order(:name)&.first
-    project ? project_slug_errors_path(project.slug) : dashboard_path
+    ActsAsTenant.without_tenant do
+      projects = resource.account&.projects
+      last_slug = cookies[:last_project_slug]
+      project = projects&.find_by(slug: last_slug) if last_slug.present?
+      project ||= projects&.order(:name)&.first
+      project ? project_slug_errors_path(project.slug) : dashboard_path
+    end
   end
 
   def current_project

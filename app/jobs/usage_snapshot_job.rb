@@ -64,6 +64,11 @@ class UsageSnapshotJob < ApplicationJob
                                   .where("settings->>'status_page_enabled' = 'true'")
                                   .count
 
+      # Count log entries in billing period
+      log_entries_count = LogEntry.where(account_id: account.id)
+                                  .where(occurred_at: start_at..end_at)
+                                  .count
+
       # Count projects (current count)
       projects_count = Project.where(account_id: account.id).count
 
@@ -75,6 +80,7 @@ class UsageSnapshotJob < ApplicationJob
         cached_pull_requests_used: pull_requests_count,
         cached_uptime_monitors_used: uptime_monitors_count,
         cached_status_pages_used: status_pages_count,
+        cached_log_entries_used: log_entries_count,
         cached_projects_used: projects_count,
         usage_cached_at: Time.current
       )
