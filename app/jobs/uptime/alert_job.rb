@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "ostruct"
+
 module Uptime
   class AlertJob
     include Sidekiq::Job
@@ -19,21 +21,22 @@ module Uptime
       return unless lock_acquired
 
       account = monitor.account
-      project = monitor.project
-
-      if project
-        uptime_prefs = project.settings&.dig("notifications", "uptime") || {}
-        case alert_type
-        when "down"
-          return if uptime_prefs["downtime"] == false
-        when "up"
-          return if uptime_prefs["recovery"] == false
-        when "ssl_expiry"
-          return if uptime_prefs["ssl_expiry"] == false
-        end
-      end
 
       ActsAsTenant.with_tenant(account) do
+        project = monitor.project
+
+        if project
+          uptime_prefs = project.settings&.dig("notifications", "uptime") || {}
+          case alert_type
+          when "down"
+            return if uptime_prefs["downtime"] == false
+          when "up"
+            return if uptime_prefs["recovery"] == false
+          when "ssl_expiry"
+            return if uptime_prefs["ssl_expiry"] == false
+          end
+        end
+
         send_email_alert(account, project, monitor, alert_type, payload)
 
         if project&.notify_via_slack?
