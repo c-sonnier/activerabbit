@@ -1,11 +1,11 @@
 <% content_for :title, "Sign Up" %>
 <% content_for :page_title, "Create your account" %>
-<% content_for :page_subtitle, "Start your journey with ActiveRabbit today" %>
+<% content_for :page_subtitle, "Start your journey with ActiveRabbit" %>
 <% content_for :layout, "auth" %>
 
-<div class="mt-6 flex flex-col gap-4 w-full max-w-sm mx-auto">
+<div class="mt-6 flex flex-col gap-3 w-full max-w-sm mx-auto">
   <%= link_to user_github_omniauth_authorize_path,
-      class: "flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white font-semibold hover:bg-gray-800 transition" do %>
+      class: "flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/20 bg-transparent text-white font-medium hover:bg-white/5 transition duration-200" do %>
     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
       <path fill-rule="evenodd" clip-rule="evenodd" d="M12 0C5.372 0 0 5.372 0 12c0 5.303 3.438 9.8 8.205 11.387.6.11.82-.26.82-.577v-2.234c-3.338.726-4.033-1.61-4.033-1.61-.546-1.387-1.334-1.756-1.334-1.756-1.09-.745.083-.73.083-.73 1.205.084 1.84 1.238 1.84 1.238 1.07 1.834 2.807 1.304 3.492.997.108-.775.418-1.305.762-1.605-2.665-.305-5.466-1.332-5.466-5.93 0-1.31.468-2.382 1.235-3.222-.124-.304-.535-1.527.117-3.176 0 0 1.008-.323 3.3 1.23a11.45 11.45 0 013.003-.404c1.02.005 2.046.138 3.003.404 2.29-1.554 3.297-1.23 3.297-1.23.653 1.649.242 2.872.118 3.176.77.84 1.234 1.912 1.234 3.222 0 4.61-2.803 5.624-5.475 5.921.43.37.815 1.096.815 2.21v3.277c0 .32.218.694.825.576C20.565 21.796 24 17.3 24 12c0-6.628-5.372-12-12-12z"/>
     </svg>
@@ -13,7 +13,7 @@
   <% end %>
 
   <%= link_to user_google_oauth2_omniauth_authorize_path,
-      class: "flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 font-semibold hover:bg-gray-50 transition" do %>
+      class: "flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/20 bg-transparent text-white font-medium hover:bg-white/5 transition duration-200" do %>
     <svg class="w-5 h-5" viewBox="0 0 533.5 544.3">
       <path fill="#4285F4" d="M533.5 278.4c0-18.3-1.6-36-4.6-53.3H272v100.9h146.9c-6.3 33.9-25.2 62.6-53.8 81.8v68.1h87.2c51.1-47.1 80.2-116.5 80.2-197.5z"/>
       <path fill="#34A853" d="M272 544.3c72.6 0 133.5-24.1 178-65.3l-87.2-68.1c-24.2 16.2-55.1 25.8-90.8 25.8-69.7 0-128.8-47-150-110.1H32.1v69.2c44.2 87.3 134.9 149.5 239.9 149.5z"/>
@@ -28,18 +28,18 @@
 <div class="mt-6">
   <div class="relative">
     <div class="absolute inset-0 flex items-center">
-      <div class="w-full border-t border-gray-300"></div>
+      <div class="w-full border-t border-gray-800"></div>
     </div>
     <div class="relative flex justify-center text-sm">
-      <span class="px-2 bg-white text-gray-500">or</span>
+      <span class="px-3 bg-black text-gray-500">or</span>
     </div>
   </div>
 </div>
 
-<%= form_for(resource, as: resource_name, url: registration_path(resource_name), local: true, html: { class: "space-y-6" }) do |f| %>
+<%= form_for(resource, as: resource_name, url: registration_path(resource_name), local: true, html: { class: "mt-6 space-y-5" }) do |f| %>
   <!-- Error Messages -->
   <% if resource.errors.any? %>
-    <div class="rounded-xl bg-red-50 p-4 border border-red-200">
+    <div class="rounded-xl bg-red-950/50 p-4 border border-red-800">
       <div class="flex">
         <div class="flex-shrink-0">
           <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -47,10 +47,10 @@
           </svg>
         </div>
         <div class="ml-3">
-          <h3 class="text-sm font-medium text-red-800">
+          <h3 class="text-sm font-medium text-red-400">
             <%= pluralize(resource.errors.count, "error") %> prohibited this account from being saved:
           </h3>
-          <div class="mt-2 text-sm text-red-700">
+          <div class="mt-2 text-sm text-red-400/80">
             <ul class="list-disc pl-5 space-y-1">
               <% resource.errors.full_messages.each do |message| %>
                 <li><%= message %></li>
@@ -64,95 +64,57 @@
 
   <!-- Email Field -->
   <div>
-    <%= f.label :email, class: "block text-sm font-medium text-gray-700 mb-2" %>
-    <div class="relative">
-      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-        </svg>
-      </div>
-      <%= f.email_field :email,
-            autofocus: true,
-            autocomplete: "email",
-            placeholder: "Enter your email address",
-            class: "block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200" %>
-    </div>
+    <%= f.label :email, class: "block text-sm font-medium text-gray-400 mb-2" %>
+    <%= f.email_field :email,
+          autofocus: true,
+          autocomplete: "email",
+          placeholder: "you@example.com",
+          class: "block w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:border-gray-700 transition duration-200" %>
   </div>
 
   <!-- Password Field -->
   <div>
     <div class="flex justify-between items-center mb-2">
-      <%= f.label :password, class: "block text-sm font-medium text-gray-700" %>
+      <%= f.label :password, class: "block text-sm font-medium text-gray-400" %>
       <% if @minimum_password_length %>
-        <span class="text-xs text-gray-500">
-          <svg class="inline w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
+        <span class="text-xs text-gray-600">
           <%= @minimum_password_length %> characters minimum
         </span>
       <% end %>
     </div>
-    <div class="relative">
-      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-        </svg>
-      </div>
-      <%= f.password_field :password,
-            autocomplete: "new-password",
-            placeholder: "Create a secure password",
-            class: "block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200" %>
-    </div>
+    <%= f.password_field :password,
+          autocomplete: "new-password",
+          placeholder: "Create a password",
+          class: "block w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:border-gray-700 transition duration-200" %>
   </div>
 
   <!-- Password Confirmation Field -->
   <div>
-    <%= f.label :password_confirmation, "Confirm Password", class: "block text-sm font-medium text-gray-700 mb-2" %>
-    <div class="relative">
-      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      </div>
-      <%= f.password_field :password_confirmation,
-            autocomplete: "new-password",
-            placeholder: "Confirm your password",
-            class: "block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200" %>
-    </div>
+    <%= f.label :password_confirmation, "Confirm password", class: "block text-sm font-medium text-gray-400 mb-2" %>
+    <%= f.password_field :password_confirmation,
+          autocomplete: "new-password",
+          placeholder: "Confirm your password",
+          class: "block w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:border-gray-700 transition duration-200" %>
   </div>
 
   <!-- Terms Notice -->
-  <div class="text-xs text-gray-500 bg-gray-50 p-3 rounded-xl border border-gray-200">
-    <svg class="inline w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-    </svg>
+  <div class="text-xs text-gray-500">
     By creating an account, you agree to our
-    <a href="#" class="text-indigo-600 hover:text-indigo-500 font-medium">Terms of Service</a>
+    <a href="#" class="text-gray-400 hover:text-white transition-colors">Terms of Service</a>
     and
-    <a href="#" class="text-indigo-600 hover:text-indigo-500 font-medium">Privacy Policy</a>.
+    <a href="#" class="text-gray-400 hover:text-white transition-colors">Privacy Policy</a>.
   </div>
 
   <!-- Submit Button -->
   <div>
-    <%= f.submit "Create Account",
-          class: "group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5" %>
+    <%= f.submit "Create account",
+          class: "w-full flex justify-center py-3 px-4 text-sm font-semibold rounded-xl text-gray-950 bg-white hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-700 transition duration-200 cursor-pointer" %>
   </div>
 <% end %>
 
-<!-- Divider -->
-<div class="mt-6">
-  <div class="relative">
-    <div class="absolute inset-0 flex items-center">
-      <div class="w-full border-t border-gray-300"></div>
-    </div>
-    <div class="relative flex justify-center text-sm">
-      <span class="px-2 bg-white text-gray-500">Already have an account?</span>
-    </div>
-  </div>
-</div>
-
 <!-- Sign In Link -->
-<div class="mt-6">
-  <%= link_to "Sign in to your account", new_session_path(resource_name),
-        class: "group relative w-full flex justify-center py-3 px-4 border border-gray-300 text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 shadow-sm hover:shadow-md" %>
+<div class="mt-8 text-center">
+  <span class="text-sm text-gray-500">Already have an account?</span>
+  <%= link_to "Sign in", new_session_path(resource_name),
+        class: "text-sm font-semibold text-white hover:text-gray-300 transition-colors ml-1" %>
 </div>
