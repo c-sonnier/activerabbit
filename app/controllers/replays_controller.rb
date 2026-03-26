@@ -8,18 +8,17 @@ class ReplaysController < ApplicationController
 
     # Filtering
     @replays = @replays.where(environment: params[:environment]) if params[:environment].present?
-    @replays = @replays.with_issue if params[:has_issue] == "true"
+    @replays = @replays.with_issue if params[:has_issue].in?(%w[true 1])
 
     # Search by URL
     @replays = @replays.where("url ILIKE ?", "%#{params[:q]}%") if params[:q].present?
 
     @replays = @replays.page(params[:page]).per(25)
 
-    @stats = {
-      total: @project.replays.ready.count,
-      with_errors: @project.replays.ready.with_issue.count,
-      avg_duration: @project.replays.ready.average(:duration_ms)&.to_i || 0
-    }
+    stats_row = @project.replays.ready
+      .select("COUNT(*) AS total, COUNT(issue_id) AS with_errors, COALESCE(AVG(CASE WHEN duration_ms > 0 AND duration_ms < 3600000 THEN duration_ms END), 0)::integer AS avg_duration")
+      .take
+    @stats = { total: stats_row.total, with_errors: stats_row.with_errors, avg_duration: stats_row.avg_duration }
   end
 
   def show
@@ -30,9 +29,8 @@ class ReplaysController < ApplicationController
       ReplayStorage.client.presigned_url(key: @replay.storage_key) rescue nil
     end
 
-    ready = @project.replays.ready.recent
-    @prev_replay = ready.where("created_at > ?", @replay.created_at).last
-    @next_replay = ready.where("created_at < ?", @replay.created_at).first
+    @prev_replay = @project.replays.ready.where("created_at > ?", @replay.created_at).order(created_at: :asc).limit(1).first
+    @next_replay = @project.replays.ready.where("created_at < ?", @replay.created_at).order(created_at: :desc).limit(1).first
   end
 
   # Serve compressed replay data from local storage

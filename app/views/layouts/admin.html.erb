@@ -181,7 +181,7 @@
           <%= link_to base_performance_path,
               class: "sidebar-nav-item group relative flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(base_performance_path)}" do %>
             <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
             </svg>
             <span data-sidebar-target="navText">Performance</span>
             <span class="sidebar-tooltip">Performance</span>
@@ -190,7 +190,7 @@
           <%= link_to uptime_index_path,
               class: "sidebar-nav-item group relative flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if controller_name == 'monitors' && controller.class.module_parent_name == 'Uptime'}" do %>
             <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
             </svg>
             <span data-sidebar-target="navText">Uptime</span>
             <span class="sidebar-tooltip">Uptime Monitoring</span>
@@ -259,10 +259,20 @@
           <%= link_to usage_path,
               class: "sidebar-nav-item group relative flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(usage_path)}" do %>
             <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
             </svg>
             <span data-sidebar-target="navText">Usage</span>
             <span class="sidebar-tooltip">Usage</span>
+          <% end %>
+
+          <%= link_to plan_path,
+              class: "sidebar-nav-item group relative flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(plan_path)}" do %>
+            <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+            </svg>
+            <span data-sidebar-target="navText">Subscribe</span>
+            <span class="sidebar-tooltip">Subscribe</span>
           <% end %>
 
           <%# Super Admin: All Accounts link %>
@@ -362,7 +372,7 @@
 
         <!-- Top Navigation -->
         <header class="bg-white shadow-sm border-b border-gray-200">
-          <div class="flex items-center px-3 sm:px-6 py-3 gap-2 sm:gap-4 flex-wrap">
+          <div class="flex items-center px-2 sm:px-4 py-1.5 gap-2 sm:gap-3">
             <!-- Mobile hamburger -->
             <button class="lg:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                     data-action="click->sidebar#openMobile">
@@ -608,9 +618,7 @@
 
             <!-- User Menu -->
             <div class="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
-              <!-- Subscription CTA -->
-              <%= link_to "Subscription", plan_path,
-                  class: "hidden sm:inline-flex px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700" %>
+              <%# Subscribe button hidden — available in sidebar %>
 
               <!-- User Avatar and Menu -->
               <div class="relative" data-controller="dropdown">

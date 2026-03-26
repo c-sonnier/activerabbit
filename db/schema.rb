@@ -10,9 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_24_100005) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_25_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+  enable_extension "pg_trgm"
 
   create_table "accounts", force: :cascade do |t|
     t.string "name", null: false
@@ -314,6 +315,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_24_100005) do
     t.index ["account_id"], name: "index_log_entries_on_account_id"
     t.index ["context"], name: "index_log_entries_on_context", using: :gin
     t.index ["issue_id", "occurred_at"], name: "index_log_entries_on_issue_id_and_occurred_at"
+    t.index ["message"], name: "index_log_entries_on_message_trgm", opclass: :gin_trgm_ops, using: :gin
     t.index ["params"], name: "index_log_entries_on_params", using: :gin
     t.index ["project_id", "level", "occurred_at"], name: "index_log_entries_on_project_id_and_level_and_occurred_at"
     t.index ["project_id", "occurred_at"], name: "index_log_entries_on_project_id_and_occurred_at"
@@ -592,6 +594,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_24_100005) do
     t.datetime "updated_at", null: false
     t.index ["account_id", "project_id", "created_at"], name: "idx_replays_account_project_created"
     t.index ["issue_id"], name: "index_replays_on_issue_id"
+    t.index ["project_id", "status", "environment", "created_at"], name: "idx_replays_project_status_env_created"
     t.index ["replay_id"], name: "index_replays_on_replay_id", unique: true
     t.index ["session_id"], name: "index_replays_on_session_id"
     t.index ["status", "retention_until"], name: "idx_replays_status_retention"

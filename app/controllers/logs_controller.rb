@@ -28,8 +28,8 @@ class LogsController < ApplicationController
     time_range = parse_time_range(params[:range] || "24h")
     scope = scope.where("occurred_at > ?", time_range.ago) if time_range
 
-    @logs = scope.reverse_chronological.limit(200)
     @total_count = scope.count
+    @logs = scope.reverse_chronological.page(params[:page]).per(50)
 
     respond_to do |format|
       format.html

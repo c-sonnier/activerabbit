@@ -80,22 +80,6 @@
             </div>
           <% end %>
 
-          <% [
-            { key: "critical", label: "Critical", count: @critical_count, icon_bg: "bg-red-100", dot: "bg-red-500" },
-            { key: "high",     label: "High",     count: @high_count,     icon_bg: "bg-orange-100", dot: "bg-orange-500" },
-            { key: "medium",   label: "Medium",   count: @medium_count,   icon_bg: "bg-yellow-100", dot: "bg-yellow-400" },
-            { key: "low",      label: "Low",      count: @low_count,      icon_bg: "bg-gray-100", dot: "bg-gray-300" }
-          ].each do |s| %>
-            <%= link_to errors_index_path(filter: s[:key]), class: "flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0 min-w-[7.5rem]" do %>
-              <div class="w-8 h-8 <%= s[:icon_bg] %> rounded-full flex items-center justify-center shrink-0">
-                <div class="w-2.5 h-2.5 rounded-full <%= s[:dot] %>"></div>
-              </div>
-              <div class="ml-3 min-w-0">
-                <p class="text-xs text-gray-500 whitespace-nowrap"><%= s[:label] %></p>
-                <p class="text-lg font-semibold text-gray-900"><%= number_with_delimiter(s[:count]) %></p>
-              </div>
-            <% end %>
-          <% end %>
         </div>
 
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
@@ -182,10 +166,10 @@
                 <span>Error & Action</span>
               <% end %>
             </th>
-            <th class="w-[8%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th class="w-[8%] pl-6 pr-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <%= sort_link(@q, :severity_order, "Severity", class: "inline-flex items-center") %>
             </th>
-            <th class="w-[10%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th class="w-[10%] pl-8 pr-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <%= sort_link(@q, :last_seen_at, "Last Seen", class: "inline-flex items-center") %>
             </th>
             <th class="w-[7%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -245,7 +229,7 @@
               </td>
 
               <!-- Severity -->
-              <td class="px-4 py-4">
+              <td class="pl-6 pr-4 py-4">
                 <% sev = (issue.severity || 'low').to_s.downcase %>
                 <% sev_badge = {
                   'critical' => 'bg-red-100 text-red-700 border-red-200',
@@ -261,7 +245,7 @@
               </td>
 
               <!-- Last Seen -->
-              <td class="px-4 py-4">
+              <td class="pl-8 pr-4 py-4">
                 <div class="relative group">
                   <div class="text-sm text-gray-900 cursor-default" title="<%= time_ago_in_words(issue.last_seen_at).gsub('about ', '') %> ago"><%= last_seen_short(issue.last_seen_at) %></div>
                   <div class="absolute bottom-full left-0 mb-2 px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-medium whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 shadow-lg z-50 pointer-events-none">

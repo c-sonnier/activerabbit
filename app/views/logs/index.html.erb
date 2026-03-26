@@ -2,10 +2,11 @@
   Logs
 <% end %>
 
-<div class="space-y-4" data-controller="log-search log-stream" data-log-stream-project-id-value="<%= @project&.id || '' %>">
+<div class="space-y-4 pb-20" data-controller="log-search log-stream" data-log-stream-project-id-value="<%= @project&.id || '' %>">
   <!-- Search & Filters -->
-  <div class="bg-white rounded-lg shadow px-6 py-4">
+  <div class="bg-white shadow-lg px-6 py-3 fixed bottom-0 right-0 z-40 border-t border-gray-200" style="left: 0;" id="logs-search-bar">
     <div class="flex items-center gap-4">
+      <span class="text-xs text-gray-400 whitespace-nowrap"><%= number_with_delimiter(@total_count) %> logs</span>
       <%= form_tag(request.path, method: :get, class: "flex-1 flex items-center gap-3", data: { "log-search-target": "form" }) do %>
         <div class="flex-1 relative">
           <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -50,31 +51,66 @@
     </div>
   </div>
 
-  <!-- Results count -->
-  <div class="flex items-center justify-between px-1">
-    <p class="text-sm text-gray-500">
-      Showing <%= @logs.size %><%= " of #{@total_count}" if @total_count > @logs.size %> log entries
-    </p>
-  </div>
-
   <!-- Log entries -->
-  <div class="bg-white rounded-lg shadow overflow-hidden">
-    <div id="log-entries" class="divide-y divide-gray-100" data-log-stream-target="entries">
-      <% if @logs.any? %>
-        <% @logs.each do |log_entry| %>
-          <%= render "logs/log_entry_row", log_entry: log_entry %>
-        <% end %>
-      <% else %>
-        <div class="px-6 py-12 text-center">
-          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-          </svg>
-          <h3 class="mt-2 text-sm font-medium text-gray-900">No log entries found</h3>
-          <p class="mt-1 text-sm text-gray-500">
-            Start sending logs via <code class="bg-gray-100 px-1 rounded">POST /api/v1/logs</code>
-          </p>
-        </div>
+  <div class="bg-white rounded-lg shadow">
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+      <h3 class="text-lg font-medium text-gray-900">Log Entries</h3>
+      <%= link_to onboarding_install_gem_path(project_id: @project.id), class: "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium" do %>
+        Install SDK
       <% end %>
     </div>
+    <div class="overflow-hidden">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-4"></th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trace</th>
+          </tr>
+        </thead>
+        <tbody id="log-entries" class="bg-white divide-y divide-gray-200" data-log-stream-target="entries">
+          <% if @logs.any? %>
+            <% @logs.each do |log_entry| %>
+              <%= render "logs/log_entry_row", log_entry: log_entry %>
+            <% end %>
+          <% else %>
+            <tr>
+              <td colspan="6" class="px-6 py-12 text-center">
+                <div class="mx-auto">
+                  <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                  </svg>
+                  <h3 class="text-lg font-medium text-gray-900 mb-2">No log entries found</h3>
+                  <p class="text-gray-500">Start sending logs via <code class="bg-gray-100 px-1 rounded">POST /api/v1/logs</code></p>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <% if @logs.respond_to?(:total_pages) && @logs.total_pages > 1 %>
+      <div class="px-6 py-4 border-t border-gray-200">
+        <%= paginate @logs %>
+      </div>
+    <% end %>
   </div>
 </div>
+
+<script>
+(function() {
+  var bar = document.getElementById('logs-search-bar');
+  var content = document.querySelector('[data-sidebar-target="content"]');
+  if (!bar || !content) return;
+  function sync() {
+    bar.style.left = content.getBoundingClientRect().left + 'px';
+  }
+  sync();
+  var observer = new MutationObserver(sync);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  window.addEventListener('resize', sync);
+})();
+</script>

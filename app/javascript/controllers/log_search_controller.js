@@ -8,12 +8,11 @@ export default class extends Controller {
   }
 
   toggleDetail(event) {
-    const row = event.currentTarget
-    const entryId = row.dataset.logEntryId
-    const detail = row.querySelector(`[data-log-detail-id="${entryId}"]`)
-
-    if (detail) {
-      detail.classList.toggle("hidden")
+    const tr = event.currentTarget
+    if (!tr || tr.tagName !== "TR") return
+    const next = tr.nextElementSibling
+    if (next && next.hasAttribute("data-log-detail-id")) {
+      next.classList.toggle("hidden")
     }
   }
 }
