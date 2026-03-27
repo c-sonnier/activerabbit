@@ -7,6 +7,7 @@ class CheckInsController < ApplicationController
 
   def index
     base_scope = ::CheckIn.where(account: current_account)
+    base_scope = base_scope.where(project_id: current_project.id) if current_project.present?
 
     @check_ins = base_scope.order(created_at: :desc)
     @total_count = @check_ins.count
@@ -32,15 +33,22 @@ class CheckInsController < ApplicationController
       timezone: "UTC",
       enabled: true
     )
+    if current_project.present?
+      @check_in.project = current_project
+      @check_in_project_locked = true
+    elsif (p = selected_project_for_menu)
+      @check_in.project_id = p.id
+    end
   end
 
   def create
     @check_in = ::CheckIn.new(check_in_params)
-    @check_in.project = current_account.projects.find(params[:check_in][:project_id]) if params[:check_in][:project_id].present?
+    assign_check_in_project(@check_in)
 
     if @check_in.save
       redirect_to check_in_path(@check_in), notice: "Check-in created. Use the ping URL to start monitoring."
     else
+      @check_in_project_locked = current_project.present?
       render :new, status: :unprocessable_entity
     end
   end
@@ -71,6 +79,15 @@ class CheckInsController < ApplicationController
   end
 
   private
+
+  def assign_check_in_project(record)
+    pid = params.dig(:check_in, :project_id).presence
+    if pid.present?
+      record.project = current_account.projects.find(pid)
+    elsif current_project.present?
+      record.project = current_project
+    end
+  end
 
   def set_check_in
     @check_in = ::CheckIn.find(params[:id])

@@ -303,6 +303,7 @@ Rails.application.routes.draw do
   get ":project_slug/deploys", to: "deploys#index", as: "project_slug_deploys"
   get ":project_slug/uptime", to: "uptime/monitors#index", as: "project_slug_uptime"
   get ":project_slug/uptime/:id", to: "uptime/monitors#show", as: "project_slug_uptime_monitor"
+  get ":project_slug/check_ins/new", to: "check_ins#new", as: "project_slug_new_check_in"
   get ":project_slug/check_ins", to: "check_ins#index", as: "project_slug_check_ins"
   get ":project_slug/settings", to: "project_settings#show", as: "project_slug_settings"
 
