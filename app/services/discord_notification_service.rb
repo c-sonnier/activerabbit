@@ -51,6 +51,11 @@ class DiscordNotificationService
     send_webhook(embeds: [embed])
   end
 
+  def send_deploy_notification(deploy, phase:)
+    embed = build_deploy_embed(deploy, phase.to_s)
+    send_webhook(embeds: [embed])
+  end
+
   def send_incident_open(incident)
     embed = build_incident_open_embed(incident)
     send_webhook(embeds: [embed])
@@ -265,6 +270,51 @@ class DiscordNotificationService
     }
   end
 
+  def build_deploy_embed(deploy, phase)
+    release = deploy.release
+    title =
+      if phase == "started"
+        "\u{1F680} Deployment in progress"
+      else
+        "\u{2705} Deployment completed"
+      end
+
+    user_val =
+      if deploy.user
+        parts = [deploy.user.try(:name).presence, deploy.user.email].compact.uniq
+        parts.join(" · ")
+      else
+        "—"
+      end
+
+    fields = [
+      { name: "Project", value: @project.name, inline: true },
+      { name: "Version", value: truncate_text(release.version, 256), inline: true },
+      { name: "Environment", value: release.environment.to_s, inline: true },
+      { name: "By", value: user_val, inline: false },
+      { name: "Started", value: format_time(deploy.started_at), inline: true }
+    ]
+
+    if deploy.finished_at.present?
+      fields << { name: "Finished", value: format_time(deploy.finished_at), inline: true }
+      secs = (deploy.finished_at - deploy.started_at).to_i
+      fields << { name: "Duration", value: "#{secs}s", inline: true } if secs.positive?
+    end
+
+    fields << { name: "Status", value: deploy.status.to_s, inline: true } if deploy.status.present?
+
+    color = phase == "started" ? DISCORD_EMBED_COLOR_WARNING : DISCORD_EMBED_COLOR_SUCCESS
+
+    {
+      title: title,
+      url: deploy_list_url,
+      color: color,
+      fields: fields,
+      footer: footer,
+      timestamp: Time.current.iso8601
+    }
+  end
+
   # --- Helpers ---
 
   def unicode_emoji(type)
@@ -280,6 +330,10 @@ class DiscordNotificationService
     host = Rails.env.development? ? "http://localhost:3000" : ENV.fetch("APP_HOST", "https://activerabbit.com")
     host = "https://#{host}" unless host.start_with?("http://", "https://")
     "#{host}/#{@project.slug}"
+  end
+
+  def deploy_list_url
+    "#{project_url}/deploys"
   end
 
   def error_url(issue, tab: nil, event_id: nil)

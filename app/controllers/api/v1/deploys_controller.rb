@@ -28,6 +28,9 @@ class Api::V1::DeploysController < Api::BaseController
       finished_at: params[:finished_at]
     )
 
+    phase = deploy.finished_at.present? ? "finished" : "started"
+    DeployNotificationJob.perform_async(deploy.id, phase)
+
     render json: { ok: true, deploy_id: deploy.id }
   end
 end
