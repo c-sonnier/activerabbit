@@ -104,11 +104,11 @@ class CheckInsController < ApplicationController
     slots = []
     slot_duration = if interval <= 300
                      300
-                   elsif interval <= 3600
+    elsif interval <= 3600
                      3600
-                   else
+    else
                      interval
-                   end
+    end
 
     cursor = 24.hours.ago.beginning_of_hour
     while cursor < Time.current
@@ -118,13 +118,13 @@ class CheckInsController < ApplicationController
 
       status = if check_in.last_seen_at.nil? && count.zero?
                  "empty"
-               elsif count > 0
+      elsif count > 0
                  "ok"
-               elsif expected > 0 && cursor < Time.current - interval
+      elsif expected > 0 && cursor < Time.current - interval
                  "missed"
-               else
+      else
                  "pending"
-               end
+      end
 
       slots << { time: cursor, count: count, status: status }
       cursor = slot_end
