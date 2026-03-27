@@ -155,19 +155,160 @@
       <%= paginate @replays if respond_to?(:paginate) %>
     </div>
   <% else %>
-    <div class="px-6 py-12 text-center">
-      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-      </svg>
-      <h3 class="mt-2 text-sm font-medium text-gray-900">No session replays found</h3>
-      <p class="mt-1 text-sm text-gray-500">
-        <% if params[:q].present? || params[:environment].present? || params[:has_issue].present? %>
-          No replays match your current filters.
-        <% else %>
-          Session replays will appear here once recording is enabled.
-        <% end %>
-      </p>
-    </div>
+    <% if params[:q].present? || params[:environment].present? || params[:has_issue].present? %>
+      <div class="px-6 py-12 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No session replays found</h3>
+        <p class="mt-1 text-sm text-gray-500">No replays match your current filters.</p>
+      </div>
+    <% else %>
+      <div class="px-6 py-10">
+        <div class="max-w-2xl mx-auto">
+          <div class="text-center mb-8">
+            <div class="mx-auto w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-3">
+              <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900">Set up Session Replay</h3>
+            <p class="mt-1 text-sm text-gray-500">Add a small script to your app to start recording user sessions.</p>
+          </div>
+
+          <!-- Step 1 -->
+          <div class="mb-6">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold">1</span>
+              <h4 class="text-sm font-semibold text-gray-900">Add the rrweb recording script</h4>
+            </div>
+            <p class="text-sm text-gray-500 ml-8 mb-2">Add this snippet before the closing <code class="text-xs bg-gray-100 px-1 py-0.5 rounded">&lt;/body&gt;</code> tag in your HTML layout:</p>
+            <div class="ml-8 relative">
+              <pre class="bg-gray-900 text-gray-100 rounded-lg p-4 text-xs overflow-x-auto"><code>&lt;script src="https://cdn.jsdelivr.net/npm/rrweb@2.0.0-alpha.4/dist/rrweb.min.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+(function() {
+  var TOKEN = "<%= @project.api_token %>";
+  var ENDPOINT = "<%= request.base_url %>/api/v1/replay_sessions";
+  var replayId = crypto.randomUUID();
+  var sessionId = crypto.randomUUID();
+  var events = [];
+  var startedAt = new Date().toISOString();
+  var startTime = Date.now();
+
+  rrweb.record({
+    emit: function(event) { events.push(event); },
+    sampling: { mousemove: 50, scroll: 150, input: "last" },
+    maskInputOptions: { password: true }
+  });
+
+  function send(sync) {
+    if (events.length &lt; 2) return;
+    var payload = JSON.stringify({
+      replay_id: replayId,
+      session_id: sessionId,
+      events: events,
+      started_at: startedAt,
+      duration_ms: Date.now() - startTime,
+      url: location.href,
+      user_agent: navigator.userAgent,
+      viewport_width: innerWidth,
+      viewport_height: innerHeight,
+      environment: "production"
+    });
+    fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Project-Token": TOKEN },
+      body: payload,
+      keepalive: !!sync
+    }).catch(function() {});
+  }
+
+  setInterval(send, 30000);
+  document.addEventListener("visibilitychange", function() { send(true); });
+  window.addEventListener("beforeunload", function() { send(true); });
+})();
+&lt;/script&gt;</code></pre>
+              <button onclick="navigator.clipboard.writeText(this.closest('.relative').querySelector('code').textContent)" class="absolute top-2 right-2 p-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors" title="Copy">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke-width="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke-width="2"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="mb-6">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold">2</span>
+              <h4 class="text-sm font-semibold text-gray-900">Or install via npm</h4>
+            </div>
+            <div class="ml-8 relative">
+              <pre class="bg-gray-900 text-gray-100 rounded-lg p-4 text-xs overflow-x-auto"><code>npm install rrweb</code></pre>
+            </div>
+            <p class="text-sm text-gray-500 ml-8 mt-2 mb-2">Then in your app's entry point:</p>
+            <div class="ml-8 relative">
+              <pre class="bg-gray-900 text-gray-100 rounded-lg p-4 text-xs overflow-x-auto"><code>import { record } from 'rrweb';
+
+const TOKEN = '<%= @project.api_token %>';
+const ENDPOINT = '<%= request.base_url %>/api/v1/replay_sessions';
+const replayId = crypto.randomUUID();
+const sessionId = crypto.randomUUID();
+const events = [];
+const startedAt = new Date().toISOString();
+const startTime = Date.now();
+
+record({
+  emit(event) { events.push(event); },
+  sampling: { mousemove: 50, scroll: 150, input: 'last' },
+  maskInputOptions: { password: true },
+});
+
+function send(sync = false) {
+  if (events.length &lt; 2) return;
+  fetch(ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Project-Token': TOKEN },
+    body: JSON.stringify({
+      replay_id: replayId, session_id: sessionId,
+      events, started_at: startedAt,
+      duration_ms: Date.now() - startTime,
+      url: location.href, user_agent: navigator.userAgent,
+      viewport_width: innerWidth, viewport_height: innerHeight,
+      environment: 'production',
+    }),
+    keepalive: sync,
+  }).catch(() => {});
+}
+
+setInterval(send, 30000);
+document.addEventListener('visibilitychange', () => send(true));
+window.addEventListener('beforeunload', () => send(true));</code></pre>
+              <button onclick="navigator.clipboard.writeText(this.closest('.relative').querySelector('code').textContent)" class="absolute top-2 right-2 p-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors" title="Copy">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke-width="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke-width="2"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold">3</span>
+              <h4 class="text-sm font-semibold text-gray-900">Deploy and verify</h4>
+            </div>
+            <p class="text-sm text-gray-500 ml-8">Deploy your app with the snippet. Session replays will appear here within a few minutes of your first user visit.</p>
+          </div>
+
+          <div class="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div class="flex gap-2">
+              <svg class="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+              <div class="text-sm text-amber-800">
+                <p class="font-medium">Your project token</p>
+                <p class="mt-1">The snippets above include your project token (<code class="bg-amber-100 px-1 py-0.5 rounded text-xs"><%= @project.api_token.truncate(12) %></code>). Keep it private — anyone with this token can send replay data to this project.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
   <% end %>
 </div>

@@ -4,8 +4,8 @@ class Api::V1::ReplaySessionsController < Api::BaseController
     ActsAsTenant.with_tenant(@current_project.account) do
       raw_events_json = params[:events].to_json
 
-      # Upsert: if replay_id already exists, update it with new events
-      existing = Replay.find_by(replay_id: params[:replay_id])
+      # Upsert: if replay_id already exists for this project, update it with new events
+      existing = @current_project.replays.find_by(replay_id: params[:replay_id])
 
       if existing
         # Re-ingest with updated events
