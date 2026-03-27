@@ -2,6 +2,7 @@ require "test_helper"
 
 class ApiDeploysTest < ActionDispatch::IntegrationTest
   setup do
+    Sidekiq::Worker.clear_all
     @account = accounts(:default)
     @user = users(:owner)
     @project = projects(:default)
@@ -21,13 +22,39 @@ class ApiDeploysTest < ActionDispatch::IntegrationTest
     }.to_json
 
     assert_difference -> { Deploy.count }, 1 do
-      post "/api/v1/deploys", params: body, headers: @headers
+      assert_difference -> { DeployNotificationJob.jobs.size }, 1 do
+        post "/api/v1/deploys", params: body, headers: @headers
+      end
     end
+
+    job = DeployNotificationJob.jobs.last
+    assert_equal "finished", job["args"][1]
 
     assert_response :ok
     json = JSON.parse(response.body)
     assert_equal true, json["ok"]
     assert json["deploy_id"].present?
+  end
+
+  test "POST /api/v1/deploys enqueues deploy notification with started phase when not finished" do
+    body = {
+      project_slug: @project.slug,
+      version: "v#{SecureRandom.hex(4)}-inflight",
+      environment: "staging",
+      status: "running",
+      user: @user.email,
+      started_at: Time.current.iso8601
+    }.to_json
+
+    assert_difference -> { Deploy.count }, 1 do
+      assert_difference -> { DeployNotificationJob.jobs.size }, 1 do
+        post "/api/v1/deploys", params: body, headers: @headers
+      end
+    end
+
+    job = DeployNotificationJob.jobs.last
+    assert_equal "started", job["args"][1]
+    assert_response :ok
   end
 
   test "POST /api/v1/deploys returns not_found for unknown project slug" do
