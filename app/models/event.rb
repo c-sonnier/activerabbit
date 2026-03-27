@@ -16,6 +16,8 @@ class Event < ApplicationRecord
   scope :within_retention, ->(cutoff) { where("occurred_at >= ?", cutoff) }
   # Events from failed background jobs (Sidekiq / Solid Queue via ActiveJob)
   # Cast to jsonb so PostgreSQL ? (key exists) operator works (it only exists for jsonb, not json)
+  scope :frontend, -> { where(source: "frontend") }
+  scope :backend, -> { where(source: "backend") }
   scope :from_job_failures, -> {
     where(
       "((context::jsonb) ? :job_key) OR (((context::jsonb)->'tags'->>'component') IN ('sidekiq', 'active_job')) OR ((context::jsonb) ? :ctx_key)",
@@ -37,13 +39,17 @@ class Event < ApplicationRecord
                         extract_controller_action_from_job_context(payload[:context]) ||
                         extract_controller_from_backtrace(backtrace)
 
+    # Detect error source: frontend (JS SDK) vs backend (Ruby gem)
+    source = detect_source(payload)
+
     # Find or create issue (grouped problem)
     issue = Issue.find_or_create_by_fingerprint(
       project: project,
       exception_class: exception_class,
       top_frame: top_frame,
       controller_action: controller_action,
-      sample_message: message
+      sample_message: message,
+      source: source
     )
 
     # Build context with structured stack trace (Sentry-style) and job/tags from gem
@@ -86,7 +92,8 @@ class Event < ApplicationRecord
       user_id_hash: payload[:user_id] ? Digest::SHA256.hexdigest(payload[:user_id].to_s) : nil,
       context: event_context,
       server_name: payload[:server_name],
-      request_id: payload[:request_id]
+      request_id: payload[:request_id],
+      source: source
     )
 
     # Recalculate severity now that the event exists (the before_save callback
@@ -163,6 +170,31 @@ class Event < ApplicationRecord
   def set_defaults
     self.occurred_at ||= Time.current
     self.environment ||= "production"
+  end
+
+  FRONTEND_SDK_MARKERS = %w[
+    @activerabbit/core @activerabbit/browser @activerabbit/react
+    @activerabbit/nextjs @activerabbit/node activerabbit-js
+  ].freeze
+
+  def self.detect_source(payload)
+    explicit = payload[:source] || payload["source"]
+    return explicit if explicit.present? && %w[frontend backend].include?(explicit.to_s)
+
+    sdk = payload[:_sdk] || payload["_sdk"]
+    if sdk.is_a?(Hash)
+      sdk_name = sdk[:name] || sdk["name"]
+      return "frontend" if sdk_name.present? && FRONTEND_SDK_MARKERS.any? { |m| sdk_name.to_s.include?(m) }
+    end
+
+    runtime = payload[:runtime_context] || payload["runtime_context"]
+    if runtime.is_a?(Hash)
+      name = runtime[:name] || runtime["name"]
+      return "frontend" if name.to_s =~ /browser|chrome|firefox|safari|edge/i
+      return "backend" if runtime[:ruby_version] || runtime["ruby_version"]
+    end
+
+    "backend"
   end
 
   def self.extract_top_frame(backtrace)

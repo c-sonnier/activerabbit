@@ -32,6 +32,10 @@ class ErrorsController < ApplicationController
       base_scope = base_scope.from_job_failures
     when "ai"
       base_scope = base_scope.where.not(ai_summary: [nil, ""])
+    when "frontend"
+      base_scope = base_scope.frontend
+    when "backend"
+      base_scope = base_scope.backend
     when "critical"
       base_scope = base_scope.by_severity("critical")
     when "high"
@@ -87,6 +91,7 @@ class ErrorsController < ApplicationController
       issues_base = issues_base.where("last_seen_at < ?", 1.minute.ago)
       status_counts = issues_base.group(:status).count
       severity_counts = issues_base.group(:severity).count
+      source_counts = issues_base.group(:source).count
       {
         total: status_counts.values.sum,
         wip: status_counts.fetch("wip", 0),
@@ -97,7 +102,9 @@ class ErrorsController < ApplicationController
         critical: severity_counts.fetch("critical", 0),
         high: severity_counts.fetch("high", 0),
         medium: severity_counts.fetch("medium", 0),
-        low: severity_counts.fetch("low", 0)
+        low: severity_counts.fetch("low", 0),
+        frontend: source_counts.fetch("frontend", 0),
+        backend: source_counts.fetch("backend", 0)
       }
     end
 
@@ -111,6 +118,8 @@ class ErrorsController < ApplicationController
     @high_count = stats[:high]
     @medium_count = stats[:medium]
     @low_count = stats[:low]
+    @frontend_count = stats[:frontend]
+    @backend_count = stats[:backend]
 
     # ── Impact metrics (scoped to the 25 issues on this page) ─────────
     issue_ids = @issues.map(&:id)

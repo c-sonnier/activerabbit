@@ -48,6 +48,9 @@ gem "tailwindcss-rails"
 # Security
 gem "rack-attack"
 
+# CORS for browser-based JS SDK
+gem "rack-cors"
+
 # HTTP client
 gem "faraday"
 
