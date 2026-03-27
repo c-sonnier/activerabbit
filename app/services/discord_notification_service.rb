@@ -51,6 +51,26 @@ class DiscordNotificationService
     send_webhook(embeds: [embed])
   end
 
+  def send_check_in_alert(check_in)
+    host = Rails.env.development? ? "http://localhost:3000" : ENV.fetch("APP_HOST", "https://activerabbit.com")
+    host = "https://#{host}" unless host.start_with?("http://", "https://")
+    check_in_url = "#{host}/check_ins/#{check_in.id}"
+
+    embed = {
+      title: "Missed Check-In: #{check_in.description || check_in.identifier}",
+      color: DISCORD_EMBED_COLOR_DANGER,
+      fields: [
+        { name: "Project", value: @project.name, inline: true },
+        { name: "Expected Interval", value: check_in.interval_display, inline: true },
+        { name: "Last Seen", value: check_in.last_seen_at&.strftime("%b %d, %H:%M UTC") || "Never", inline: true }
+      ],
+      description: "This check-in has not reported within its expected interval. Your cron job or scheduled task may have stopped running.",
+      url: check_in_url,
+      timestamp: Time.current.iso8601
+    }
+    send_webhook(embeds: [embed])
+  end
+
   def send_incident_open(incident)
     embed = build_incident_open_embed(incident)
     send_webhook(embeds: [embed])

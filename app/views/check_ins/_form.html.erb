@@ -1,0 +1,95 @@
+<%= form_with(model: @check_in, url: @check_in.persisted? ? check_in_path(@check_in) : check_ins_path, local: true, class: "space-y-6") do |form| %>
+
+  <% if @check_in.errors.any? %>
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.268 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">
+            There were <%= pluralize(@check_in.errors.count, "error") %> with your submission:
+          </h3>
+          <div class="mt-2 text-sm text-red-700">
+            <ul class="list-disc pl-5 space-y-1">
+              <% @check_in.errors.full_messages.each do |msg| %>
+                <li><%= msg %></li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Project -->
+  <div>
+    <%= form.label :project_id, "Project", class: "block text-sm font-medium text-gray-700 mb-2" %>
+    <%= form.collection_select :project_id, current_account.projects.order(:name), :id, :name,
+        { prompt: "Select a project..." },
+        class: "appearance-none block w-full px-3 py-3 border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 sm:text-sm" %>
+    <p class="mt-1 text-xs text-gray-500">Which project does this check-in belong to?</p>
+  </div>
+
+  <!-- Description -->
+  <div>
+    <%= form.label :description, "Name / Description", class: "block text-sm font-medium text-gray-700 mb-2" %>
+    <%= form.text_field :description, placeholder: "Daily Database Backup", class: "appearance-none block w-full px-3 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 sm:text-sm" %>
+    <p class="mt-1 text-xs text-gray-500">A friendly name to identify this check-in in alerts and dashboards</p>
+  </div>
+
+  <!-- Kind and Interval -->
+  <div>
+    <h3 class="text-sm font-medium text-gray-900 mb-3">Schedule Settings</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <%= form.label :kind, "Type", class: "block text-sm font-medium text-gray-700 mb-2" %>
+        <%= form.select :kind, [["Heartbeat", "heartbeat"], ["Cron", "cron"]], {},
+            class: "appearance-none block w-full px-3 py-3 border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 sm:text-sm" %>
+      </div>
+
+      <div>
+        <%= form.label :heartbeat_interval_seconds, "Expected Interval", class: "block text-sm font-medium text-gray-700 mb-2" %>
+        <%= form.select :heartbeat_interval_seconds,
+            [
+              ["Every 5 minutes", 300],
+              ["Every 15 minutes", 900],
+              ["Every 30 minutes", 1800],
+              ["Every hour", 3600],
+              ["Every 6 hours", 21600],
+              ["Every 12 hours", 43200],
+              ["Every day", 86400],
+              ["Every week", 604800],
+              ["Every month (30 days)", 2592000]
+            ], {},
+            class: "appearance-none block w-full px-3 py-3 border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 sm:text-sm" %>
+        <p class="mt-1 text-xs text-gray-500">Alert if no ping within this interval</p>
+      </div>
+
+      <div>
+        <%= form.label :timezone, "Timezone", class: "block text-sm font-medium text-gray-700 mb-2" %>
+        <%= form.time_zone_select :timezone, ActiveSupport::TimeZone.us_zones, { default: "UTC" },
+            class: "appearance-none block w-full px-3 py-3 border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 sm:text-sm" %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enabled -->
+  <div class="flex items-center gap-3">
+    <%= form.check_box :enabled, class: "h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" %>
+    <%= form.label :enabled, "Enabled", class: "text-sm font-medium text-gray-700" %>
+    <span class="text-xs text-gray-500">Uncheck to pause monitoring without deleting</span>
+  </div>
+
+  <!-- Actions -->
+  <div class="flex items-center justify-between pt-6 border-t border-gray-200">
+    <%= link_to check_ins_path, class: "text-sm text-gray-500 hover:text-gray-700" do %>
+      &larr; Back to check-ins
+    <% end %>
+
+    <%= form.submit @check_in.persisted? ? "Update Check-In" : "Create Check-In",
+        class: "inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-xl shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 cursor-pointer" %>
+  </div>
+<% end %>

@@ -92,6 +92,14 @@ Rails.application.routes.draw do
   # Top-level Logs route (no /admin)
   get "logs", to: "logs#index", as: "logs"
 
+  # Top-level Check-In routes (Dead Man's Snitch replacement)
+  resources :check_ins do
+    member do
+      post :pause
+      post :resume
+    end
+  end
+
   # Top-level Uptime routes (no /admin)
   get "uptime", to: "uptime/monitors#index", as: "uptime_index"
   get "uptime/new", to: "uptime/monitors#new", as: "new_uptime"
@@ -193,6 +201,10 @@ Rails.application.routes.draw do
   # API routes for data ingestion
   namespace :api do
     namespace :v1 do
+      # Check-in ping endpoint (unauthenticated — token in URL is the auth)
+      get  "check_in/:token", to: "check_ins#ping", as: "check_in_ping"
+      post "check_in/:token", to: "check_ins#ping"
+
       # Event ingestion endpoints
       post "events/errors", to: "events#create_error"
       post "events/performance", to: "events#create_performance"
@@ -291,6 +303,7 @@ Rails.application.routes.draw do
   get ":project_slug/deploys", to: "deploys#index", as: "project_slug_deploys"
   get ":project_slug/uptime", to: "uptime/monitors#index", as: "project_slug_uptime"
   get ":project_slug/uptime/:id", to: "uptime/monitors#show", as: "project_slug_uptime_monitor"
+  get ":project_slug/check_ins", to: "check_ins#index", as: "project_slug_check_ins"
   get ":project_slug/settings", to: "project_settings#show", as: "project_slug_settings"
 
   # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
