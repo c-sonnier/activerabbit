@@ -105,11 +105,11 @@
   </head>
 
   <body class="bg-gray-50"
-    <%# Test: load recorder via script tag (same way customers would) %>
     <% replay_project = (defined?(@current_project) && @current_project) || selected_project_for_menu %>
   >
     <% if replay_project&.api_token.present? %>
-      <script src="/replay/recorder.js?token=<%= replay_project.api_token %>" defer></script>
+      <script>window.ActiveRabbitReplay = { token: "<%= replay_project.api_token %>", environment: "<%= Rails.env %>" };</script>
+      <script src="/replay/recorder.js" defer crossorigin="anonymous"></script>
     <% end %>
     <div id="flash_messages"></div>
     <div class="h-screen flex overflow-hidden" data-controller="sidebar" data-sidebar-account-id-value="<%= current_account&.id %>">

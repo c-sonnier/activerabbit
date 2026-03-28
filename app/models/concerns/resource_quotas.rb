@@ -58,7 +58,7 @@ module ResourceQuotas
       ai_summaries: Float::INFINITY,
       pull_requests: 20,
       uptime_monitors: 3,
-      session_replays: 10,
+      session_replays: Rails.env.local? ? 50 : 10,
       status_pages: 0,
       projects: 10,
       data_retention_days: 31,

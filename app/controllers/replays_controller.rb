@@ -23,32 +23,20 @@ class ReplaysController < ApplicationController
 
   def show
     @replay = @project.replays.find(params[:id])
-    @replay_url = if @replay.storage_key&.start_with?("local://")
-      project_replay_data_path(@project.slug, @replay)
-    elsif @replay.storage_key.present? && ReplayStorage::BUCKET.present?
-      ReplayStorage.client.presigned_url(key: @replay.storage_key) rescue nil
-    end
+    @replay_url = project_replay_data_path(@project.slug, @replay) if @replay.storage_key.present?
 
     @prev_replay = @project.replays.ready.where("created_at > ?", @replay.created_at).order(created_at: :asc).limit(1).first
     @next_replay = @project.replays.ready.where("created_at < ?", @replay.created_at).order(created_at: :desc).limit(1).first
   end
 
-  # Serve compressed replay data from local storage
+  # Serve replay data — proxies from local storage or R2
   def data
     ActsAsTenant.without_tenant do
       replay = Replay.joins(:project)
                      .where(projects: { slug: params[:project_slug] })
                      .find(params[:id])
 
-      unless replay.storage_key&.start_with?("local://")
-        head :not_found
-        return
-      end
-
-      key = replay.storage_key.delete_prefix("local://")
-      local_path = Rails.root.join("storage", "replays", key)
-
-      unless File.exist?(local_path)
+      unless replay.storage_key.present?
         head :not_found
         return
       end
@@ -56,7 +44,23 @@ class ReplaysController < ApplicationController
       # Disable mini-profiler for binary data responses
       Rack::MiniProfiler.deauthorize_request if defined?(Rack::MiniProfiler)
 
-      send_file local_path, type: "application/octet-stream", disposition: "inline"
+      if replay.storage_key.start_with?("local://")
+        key = replay.storage_key.delete_prefix("local://")
+        local_path = Rails.root.join("storage", "replays", key)
+
+        unless File.exist?(local_path)
+          head :not_found
+          return
+        end
+
+        send_file local_path, type: "application/octet-stream", disposition: "inline"
+      elsif ReplayStorage::BUCKET.present?
+        # Proxy from R2 to avoid CORS issues
+        data = ReplayStorage.client.download(key: replay.storage_key)
+        send_data data, type: "application/octet-stream", disposition: "inline"
+      else
+        head :not_found
+      end
     end
   end
 

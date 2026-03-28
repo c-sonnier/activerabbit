@@ -64,9 +64,6 @@ Rails.application.routes.draw do
   get "cli/install.sh", to: "cli#install_script", as: :cli_install_script
   get "cli/activerabbit", to: "cli#cli_script", as: :cli_script
 
-  # Session replay recorder script (loaded by customers on their sites)
-  get "replay/recorder.js", to: "replay_recorder#script", as: :replay_recorder_script
-
   # GitHub App installation callback and webhook
   get  "github/app/callback",   to: "github_app#callback"
   post "github/app/webhook",    to: "github_app#webhook"
