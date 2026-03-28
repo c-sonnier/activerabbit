@@ -14,7 +14,7 @@ servers:
   job-secondary:
     hosts:
       - 65.108.93.69
-    cmd: bundle exec sidekiq -c 3 -q alerts,3 -q default,2 -q analysis -q mailers
+    cmd: bundle exec sidekiq -c 3 -q priority,5 -q alerts,3 -q default,2 -q analysis -q mailers
 
 registry:
   server: ghcr.io

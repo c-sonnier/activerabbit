@@ -14,12 +14,7 @@ module Api
 
         if check_in
           ActsAsTenant.with_tenant(check_in.account) do
-            check_in.ping!
-            check_in.pings.create!(
-              status: "success",
-              source_ip: request.remote_ip,
-              pinged_at: check_in.last_seen_at
-            )
+            check_in.record_success_ping!(source_ip: request.remote_ip)
           end
           render json: { status: "ok", message: "Check-in received", last_seen_at: check_in.last_seen_at.iso8601 }
         else

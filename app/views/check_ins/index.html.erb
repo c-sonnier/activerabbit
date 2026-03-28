@@ -1,6 +1,9 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-  <div class="flex justify-between items-center mb-8">
-    <h1 class="text-2xl font-bold text-gray-900">Check-Ins</h1>
+  <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-8">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Check-Ins</h1>
+      <p class="text-sm text-gray-500 mt-1">Apps use your <span class="font-medium text-gray-700">existing project API key</span> plus one short monitor id per check-in (created from the name you give) — no second secret for the Ruby gem.</p>
+    </div>
     <% add_check_in_path = current_project.present? ? project_slug_new_check_in_path(current_project.slug) : new_check_in_path %>
     <%= link_to "Add Check-In", add_check_in_path, class: "bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium" %>
   </div>

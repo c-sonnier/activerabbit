@@ -133,10 +133,6 @@ if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present? && !ActiveModel::Type::B
       "cron_timezone" => "America/Los_Angeles"
     },
 
-    # ========================================
-    # Check-In Monitoring (Dead Man's Snitch replacement)
-    # ========================================
-
     "check_in_monitor" => {
       "cron" => "* * * * *",
       "class" => "CheckIns::MonitorJob",

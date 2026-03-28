@@ -4,7 +4,7 @@ module CheckIns
   class MonitorJob
     include Sidekiq::Job
 
-    sidekiq_options queue: :default, retry: 0
+    sidekiq_options queue: :priority, retry: 0
 
     def perform
       ActsAsTenant.without_tenant do

@@ -9,8 +9,13 @@ class CheckIn < ApplicationRecord
   KINDS = %w[cron heartbeat].freeze
   STATUSES = %w[success missed reporting].freeze
 
+  SLUG_FORMAT = /\A[a-z0-9][a-z0-9_-]*\z/.freeze
+
   validates :identifier, presence: true
   validates_uniqueness_to_tenant :identifier, scope: :project_id
+  validates :description, presence: true
+  validates :slug, format: { with: SLUG_FORMAT, message: "only lowercase letters, numbers, hyphens, underscores" }, allow_blank: true
+  validates :slug, uniqueness: { scope: :project_id }, allow_blank: true
   validates :kind, inclusion: { in: KINDS }
   validates :last_status, inclusion: { in: STATUSES }, allow_nil: true
 
@@ -27,11 +32,24 @@ class CheckIn < ApplicationRecord
   }
 
   before_validation :generate_token, on: :create
+  before_validation :normalize_slug
+  before_validation :ensure_slug_from_description
+  before_validation :force_utc_timezone
 
   def ping!
     update!(
       last_seen_at: Time.current,
       last_status: "reporting"
+    )
+  end
+
+  # Records a successful heartbeat (updates last_seen_at + CheckInPing). Caller must run inside ActsAsTenant.with_tenant(account).
+  def record_success_ping!(source_ip: nil)
+    ping!
+    pings.create!(
+      status: "success",
+      source_ip: source_ip,
+      pinged_at: last_seen_at
     )
   end
 
@@ -94,5 +112,38 @@ class CheckIn < ApplicationRecord
 
   def generate_token
     self.identifier ||= SecureRandom.hex(10)
+  end
+
+  # One user-facing name (description) → stable monitor id for the SDK (slug) when missing.
+  def ensure_slug_from_description
+    return if slug.present?
+    return if description.to_s.strip.blank?
+
+    base = description.to_s.strip.parameterize(separator: "_")
+    base = "monitor_#{SecureRandom.hex(4)}" if base.blank? || base !~ SLUG_FORMAT
+
+    candidate = base
+    n = 0
+    while slug_taken?(candidate)
+      n += 1
+      candidate = "#{base}_#{n}"
+    end
+
+    self.slug = candidate
+  end
+
+  def slug_taken?(candidate)
+    rel = self.class.where(project_id: project_id, slug: candidate)
+    rel = rel.where.not(id: id) if persisted?
+    rel.exists?
+  end
+
+  def normalize_slug
+    raw = slug.to_s.strip
+    self.slug = raw.blank? ? nil : raw.parameterize(separator: "_")
+  end
+
+  def force_utc_timezone
+    self.timezone = "UTC"
   end
 end

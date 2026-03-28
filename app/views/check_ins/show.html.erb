@@ -186,43 +186,92 @@
     <% end %>
   </div>
 
-  <!-- Ping URL -->
-  <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
-    <h2 class="text-base sm:text-lg font-semibold text-gray-900 mb-3">Ping URL</h2>
-    <p class="text-sm text-gray-500 mb-3">
-      Send a GET or POST request to this URL after your task completes. If we don't hear from you within the expected interval, we'll alert you.
+  <!-- Default setup: same project API key as errors, no second secret -->
+  <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6 border border-indigo-100">
+    <h2 class="text-base sm:text-lg font-semibold text-gray-900 mb-2">Connect your app</h2>
+    <p class="text-sm text-gray-600 mb-4">
+      Use the <span class="font-medium text-gray-800">same</span> project API key and URL you already use for error tracking (<code class="text-xs font-mono bg-gray-100 px-1 rounded">activerabbit-ai</code> initializer).
+      Add <span class="font-medium text-gray-800">one</span> environment variable with this check-in’s monitor name (it is <span class="font-medium">not</span> a secret — only your API key is).
     </p>
-    <div class="flex items-center gap-2">
+
+    <% if @check_in.slug.present? %>
+      <% api_base = @check_in.ping_url.sub(%r{/api/v1/check_in/.*\z}, "") %>
+      <ol class="list-decimal list-inside text-sm text-gray-700 space-y-3 mb-4">
+        <li>Ensure the gem is configured with <code class="text-xs font-mono bg-gray-100 px-1 rounded">ACTIVERABBIT_API_KEY</code>, <code class="text-xs font-mono bg-gray-100 px-1 rounded">ACTIVERABBIT_PROJECT_ID</code>, and <code class="text-xs font-mono bg-gray-100 px-1 rounded">ACTIVERABBIT_API_URL</code> (example base: <code class="text-xs font-mono break-all"><%= api_base %></code>).</li>
+        <li>Add the monitor name for this check-in:</li>
+      </ol>
+
+      <div class="flex items-stretch gap-2 mb-4">
+        <pre class="flex-1 text-xs font-mono text-gray-800 bg-gray-50 border border-gray-200 rounded-lg px-3 py-3 overflow-x-auto whitespace-pre-wrap break-all">ACTIVERABBIT_MONITOR_SLUG=<%= @check_in.slug %></pre>
+        <button
+          type="button"
+          onclick="navigator.clipboard.writeText('ACTIVERABBIT_MONITOR_SLUG=<%= j @check_in.slug %>').then(() => { this.textContent = 'Copied!'; setTimeout(() => { this.textContent = 'Copy'; }, 2000); })"
+          class="shrink-0 self-start bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 text-sm font-medium">
+          Copy
+        </button>
+      </div>
+
+      <p class="text-sm text-gray-600 mb-2">After the task or job <span class="font-medium">succeeds</span>, report OK (from Ruby):</p>
+      <pre class="text-xs font-mono text-gray-800 bg-white border border-gray-200 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap mb-4">ActiveRabbit::Client.capture_cron_check_in("<%= @check_in.slug %>", :ok)</pre>
+
+      <p class="text-xs text-gray-500 mb-2">Optional statuses: <code class="font-mono">:in_progress</code> at start, <code class="font-mono">:error</code> in <code class="font-mono">rescue</code>. For Active Job you can use:</p>
+      <pre class="text-xs font-mono text-gray-800 bg-white border border-gray-200 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">class MyCronJob <%= "<" %> ApplicationJob
+  include ActiveRabbit::Client::CronMonitor
+  active_rabbit_cron slug: "<%= @check_in.slug %>"
+
+  def perform
+    # ...
+  end
+end</pre>
+    <% else %>
+      <p class="text-sm text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+        This check-in has no monitor id yet. Open <span class="font-medium">Edit</span>, set a <span class="font-medium">Name</span>, and save — we’ll create the id for your app automatically.
+      </p>
+    <% end %>
+  </div>
+
+  <!-- Advanced: URL ping + secret token (no gem / shell cron) -->
+  <details class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6 group">
+    <summary class="text-base sm:text-lg font-semibold text-gray-900 cursor-pointer list-none flex items-center gap-2">
+      <span class="text-gray-400 group-open:rotate-90 transition-transform inline-block">▸</span>
+      Advanced: ping URL (separate secret token)
+    </summary>
+    <p class="text-sm text-gray-500 mt-3 mb-3">
+      Only if you are <span class="font-medium">not</span> using the Ruby gem: this URL contains a <span class="font-medium">secret</span> token. Anyone with the link can mark this check-in OK — treat it like a password.
+    </p>
+    <div class="flex items-center gap-2 mb-4">
       <code class="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm font-mono text-gray-800 break-all">
         <%= @check_in.ping_url %>
       </code>
       <button
-        onclick="navigator.clipboard.writeText('<%= @check_in.ping_url %>'). then(() => { this.textContent = 'Copied!'; setTimeout(() => { this.textContent = 'Copy'; }, 2000); })"
-        class="shrink-0 bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 text-sm font-medium">
+        type="button"
+        onclick="navigator.clipboard.writeText('<%= j @check_in.ping_url %>').then(() => { this.textContent = 'Copied!'; setTimeout(() => { this.textContent = 'Copy'; }, 2000); })"
+        class="shrink-0 bg-gray-200 text-gray-800 px-4 py-3 rounded-lg hover:bg-gray-300 text-sm font-medium">
         Copy
       </button>
     </div>
-
-    <div class="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
-      <h3 class="text-sm font-medium text-gray-700 mb-2">Usage Examples</h3>
-      <div class="space-y-2 text-xs font-mono text-gray-600">
-        <p class="text-gray-500 text-xs mt-3 mb-1">Ruby (HTTParty):</p>
-        <code class="block bg-white border rounded px-3 py-2 break-all">HTTParty.get("<%= @check_in.ping_url %>")</code>
-        <p class="text-gray-500 text-xs mb-1">cURL:</p>
-        <code class="block bg-white border rounded px-3 py-2 break-all">curl -s <%= @check_in.ping_url %></code>
-        <p class="text-gray-500 text-xs mt-3 mb-1">wget:</p>
-        <code class="block bg-white border rounded px-3 py-2 break-all">wget -q -O /dev/null <%= @check_in.ping_url %></code>
-      </div>
+    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-xs font-mono text-gray-600 space-y-2">
+      <p class="text-gray-500 font-sans text-sm mb-2">Examples after a successful run:</p>
+      <code class="block bg-white border rounded px-3 py-2 break-all">curl -s <%= @check_in.ping_url %></code>
+      <code class="block bg-white border rounded px-3 py-2 break-all">wget -q -O /dev/null <%= @check_in.ping_url %></code>
     </div>
-  </div>
+  </details>
 
   <!-- Settings -->
   <div class="bg-white rounded-lg shadow p-4 sm:p-6">
     <h2 class="text-base sm:text-lg font-semibold text-gray-900 mb-4">Settings</h2>
     <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
-        <dt class="text-sm font-medium text-gray-500">Token</dt>
-        <dd class="text-sm text-gray-900 font-mono mt-1"><%= @check_in.identifier %></dd>
+        <dt class="text-sm font-medium text-gray-500">Name</dt>
+        <dd class="text-sm text-gray-900 mt-1"><%= @check_in.description.presence || "—" %></dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-gray-500">Monitor id (for your app)</dt>
+        <dd class="text-sm text-gray-900 font-mono mt-1"><%= @check_in.slug.presence || "—" %></dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-gray-500">Ping token (advanced only)</dt>
+        <dd class="text-sm text-gray-900 font-mono mt-1 break-all"><%= @check_in.identifier %></dd>
       </div>
       <div>
         <dt class="text-sm font-medium text-gray-500">Kind</dt>
@@ -233,8 +282,8 @@
         <dd class="text-sm text-gray-900 mt-1"><%= @check_in.interval_display %></dd>
       </div>
       <div>
-        <dt class="text-sm font-medium text-gray-500">Timezone</dt>
-        <dd class="text-sm text-gray-900 mt-1"><%= @check_in.timezone %></dd>
+        <dt class="text-sm font-medium text-gray-500">Time reference</dt>
+        <dd class="text-sm text-gray-900 mt-1">00:00 UTC (fixed)</dd>
       </div>
       <div>
         <dt class="text-sm font-medium text-gray-500">Created</dt>

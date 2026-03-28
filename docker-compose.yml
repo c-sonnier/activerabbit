@@ -92,7 +92,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    command: bundle exec sidekiq -c 5 -q alerts,3 -q default,2 -q analysis -q mailers
+    command: bundle exec sidekiq -c 5 -q priority,5 -q alerts,3 -q default,2 -q analysis -q mailers
     volumes:
       - .:/app
       - bundle_cache:/usr/local/bundle

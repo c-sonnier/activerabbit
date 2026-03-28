@@ -46,7 +46,7 @@ class CheckInsController < ApplicationController
     assign_check_in_project(@check_in)
 
     if @check_in.save
-      redirect_to check_in_path(@check_in), notice: "Check-in created. Use the ping URL to start monitoring."
+      redirect_to check_in_path(@check_in), notice: "Check-in created. Follow the setup steps on this page — same API key as error tracking, one monitor slug line in your app."
     else
       @check_in_project_locked = current_project.present?
       render :new, status: :unprocessable_entity
@@ -96,7 +96,7 @@ class CheckInsController < ApplicationController
   def check_in_params
     params.require(:check_in).permit(
       :description, :kind, :heartbeat_interval_seconds,
-      :timezone, :enabled, :project_id
+      :enabled, :project_id
     )
   end
 

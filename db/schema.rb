@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_27_000001) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_27_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -170,9 +170,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_27_000001) do
     t.datetime "last_alerted_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "slug"
+    t.datetime "run_started_at"
     t.index ["account_id", "last_status"], name: "index_check_ins_on_account_id_and_last_status"
     t.index ["account_id"], name: "index_check_ins_on_account_id"
     t.index ["project_id", "identifier"], name: "index_check_ins_on_project_id_and_identifier", unique: true
+    t.index ["project_id", "slug"], name: "index_check_ins_on_project_id_and_slug", unique: true
     t.index ["project_id"], name: "index_check_ins_on_project_id"
   end
 

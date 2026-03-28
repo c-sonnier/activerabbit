@@ -205,6 +205,9 @@ Rails.application.routes.draw do
       get  "check_in/:token", to: "check_ins#ping", as: "check_in_ping"
       post "check_in/:token", to: "check_ins#ping"
 
+      # Cron / heartbeat via project API token + monitor slug (Sentry-style SDK)
+      post "cron/check_ins", to: "cron_check_ins#create"
+
       # Event ingestion endpoints
       post "events/errors", to: "events#create_error"
       post "events/performance", to: "events#create_performance"
