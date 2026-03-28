@@ -4,7 +4,7 @@ module Uptime
   class PingJob
     include Sidekiq::Job
 
-    sidekiq_options queue: :default, retry: 1
+    sidekiq_options queue: :priority, retry: 1
 
     LOCK_TTL_BUFFER = 10
     MAX_REDIRECTS = 5

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_26_000001) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_27_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -140,6 +140,20 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_26_000001) do
     t.index ["token"], name: "index_api_tokens_on_token", unique: true
   end
 
+  create_table "check_in_pings", force: :cascade do |t|
+    t.bigint "check_in_id", null: false
+    t.bigint "account_id", null: false
+    t.string "status", default: "success", null: false
+    t.integer "response_time_ms"
+    t.string "source_ip"
+    t.datetime "pinged_at", null: false
+    t.datetime "created_at", null: false
+    t.index ["account_id"], name: "index_check_in_pings_on_account_id"
+    t.index ["check_in_id", "pinged_at"], name: "index_check_in_pings_on_check_in_id_and_pinged_at"
+    t.index ["check_in_id", "status"], name: "index_check_in_pings_on_check_in_id_and_status"
+    t.index ["check_in_id"], name: "index_check_in_pings_on_check_in_id"
+  end
+
   create_table "check_ins", force: :cascade do |t|
     t.bigint "project_id", null: false
     t.bigint "account_id", null: false
@@ -156,9 +170,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_26_000001) do
     t.datetime "last_alerted_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "slug"
+    t.datetime "run_started_at"
     t.index ["account_id", "last_status"], name: "index_check_ins_on_account_id_and_last_status"
     t.index ["account_id"], name: "index_check_ins_on_account_id"
     t.index ["project_id", "identifier"], name: "index_check_ins_on_project_id_and_identifier", unique: true
+    t.index ["project_id", "slug"], name: "index_check_ins_on_project_id_and_slug", unique: true
     t.index ["project_id"], name: "index_check_ins_on_project_id"
   end
 
@@ -683,6 +700,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_26_000001) do
   add_foreign_key "alert_rules", "projects"
   add_foreign_key "api_tokens", "accounts"
   add_foreign_key "api_tokens", "projects"
+  add_foreign_key "check_in_pings", "accounts"
+  add_foreign_key "check_in_pings", "check_ins"
   add_foreign_key "check_ins", "accounts"
   add_foreign_key "check_ins", "projects"
   add_foreign_key "daily_event_counts", "accounts"

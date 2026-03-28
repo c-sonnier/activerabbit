@@ -39,8 +39,8 @@ class SlackNotificationService
     send_blocks(blocks: blocks, fallback_text: fallback)
   end
 
-  def send_deploy_notification(deploy, phase:)
-    blocks, fallback = build_deploy_blocks(deploy, phase.to_s)
+  def send_check_in_alert(check_in)
+    blocks, fallback = build_check_in_alert_blocks(check_in)
     send_blocks(blocks: blocks, fallback_text: fallback)
   end
 
@@ -288,50 +288,38 @@ class SlackNotificationService
     [blocks, fallback]
   end
 
-  def build_deploy_blocks(deploy, phase)
-    release = deploy.release
-    header_text = phase == "started" ? "Deployment in progress" : "Deployment completed"
-    emoji = phase == "started" ? ":rocket:" : ":white_check_mark:"
-
-    user_line =
-      if deploy.user
-        n = deploy.user.try(:name).presence
-        e = deploy.user.email
-        [n, e].compact.uniq.join(" · ")
-      else
-        "—"
-      end
-
-    fields = [
-      { type: "mrkdwn", text: "*Project:*\n#{@project.name}" },
-      { type: "mrkdwn", text: "*Version:*\n#{release.version}" },
-      { type: "mrkdwn", text: "*Environment:*\n#{release.environment}" },
-      { type: "mrkdwn", text: "*By:*\n#{user_line}" },
-      { type: "mrkdwn", text: "*Started:*\n#{format_time(deploy.started_at)}" }
-    ]
-
-    if deploy.finished_at.present?
-      fields << { type: "mrkdwn", text: "*Finished:*\n#{format_time(deploy.finished_at)}" }
-      secs = (deploy.finished_at - deploy.started_at).to_i
-      fields << { type: "mrkdwn", text: "*Duration:*\n#{secs}s" } if secs.positive?
-    end
-
-    if deploy.status.present?
-      fields << { type: "mrkdwn", text: "*Status:*\n#{deploy.status}" }
-    end
+  def build_check_in_alert_blocks(check_in)
+    host = Rails.env.development? ? "http://localhost:3000" : ENV.fetch("APP_HOST", "https://activerabbit.com")
+    host = "https://#{host}" unless host.start_with?("http://", "https://")
+    check_in_url = "#{host}/check_ins/#{check_in.id}"
 
     blocks = [
-      { type: "header", text: { type: "plain_text", text: "#{emoji} #{header_text}", emoji: true } },
-      { type: "section", fields: fields }
+      {
+        type: "header",
+        text: { type: "plain_text", text: ":warning: Missed Check-In: #{check_in.description || check_in.identifier}", emoji: true }
+      },
+      {
+        type: "section",
+        fields: [
+          { type: "mrkdwn", text: "*Project:*\n#{@project.name}" },
+          { type: "mrkdwn", text: "*Expected Interval:*\n#{check_in.interval_display}" },
+          { type: "mrkdwn", text: "*Last Seen:*\n#{check_in.last_seen_at&.strftime('%b %d, %H:%M UTC') || 'Never'}" },
+          { type: "mrkdwn", text: "*Environment:*\n#{@project.environment}" }
+        ]
+      },
+      {
+        type: "section",
+        text: { type: "mrkdwn", text: "This check-in has not reported within its expected interval. Your cron job or scheduled task may have stopped running." }
+      },
+      {
+        type: "actions",
+        elements: [
+          { type: "button", text: { type: "plain_text", text: "View Check-In", emoji: true }, url: check_in_url, style: "danger" }
+        ]
+      }
     ]
-    blocks << {
-      type: "actions",
-      elements: [
-        { type: "button", text: { type: "plain_text", text: "View deploys", emoji: true }, url: deploy_list_url, style: "primary" }
-      ]
-    }
 
-    [blocks, "#{header_text}: #{@project.name} (#{release.environment})"]
+    [blocks, "Missed check-in: #{check_in.description || check_in.identifier}"]
   end
 
   def build_error_frequency_message(issue, payload)
