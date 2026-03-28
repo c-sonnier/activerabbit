@@ -787,6 +787,52 @@
                 data-notifications-target="channel"
                 <%= "checked" if @project.notify_via_email? %>>
             </div>
+
+            <!-- Deployment API → Slack / Discord (channels above) -->
+            <div class="pt-4 mt-4 border-t border-gray-100">
+              <p class="text-sm font-medium text-gray-900 mb-1">
+                Deployments
+              </p>
+              <p class="text-sm text-gray-500 mb-3">
+                Notify Slack and Discord (when connected and enabled) when a deployment is reported via the API or CLI
+              </p>
+
+              <div class="flex items-start justify-between mb-3">
+                <div>
+                  <label class="text-sm font-medium text-gray-900">
+                    Deployment started
+                  </label>
+                  <p class="text-sm text-gray-500">
+                    In progress (no finish time yet)
+                  </p>
+                </div>
+                <input type="hidden" name="project[notifications][deploy][started]" value="0">
+                <input type="checkbox"
+                  name="project[notifications][deploy][started]"
+                  value="1"
+                  class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                  data-notifications-target="channel"
+                  <%= "checked" if @project.notify_deploy_started? %>>
+              </div>
+
+              <div class="flex items-start justify-between">
+                <div>
+                  <label class="text-sm font-medium text-gray-900">
+                    Deployment finished
+                  </label>
+                  <p class="text-sm text-gray-500">
+                    Completed or failed (includes duration when available)
+                  </p>
+                </div>
+                <input type="hidden" name="project[notifications][deploy][finished]" value="0">
+                <input type="checkbox"
+                  name="project[notifications][deploy][finished]"
+                  value="1"
+                  class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                  data-notifications-target="channel"
+                  <%= "checked" if @project.notify_deploy_finished? %>>
+              </div>
+            </div>
           </div>
 
           <!-- Uptime Alerts Section -->

@@ -194,6 +194,15 @@
             <span data-sidebar-target="navText">Uptime</span>
             <span class="sidebar-tooltip">Uptime Monitoring</span>
           <% end %>
+          <%= link_to check_ins_path,
+              class: "sidebar-nav-item group relative flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if controller_name == 'check_ins'}" do %>
+            <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span data-sidebar-target="navText">Check-Ins</span>
+            <span class="sidebar-tooltip">Cron Monitoring</span>
+          <% end %>
+
           <%= link_to base_logs_path,
               class: "sidebar-nav-item group relative flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(base_logs_path)}" do %>
             <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

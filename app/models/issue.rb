@@ -93,6 +93,8 @@ class Issue < ApplicationRecord
   scope :open, -> { where(status: "open") }
   scope :wip, -> { where(status: "wip") }
   scope :closed, -> { where(status: "closed") }
+  scope :frontend, -> { where(source: "frontend") }
+  scope :backend, -> { where(source: "backend") }
   scope :recent, -> { order(last_seen_at: :desc) }
   scope :by_frequency, -> { order(count: :desc) }
   scope :by_severity, ->(level) { where(severity: level) }
@@ -118,7 +120,7 @@ class Issue < ApplicationRecord
     read_attribute(:github_pr_url).presence || project&.settings&.dig("issue_pr_urls", id.to_s)
   end
 
-  def self.find_or_create_by_fingerprint(project:, exception_class:, top_frame:, controller_action:, sample_message: nil)
+  def self.find_or_create_by_fingerprint(project:, exception_class:, top_frame:, controller_action:, sample_message: nil, source: "backend")
     fingerprint = generate_fingerprint(exception_class, top_frame, controller_action)
 
     issue = find_by(project: project, fingerprint: fingerprint)
@@ -144,6 +146,7 @@ class Issue < ApplicationRecord
         top_frame: top_frame,
         controller_action: controller_action,
         sample_message: sample_message,
+        source: source,
         count: 1,
         first_seen_at: Time.current,
         last_seen_at: Time.current,
@@ -359,7 +362,7 @@ class Issue < ApplicationRecord
     ["account_id", "ai_summary", "ai_summary_generated_at", "closed_at",
     "controller_action", "count", "created_at", "exception_class",
     "events_24h_count", "fingerprint", "first_seen_at", "has_pr_url", "id", "id_value", "last_seen_at",
-    "project_id", "sample_message", "severity", "severity_order", "status", "top_frame", "updated_at"]
+    "project_id", "sample_message", "severity", "severity_order", "source", "status", "top_frame", "updated_at"]
   end
 
   def self.ransackable_associations(auth_object = nil)

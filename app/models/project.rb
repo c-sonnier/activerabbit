@@ -20,6 +20,7 @@ class Project < ApplicationRecord
   has_many :notification_preferences, dependent: :destroy
   has_many :uptime_monitors, class_name: "Uptime::Monitor", dependent: :destroy
   has_many :replays
+  has_many :check_ins, dependent: :destroy
 
   validates :name, presence: true
   validates_uniqueness_to_tenant :name
@@ -189,6 +190,19 @@ class Project < ApplicationRecord
     return false unless discord_configured?
 
     settings.dig("notifications", "channels", "discord") != false
+  end
+
+  # Deploy hooks (POST /api/v1/deploys) — Slack/Discord when enabled below and channel toggles allow.
+  def notify_deploy_started?
+    return false unless notifications_enabled?
+
+    settings.dig("notifications", "deploy", "started") != false
+  end
+
+  def notify_deploy_finished?
+    return false unless notifications_enabled?
+
+    settings.dig("notifications", "deploy", "finished") != false
   end
 
   # ---- Auto-fix (opt-in) ----

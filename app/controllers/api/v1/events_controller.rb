@@ -224,7 +224,10 @@ class Api::V1::EventsController < Api::BaseController
       context: context,
       tags: tags,
       server_name: params[:server_name] || params["server_name"],
-      request_id: params[:request_id] || params["request_id"]
+      request_id: params[:request_id] || params["request_id"],
+      source: params[:source] || params["source"],
+      _sdk: params[:_sdk] || params["_sdk"],
+      runtime_context: params[:runtime_context] || params["runtime_context"]
     }
   end
 

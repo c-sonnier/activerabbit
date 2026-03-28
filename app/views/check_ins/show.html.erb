@@ -1,0 +1,306 @@
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- Header -->
+  <div class="bg-white rounded-lg shadow mb-6">
+    <div class="px-4 sm:px-6 py-4">
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+        <div class="min-w-0">
+          <h1 class="text-xl sm:text-2xl font-bold text-gray-900 truncate">
+            <%= @check_in.description.presence || @check_in.identifier %>
+          </h1>
+          <p class="text-gray-500 mt-1 text-sm">Project: <%= @check_in.project.name %></p>
+          <div class="mt-3 flex flex-wrap items-center gap-2 sm:gap-3">
+            <%
+              badge_class = case @check_in.status_display
+                            when "healthy" then "bg-green-100 text-green-800"
+                            when "missed" then "bg-red-100 text-red-800"
+                            when "new" then "bg-gray-100 text-gray-600"
+                            else "bg-gray-100 text-gray-600"
+                            end
+            %>
+            <span class="px-3 py-1 rounded-full text-sm font-medium <%= badge_class %>">
+              <%= @check_in.status_display.upcase %>
+            </span>
+            <span class="text-xs sm:text-sm text-gray-500">
+              Every <%= @check_in.interval_display %>
+            </span>
+            <% unless @check_in.enabled? %>
+              <span class="px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">PAUSED</span>
+            <% end %>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 shrink-0">
+          <% if @check_in.enabled? %>
+            <%= button_to "Pause", pause_check_in_path(@check_in), method: :post, class: "bg-yellow-500 text-white px-3 py-2 rounded-lg hover:bg-yellow-600 text-sm" %>
+          <% else %>
+            <%= button_to "Resume", resume_check_in_path(@check_in), method: :post, class: "bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 text-sm" %>
+          <% end %>
+          <%= link_to "Edit", edit_check_in_path(@check_in), class: "bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50 text-sm" %>
+          <%= button_to "Delete", check_in_path(@check_in), method: :delete, data: { turbo_confirm: "Delete this check-in?" }, class: "bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 text-sm" %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metric Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4 mb-6">
+    <div class="bg-white rounded-lg shadow p-3 sm:p-4">
+      <p class="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Status</p>
+      <p class="text-xl sm:text-2xl font-bold text-<%= @check_in.status_color %>-600"><%= @check_in.status_display.upcase %></p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-3 sm:p-4">
+      <p class="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Interval</p>
+      <p class="text-xl sm:text-2xl font-bold text-gray-900"><%= @check_in.interval_display %></p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-3 sm:p-4">
+      <p class="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Last Seen</p>
+      <p class="text-lg sm:text-xl font-bold text-gray-900">
+        <% if @check_in.last_seen_at %>
+          <%= time_ago_in_words(@check_in.last_seen_at) %> ago
+        <% else %>
+          <span class="text-gray-400">Never</span>
+        <% end %>
+      </p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-3 sm:p-4">
+      <p class="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Pings (24h)</p>
+      <p class="text-xl sm:text-2xl font-bold text-gray-900"><%= @pings_24h %></p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-3 sm:p-4">
+      <p class="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Uptime</p>
+      <p class="text-xl sm:text-2xl font-bold <%= @uptime_percentage && @uptime_percentage >= 99 ? 'text-green-600' : @uptime_percentage && @uptime_percentage >= 90 ? 'text-yellow-600' : @uptime_percentage ? 'text-red-600' : 'text-gray-400' %>">
+        <%= @uptime_percentage ? "#{@uptime_percentage}%" : "—" %>
+      </p>
+    </div>
+  </div>
+
+  <!-- 24h Timeline -->
+  <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-base sm:text-lg font-semibold text-gray-900">Last 24 Hours</h2>
+      <div class="flex items-center gap-4 text-xs text-gray-500">
+        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-green-500 inline-block"></span> OK</span>
+        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-red-500 inline-block"></span> Missed</span>
+        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-gray-200 inline-block"></span> Pending</span>
+      </div>
+    </div>
+    <div class="flex gap-[2px] items-end h-10">
+      <% @ping_timeline.each do |slot| %>
+        <%
+          bar_color = case slot[:status]
+                      when "ok" then "bg-green-500 hover:bg-green-600"
+                      when "missed" then "bg-red-500 hover:bg-red-600"
+                      when "pending" then "bg-gray-200 hover:bg-gray-300"
+                      else "bg-gray-100"
+                      end
+          bar_height = slot[:status] == "ok" ? "h-full" : "h-full"
+        %>
+        <div class="flex-1 <%= bar_height %> <%= bar_color %> rounded-sm transition-colors cursor-default"
+             title="<%= slot[:time].strftime('%H:%M') %> — <%= slot[:count] %> ping<%= slot[:count] != 1 ? 's' : '' %> (<%= slot[:status] %>)">
+        </div>
+      <% end %>
+    </div>
+    <div class="flex justify-between mt-1.5 text-[10px] text-gray-400">
+      <span>24h ago</span>
+      <span>12h ago</span>
+      <span>Now</span>
+    </div>
+  </div>
+
+  <!-- Ping Stats -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white rounded-lg shadow p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs text-gray-500 uppercase tracking-wide">Last 24 Hours</p>
+          <p class="text-2xl font-bold text-gray-900 mt-1"><%= @pings_24h %></p>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
+          <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 mt-1">pings received</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs text-gray-500 uppercase tracking-wide">Last 7 Days</p>
+          <p class="text-2xl font-bold text-gray-900 mt-1"><%= @pings_7d %></p>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center">
+          <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 mt-1">pings received</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs text-gray-500 uppercase tracking-wide">Last 30 Days</p>
+          <p class="text-2xl font-bold text-gray-900 mt-1"><%= @pings_30d %></p>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center">
+          <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+          </svg>
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 mt-1">pings received</p>
+    </div>
+  </div>
+
+  <!-- Recent Pings Log -->
+  <div class="bg-white rounded-lg shadow mb-6">
+    <div class="px-4 sm:px-6 py-4 border-b border-gray-200">
+      <h2 class="text-base sm:text-lg font-semibold text-gray-900">Recent Pings</h2>
+    </div>
+    <% if @recent_pings.any? %>
+      <div class="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+        <% @recent_pings.each do |ping| %>
+          <div class="px-4 sm:px-6 py-3 flex items-center justify-between hover:bg-gray-50">
+            <div class="flex items-center gap-3">
+              <span class="w-2 h-2 rounded-full bg-green-500 shrink-0"></span>
+              <div>
+                <p class="text-sm font-medium text-gray-900">
+                  <%= ping.pinged_at.strftime("%b %d, %Y at %H:%M:%S UTC") %>
+                </p>
+                <p class="text-xs text-gray-500">
+                  <%= time_ago_in_words(ping.pinged_at) %> ago
+                  <% if ping.source_ip.present? %>
+                    <span class="text-gray-400 ml-1">from <%= ping.source_ip %></span>
+                  <% end %>
+                </p>
+              </div>
+            </div>
+            <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">OK</span>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="px-6 py-8 text-center">
+        <p class="text-sm text-gray-500">No pings recorded yet. Send your first ping to start tracking.</p>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Default setup: same project API key as errors, no second secret -->
+  <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6 border border-indigo-100">
+    <h2 class="text-base sm:text-lg font-semibold text-gray-900 mb-2">Connect your app</h2>
+    <p class="text-sm text-gray-600 mb-4">
+      Use the <span class="font-medium text-gray-800">same</span> project API key and URL you already use for error tracking (<code class="text-xs font-mono bg-gray-100 px-1 rounded">activerabbit-ai</code> initializer).
+      Add <span class="font-medium text-gray-800">one</span> environment variable with this check-in’s monitor name (it is <span class="font-medium">not</span> a secret — only your API key is).
+    </p>
+
+    <% if @check_in.slug.present? %>
+      <% api_base = @check_in.ping_url.sub(%r{/api/v1/check_in/.*\z}, "") %>
+      <ol class="list-decimal list-inside text-sm text-gray-700 space-y-3 mb-4">
+        <li>Ensure the gem is configured with <code class="text-xs font-mono bg-gray-100 px-1 rounded">ACTIVERABBIT_API_KEY</code>, <code class="text-xs font-mono bg-gray-100 px-1 rounded">ACTIVERABBIT_PROJECT_ID</code>, and <code class="text-xs font-mono bg-gray-100 px-1 rounded">ACTIVERABBIT_API_URL</code> (example base: <code class="text-xs font-mono break-all"><%= api_base %></code>).</li>
+        <li>Add the monitor name for this check-in:</li>
+      </ol>
+
+      <div class="flex items-stretch gap-2 mb-4">
+        <pre class="flex-1 text-xs font-mono text-gray-800 bg-gray-50 border border-gray-200 rounded-lg px-3 py-3 overflow-x-auto whitespace-pre-wrap break-all">ACTIVERABBIT_MONITOR_SLUG=<%= @check_in.slug %></pre>
+        <button
+          type="button"
+          onclick="navigator.clipboard.writeText('ACTIVERABBIT_MONITOR_SLUG=<%= j @check_in.slug %>').then(() => { this.textContent = 'Copied!'; setTimeout(() => { this.textContent = 'Copy'; }, 2000); })"
+          class="shrink-0 self-start bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 text-sm font-medium">
+          Copy
+        </button>
+      </div>
+
+      <p class="text-sm text-gray-600 mb-2">After the task or job <span class="font-medium">succeeds</span>, report OK (from Ruby):</p>
+      <pre class="text-xs font-mono text-gray-800 bg-white border border-gray-200 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap mb-4">ActiveRabbit::Client.capture_cron_check_in("<%= @check_in.slug %>", :ok)</pre>
+
+      <p class="text-xs text-gray-500 mb-2">Optional statuses: <code class="font-mono">:in_progress</code> at start, <code class="font-mono">:error</code> in <code class="font-mono">rescue</code>. For Active Job you can use:</p>
+      <pre class="text-xs font-mono text-gray-800 bg-white border border-gray-200 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">class MyCronJob <%= "<" %> ApplicationJob
+  include ActiveRabbit::Client::CronMonitor
+  active_rabbit_cron slug: "<%= @check_in.slug %>"
+
+  def perform
+    # ...
+  end
+end</pre>
+    <% else %>
+      <p class="text-sm text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+        This check-in has no monitor id yet. Open <span class="font-medium">Edit</span>, set a <span class="font-medium">Name</span>, and save — we’ll create the id for your app automatically.
+      </p>
+    <% end %>
+  </div>
+
+  <!-- Advanced: URL ping + secret token (no gem / shell cron) -->
+  <details class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6 group">
+    <summary class="text-base sm:text-lg font-semibold text-gray-900 cursor-pointer list-none flex items-center gap-2">
+      <span class="text-gray-400 group-open:rotate-90 transition-transform inline-block">▸</span>
+      Advanced: ping URL (separate secret token)
+    </summary>
+    <p class="text-sm text-gray-500 mt-3 mb-3">
+      Only if you are <span class="font-medium">not</span> using the Ruby gem: this URL contains a <span class="font-medium">secret</span> token. Anyone with the link can mark this check-in OK — treat it like a password.
+    </p>
+    <div class="flex items-center gap-2 mb-4">
+      <code class="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm font-mono text-gray-800 break-all">
+        <%= @check_in.ping_url %>
+      </code>
+      <button
+        type="button"
+        onclick="navigator.clipboard.writeText('<%= j @check_in.ping_url %>').then(() => { this.textContent = 'Copied!'; setTimeout(() => { this.textContent = 'Copy'; }, 2000); })"
+        class="shrink-0 bg-gray-200 text-gray-800 px-4 py-3 rounded-lg hover:bg-gray-300 text-sm font-medium">
+        Copy
+      </button>
+    </div>
+    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-xs font-mono text-gray-600 space-y-2">
+      <p class="text-gray-500 font-sans text-sm mb-2">Examples after a successful run:</p>
+      <code class="block bg-white border rounded px-3 py-2 break-all">curl -s <%= @check_in.ping_url %></code>
+      <code class="block bg-white border rounded px-3 py-2 break-all">wget -q -O /dev/null <%= @check_in.ping_url %></code>
+    </div>
+  </details>
+
+  <!-- Settings -->
+  <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+    <h2 class="text-base sm:text-lg font-semibold text-gray-900 mb-4">Settings</h2>
+    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <dt class="text-sm font-medium text-gray-500">Name</dt>
+        <dd class="text-sm text-gray-900 mt-1"><%= @check_in.description.presence || "—" %></dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-gray-500">Monitor id (for your app)</dt>
+        <dd class="text-sm text-gray-900 font-mono mt-1"><%= @check_in.slug.presence || "—" %></dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-gray-500">Ping token (advanced only)</dt>
+        <dd class="text-sm text-gray-900 font-mono mt-1 break-all"><%= @check_in.identifier %></dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-gray-500">Kind</dt>
+        <dd class="text-sm text-gray-900 mt-1"><%= @check_in.kind.capitalize %></dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-gray-500">Expected Interval</dt>
+        <dd class="text-sm text-gray-900 mt-1"><%= @check_in.interval_display %></dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-gray-500">Time reference</dt>
+        <dd class="text-sm text-gray-900 mt-1">00:00 UTC (fixed)</dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-gray-500">Created</dt>
+        <dd class="text-sm text-gray-900 mt-1"><%= @check_in.created_at.strftime("%b %d, %Y at %H:%M UTC") %></dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-gray-500">Last Alerted</dt>
+        <dd class="text-sm text-gray-900 mt-1">
+          <%= @check_in.last_alerted_at&.strftime("%b %d, %Y at %H:%M UTC") || "Never" %>
+        </dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="mt-4">
+    <%= link_to check_ins_path, class: "text-sm text-gray-500 hover:text-gray-700" do %>
+      &larr; Back to check-ins
+    <% end %>
+  </div>
+</div>

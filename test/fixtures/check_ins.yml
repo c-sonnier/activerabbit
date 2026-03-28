@@ -1,0 +1,64 @@
+# Check-ins for multi-tenant monitoring tests
+
+healthy:
+  project: default
+  account: default
+  identifier: "ci_healthy_fixture"
+  kind: heartbeat
+  heartbeat_interval_seconds: 3600
+  timezone: UTC
+  description: "Healthy fixture"
+  enabled: true
+  last_seen_at: <%= Time.current %>
+  last_status: reporting
+
+new_unused:
+  project: default
+  account: default
+  identifier: "ci_new_fixture"
+  description: "New unused fixture"
+  slug: new_unused_fixture
+  kind: cron
+  heartbeat_interval_seconds: 300
+  timezone: UTC
+  enabled: true
+  last_seen_at:
+  last_status: success
+
+disabled:
+  project: default
+  account: default
+  identifier: "ci_disabled_fixture"
+  description: "Disabled fixture"
+  kind: cron
+  heartbeat_interval_seconds: 300
+  timezone: UTC
+  enabled: false
+  last_seen_at: <%= Time.current %>
+  last_status: success
+
+api_ok:
+  project: default
+  account: default
+  identifier: "ci_api_ok_token_fixed"
+  description: "API OK fixture"
+  slug: api_ok_monitor
+  kind: cron
+  heartbeat_interval_seconds: 3600
+  timezone: UTC
+  enabled: true
+  last_seen_at: <%= 5.minutes.ago %>
+  last_status: reporting
+
+overdue_alert:
+  project: default
+  account: default
+  identifier: "ci_overdue_fixture"
+  description: "Overdue fixture"
+  kind: cron
+  heartbeat_interval_seconds: 300
+  timezone: UTC
+  enabled: true
+  last_seen_at: <%= 2.hours.ago %>
+  last_status: reporting
+  last_alerted_at: <%= 3.hours.ago %>

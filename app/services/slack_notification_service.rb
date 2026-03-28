@@ -39,6 +39,11 @@ class SlackNotificationService
     send_blocks(blocks: blocks, fallback_text: fallback)
   end
 
+  def send_check_in_alert(check_in)
+    blocks, fallback = build_check_in_alert_blocks(check_in)
+    send_blocks(blocks: blocks, fallback_text: fallback)
+  end
+
   def send_custom_alert(title, message, color: "warning")
     blocks, fallback = build_custom_blocks(title, message, color)
     send_blocks(blocks: blocks, fallback_text: fallback)
@@ -77,6 +82,10 @@ class SlackNotificationService
     host = Rails.env.development? ? "http://localhost:3000" : ENV.fetch("APP_HOST", "https://activerabbit.com")
     host = "https://#{host}" unless host.start_with?("http://", "https://")
     "#{host}/#{@project.slug}"
+  end
+
+  def deploy_list_url
+    "#{project_url}/deploys"
   end
 
   def performance_action_url(target)
@@ -277,6 +286,40 @@ class SlackNotificationService
 
     fallback = "Uptime #{status_text}: #{monitor.name} (#{monitor.url})"
     [blocks, fallback]
+  end
+
+  def build_check_in_alert_blocks(check_in)
+    host = Rails.env.development? ? "http://localhost:3000" : ENV.fetch("APP_HOST", "https://activerabbit.com")
+    host = "https://#{host}" unless host.start_with?("http://", "https://")
+    check_in_url = "#{host}/check_ins/#{check_in.id}"
+
+    blocks = [
+      {
+        type: "header",
+        text: { type: "plain_text", text: ":warning: Missed Check-In: #{check_in.description || check_in.identifier}", emoji: true }
+      },
+      {
+        type: "section",
+        fields: [
+          { type: "mrkdwn", text: "*Project:*\n#{@project.name}" },
+          { type: "mrkdwn", text: "*Expected Interval:*\n#{check_in.interval_display}" },
+          { type: "mrkdwn", text: "*Last Seen:*\n#{check_in.last_seen_at&.strftime('%b %d, %H:%M UTC') || 'Never'}" },
+          { type: "mrkdwn", text: "*Environment:*\n#{@project.environment}" }
+        ]
+      },
+      {
+        type: "section",
+        text: { type: "mrkdwn", text: "This check-in has not reported within its expected interval. Your cron job or scheduled task may have stopped running." }
+      },
+      {
+        type: "actions",
+        elements: [
+          { type: "button", text: { type: "plain_text", text: "View Check-In", emoji: true }, url: check_in_url, style: "danger" }
+        ]
+      }
+    ]
+
+    [blocks, "Missed check-in: #{check_in.description || check_in.identifier}"]
   end
 
   def build_error_frequency_message(issue, payload)

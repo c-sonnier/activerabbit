@@ -40,13 +40,13 @@ module Uptime
       # Time period filter
       @period = params[:period] || "24h"
       @period_hours = case @period
-                      when "1h" then 1
-                      when "6h" then 6
-                      when "24h" then 24
-                      when "7d" then 168
-                      when "30d" then 720
-                      else 24
-                      end
+      when "1h" then 1
+      when "6h" then 6
+      when "24h" then 24
+      when "7d" then 168
+      when "30d" then 720
+      else 24
+      end
       @period_start = @period_hours.hours.ago
 
       checks_scope = @monitor.checks.where("created_at > ?", @period_start)

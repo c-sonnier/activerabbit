@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_25_000001) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_27_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -144,6 +144,45 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_25_000001) do
     t.index ["token"], name: "index_api_tokens_on_token", unique: true
   end
 
+  create_table "check_in_pings", force: :cascade do |t|
+    t.bigint "check_in_id", null: false
+    t.bigint "account_id", null: false
+    t.string "status", default: "success", null: false
+    t.integer "response_time_ms"
+    t.string "source_ip"
+    t.datetime "pinged_at", null: false
+    t.datetime "created_at", null: false
+    t.index ["account_id"], name: "index_check_in_pings_on_account_id"
+    t.index ["check_in_id", "pinged_at"], name: "index_check_in_pings_on_check_in_id_and_pinged_at"
+    t.index ["check_in_id", "status"], name: "index_check_in_pings_on_check_in_id_and_status"
+    t.index ["check_in_id"], name: "index_check_in_pings_on_check_in_id"
+  end
+
+  create_table "check_ins", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.bigint "account_id", null: false
+    t.string "identifier", null: false
+    t.string "kind", default: "cron", null: false
+    t.string "schedule_cron"
+    t.integer "max_run_time_seconds"
+    t.integer "heartbeat_interval_seconds"
+    t.string "timezone", default: "UTC"
+    t.text "description"
+    t.boolean "enabled", default: true, null: false
+    t.datetime "last_seen_at"
+    t.string "last_status", default: "success"
+    t.datetime "last_alerted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "slug"
+    t.datetime "run_started_at"
+    t.index ["account_id", "last_status"], name: "index_check_ins_on_account_id_and_last_status"
+    t.index ["account_id"], name: "index_check_ins_on_account_id"
+    t.index ["project_id", "identifier"], name: "index_check_ins_on_project_id_and_identifier", unique: true
+    t.index ["project_id", "slug"], name: "index_check_ins_on_project_id_and_slug", unique: true
+    t.index ["project_id"], name: "index_check_ins_on_project_id"
+  end
+
   create_table "daily_event_counts", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.date "day", null: false
@@ -209,6 +248,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_25_000001) do
     t.string "trace_id"
     t.uuid "replay_id"
     t.uuid "session_id"
+    t.string "source", default: "backend", null: false
     t.index "((context)::jsonb)", name: "idx_events_context_gin", using: :gin
     t.index ["account_id", "occurred_at"], name: "idx_events_account_occurred_at", order: { occurred_at: :desc }
     t.index ["account_id", "project_id", "controller_action", "occurred_at"], name: "idx_on_account_id_project_id_controller_action_occu_3cbe313ccb"
@@ -229,6 +269,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_25_000001) do
     t.index ["request_id"], name: "index_events_on_request_id"
     t.index ["server_name"], name: "index_events_on_server_name"
     t.index ["trace_id"], name: "index_events_on_trace_id"
+    t.index ["source"], name: "index_events_on_source"
   end
 
   create_table "healthchecks", force: :cascade do |t|
@@ -280,6 +321,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_25_000001) do
     t.datetime "auto_fix_attempted_at"
     t.datetime "auto_fix_merged_at"
     t.text "auto_fix_error"
+    t.string "source", default: "backend", null: false
     t.index ["account_id", "status", "last_seen_at"], name: "idx_issues_account_status_last_seen"
     t.index ["account_id"], name: "index_issues_on_account_id"
     t.index ["auto_fix_status"], name: "index_issues_on_auto_fix_status", where: "(auto_fix_status IS NOT NULL)"
@@ -291,6 +333,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_25_000001) do
     t.index ["project_id", "last_seen_at"], name: "idx_issues_project_last_seen", order: { last_seen_at: :desc }
     t.index ["project_id"], name: "index_issues_on_project_id"
     t.index ["severity"], name: "index_issues_on_severity"
+    t.index ["source"], name: "index_issues_on_source"
     t.index ["status"], name: "index_issues_on_status"
   end
 
@@ -737,6 +780,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_25_000001) do
   add_foreign_key "alert_rules", "projects"
   add_foreign_key "api_tokens", "accounts"
   add_foreign_key "api_tokens", "projects"
+  add_foreign_key "check_in_pings", "accounts"
+  add_foreign_key "check_in_pings", "check_ins"
+  add_foreign_key "check_ins", "accounts"
+  add_foreign_key "check_ins", "projects"
   add_foreign_key "daily_event_counts", "accounts"
   add_foreign_key "daily_resource_usages", "accounts"
   add_foreign_key "deploys", "accounts"

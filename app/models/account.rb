@@ -154,8 +154,10 @@ class Account < ApplicationRecord
     self.settings = (settings || {}).merge("slack_channel" => formatted_channel)
   end
 
+  # True when a real webhook URL is available (DB, global/name ENV vars).
+  # Must match slack_webhook_url so SLACK_WEBHOOK_URL alone enables account Slack.
   def slack_configured?
-    settings&.dig("slack_webhook_url").present?
+    slack_webhook_url.to_s.match?(/\Ahttps?:\/\//)
   end
 
   def slack_notifications_enabled?
