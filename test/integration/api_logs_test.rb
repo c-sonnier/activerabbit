@@ -15,7 +15,7 @@ class ApiLogsTest < ActionDispatch::IntegrationTest
       }.to_json,
       headers: {
         "Content-Type" => "application/json",
-        "Authorization" => "Bearer #{@api_token.token}"
+        "X-Project-Token" => @api_token.token
       }
 
     assert_response :accepted
@@ -28,7 +28,7 @@ class ApiLogsTest < ActionDispatch::IntegrationTest
       params: { logs: [] }.to_json,
       headers: {
         "Content-Type" => "application/json",
-        "Authorization" => "Bearer #{@api_token.token}"
+        "X-Project-Token" => @api_token.token
       }
 
     assert_response :unprocessable_entity
@@ -41,7 +41,7 @@ class ApiLogsTest < ActionDispatch::IntegrationTest
       }.to_json,
       headers: {
         "Content-Type" => "application/json",
-        "Authorization" => "Bearer #{@api_token.token}"
+        "X-Project-Token" => @api_token.token
       }
 
     assert_response :unprocessable_entity

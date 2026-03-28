@@ -35,8 +35,8 @@ class ResourceQuotasTest < ActiveSupport::TestCase
     assert_equal false, ResourceQuotas::PLAN_QUOTAS[:free][:slack_notifications]
   end
 
-  test "free plan has 1 uptime monitor" do
-    assert_equal 1, ResourceQuotas::PLAN_QUOTAS[:free][:uptime_monitors]
+  test "free plan has 0 uptime monitors" do
+    assert_equal 0, ResourceQuotas::PLAN_QUOTAS[:free][:uptime_monitors]
   end
 
   test "free plan has 0 status pages" do
@@ -51,8 +51,8 @@ class ResourceQuotasTest < ActiveSupport::TestCase
     assert_equal 50_000, ResourceQuotas::PLAN_QUOTAS[:team][:events]
   end
 
-  test "team plan has 20 AI summaries" do
-    assert_equal 20, ResourceQuotas::PLAN_QUOTAS[:team][:ai_summaries]
+  test "team plan has unlimited AI summaries" do
+    assert_equal Float::INFINITY, ResourceQuotas::PLAN_QUOTAS[:team][:ai_summaries]
   end
 
   test "team plan has 20 pull requests" do
@@ -75,8 +75,8 @@ class ResourceQuotasTest < ActiveSupport::TestCase
     assert_equal 100_000, ResourceQuotas::PLAN_QUOTAS[:business][:events]
   end
 
-  test "business plan has 100 AI summaries" do
-    assert_equal 100, ResourceQuotas::PLAN_QUOTAS[:business][:ai_summaries]
+  test "business plan has unlimited AI summaries" do
+    assert_equal Float::INFINITY, ResourceQuotas::PLAN_QUOTAS[:business][:ai_summaries]
   end
 
   test "business plan has 250 pull requests" do

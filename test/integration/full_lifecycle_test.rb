@@ -851,7 +851,7 @@ class FullLifecycleTest < ActionDispatch::IntegrationTest
     assert_equal "team", team_account.current_plan
     refute team_account.on_free_plan?
     assert_equal 50_000, team_account.event_quota_value
-    assert_equal 20, team_account.ai_summaries_quota
+    assert_equal Float::INFINITY, team_account.ai_summaries_quota
     assert_equal 20, team_account.pull_requests_quota
     assert_equal 31, team_account.data_retention_days
     assert team_account.slack_notifications_allowed?
@@ -1015,8 +1015,8 @@ class FullLifecycleTest < ActionDispatch::IntegrationTest
     # --- Verify new team quotas are active ---
     assert_equal 50_000, account.event_quota_value,
       "Should have team event quota"
-    assert_equal 20, account.ai_summaries_quota,
-      "Should have team AI quota"
+    assert_equal Float::INFINITY, account.ai_summaries_quota,
+      "Should have team AI quota (unlimited)"
     assert_equal 20, account.pull_requests_quota,
       "Should have team PR quota"
     assert_equal 31, account.data_retention_days,
@@ -1028,8 +1028,8 @@ class FullLifecycleTest < ActionDispatch::IntegrationTest
     account.update!(cached_ai_summaries_used: 0)
     assert account.within_quota?(:ai_summaries),
       "Team plan should allow AI summaries (0/20 used)"
-    assert_equal 20, account.ai_summaries_quota,
-      "Team plan should have 20 AI summaries quota"
+    assert_equal Float::INFINITY, account.ai_summaries_quota,
+      "Team plan should have unlimited AI summaries quota"
 
     # --- Verify events are accepted again (no hard cap on team) ---
     account.update!(cached_events_used: 60_000)

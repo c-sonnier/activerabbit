@@ -14,6 +14,16 @@
             <strong><%= trial_days_left %> day<%= "s" unless trial_days_left == 1 %></strong> remaining.
             Subscribe to a plan to keep monitoring uninterrupted after your trial ends.
           </p>
+        <% elsif @account.respond_to?(:trial_expired_without_payment?) && @account.trial_expired_without_payment? %>
+          <p class="text-xs text-red-700 mt-1">
+            Trial expired &mdash; you've been moved to the Free plan.
+            <%= link_to "Upgrade", "#pricing-plans", class: "font-semibold text-indigo-600 hover:text-indigo-800 underline" %> to unlock higher limits.
+          </p>
+        <% elsif @account.on_free_plan? %>
+          <p class="text-xs text-gray-600 mt-1">
+            You're on the Free plan.
+            <%= link_to "Upgrade", "#pricing-plans", class: "font-semibold text-indigo-600 hover:text-indigo-800 underline" %> to unlock more features.
+          </p>
         <% end %>
         <% if @next_payment_date %>
           <p class="text-sm text-indigo-700">

@@ -122,7 +122,9 @@ class ReplayQuotaTest < ActiveSupport::TestCase
 
   test "usage_summary includes session_replays" do
     @account.current_plan = "team"
+    @account.trial_ends_at = nil
     @account.cached_replays_used = 3
+    @account.instance_variable_set(:@_usage_summary, nil)
     summary = @account.usage_summary
 
     assert summary.key?(:session_replays)

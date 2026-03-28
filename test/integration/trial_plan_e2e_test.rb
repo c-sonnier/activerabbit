@@ -649,7 +649,7 @@ class TrialPlanE2eTest < ActionDispatch::IntegrationTest
     assert_equal 50_000, account.event_quota
     assert_equal 0, account.cached_events_used, "Usage reset on upgrade"
     refute account.on_free_plan?
-    assert_equal 20, account.ai_summaries_quota
+    assert_equal Float::INFINITY, account.ai_summaries_quota
     assert_equal 31, account.data_retention_days
     assert account.slack_notifications_allowed?
 
@@ -785,8 +785,8 @@ class TrialPlanE2eTest < ActionDispatch::IntegrationTest
 
     assert_equal "business", account.current_plan,
       "Should upgrade from trial to business"
-    assert_equal 100, account.ai_summaries_quota,
-      "Business plan should have 100 AI summaries"
+    assert_equal Float::INFINITY, account.ai_summaries_quota,
+      "Business plan should have unlimited AI summaries"
     assert_equal 31, account.data_retention_days
   ensure
     ENV["STRIPE_PRICE_BUSINESS_MONTHLY"] = original_env

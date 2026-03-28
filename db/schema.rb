@@ -268,8 +268,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_27_120000) do
     t.index ["replay_id"], name: "index_events_on_replay_id"
     t.index ["request_id"], name: "index_events_on_request_id"
     t.index ["server_name"], name: "index_events_on_server_name"
-    t.index ["trace_id"], name: "index_events_on_trace_id"
     t.index ["source"], name: "index_events_on_source"
+    t.index ["trace_id"], name: "index_events_on_trace_id"
   end
 
   create_table "healthchecks", force: :cascade do |t|

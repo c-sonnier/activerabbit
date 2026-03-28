@@ -55,9 +55,9 @@ end
 # ---------------------------------------------------------------------------
 ActsAsTenant.with_tenant(account) do
   projects_data = [
-    { name: "Acme Web App",   slug: "acme-web",   url: "https://app.acme.com",  environment: "production"  },
-    { name: "Acme API",       slug: "acme-api",    url: "https://api.acme.com",  environment: "production"  },
-    { name: "Acme Admin",     slug: "acme-admin",  url: "https://admin.acme.com", environment: "staging"    }
+    { name: "Acme Web App",   slug: "acme-web",   url: "https://app.acme.com",  environment: "production", tech_stack: "rails"  },
+    { name: "Acme API",       slug: "acme-api",    url: "https://api.acme.com",  environment: "production", tech_stack: "rails"  },
+    { name: "Acme Admin",     slug: "acme-admin",  url: "https://admin.acme.com", environment: "staging",   tech_stack: "rails"  }
   ]
 
   projects = projects_data.map do |attrs|
@@ -68,6 +68,7 @@ ActsAsTenant.with_tenant(account) do
       p.url         = attrs[:url]
       p.environment = attrs[:environment]
       p.settings    = { "environment" => attrs[:environment] }
+      p.tech_stack  = attrs[:tech_stack]
     end
     puts "  Project: #{project.name} (#{project.slug})"
 

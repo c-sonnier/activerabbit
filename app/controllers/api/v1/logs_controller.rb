@@ -40,8 +40,8 @@ class Api::V1::LogsController < Api::BaseController
       end
     end
 
-    serializable = entries.map { |e| JSON.parse(e.to_h.to_json) }
-    LogIngestJob.perform_async(@current_project.id, serializable)
+    serializable = entries.map { |e| e.is_a?(ActionController::Parameters) ? e.permit!.to_h : e.to_h }
+    LogIngestJob.perform_later(@current_project.id, serializable)
 
     render json: {
       status: "accepted",

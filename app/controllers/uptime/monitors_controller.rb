@@ -34,6 +34,18 @@ module Uptime
           "ROUND(AVG(avg_response_time_ms)) as avg_response_time"
         )
         .index_by(&:uptime_monitor_id)
+
+      @active_tab = params[:tab] == "cron" ? "cron" : "monitors"
+
+      if @active_tab == "cron"
+        check_in_scope = ::CheckIn.where(account: current_account)
+        check_in_scope = check_in_scope.where(project_id: @current_project.id) if @current_project.present?
+        @check_ins = check_in_scope.order(created_at: :desc)
+        @check_in_total_count = @check_ins.count
+        @check_in_healthy_count = @check_ins.select { |c| c.status_display == "healthy" }.size
+        @check_in_missed_count = @check_ins.select { |c| c.status_display == "missed" }.size
+        @check_in_new_count = @check_ins.select { |c| c.status_display == "new" }.size
+      end
     end
 
     def show

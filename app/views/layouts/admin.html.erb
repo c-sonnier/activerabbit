@@ -187,29 +187,12 @@
           <% end %>
 
           <%= link_to uptime_index_path,
-              class: "sidebar-nav-item group relative flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if controller_name == 'monitors' && controller.class.module_parent_name == 'Uptime'}" do %>
-            <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
-            <span data-sidebar-target="navText">Uptime</span>
-            <span class="sidebar-tooltip">Uptime Monitoring</span>
-          <% end %>
-          <%= link_to check_ins_path,
-              class: "sidebar-nav-item group relative flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if controller_name == 'check_ins'}" do %>
+              class: "sidebar-nav-item group relative flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if (controller_name == 'monitors' && controller.class.module_parent_name == 'Uptime') || controller_name == 'check_ins'}" do %>
             <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            <span data-sidebar-target="navText">Check-Ins</span>
-            <span class="sidebar-tooltip">Cron Monitoring</span>
-          <% end %>
-
-          <%= link_to base_logs_path,
-              class: "sidebar-nav-item group relative flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(base_logs_path)}" do %>
-            <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
-            <span data-sidebar-target="navText">Logs</span>
-            <span class="sidebar-tooltip">Logs</span>
+            <span data-sidebar-target="navText">Uptime</span>
+            <span class="sidebar-tooltip">Uptime Monitoring</span>
           <% end %>
           <% base_replays_path = menu_project ? "/#{menu_project.slug}/replays" : "#" %>
           <%= link_to base_replays_path,
@@ -222,6 +205,14 @@
             <span class="sidebar-tooltip">Session Replays</span>
           <% end %>
 
+          <%= link_to base_logs_path,
+              class: "sidebar-nav-item group relative flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(base_logs_path)}" do %>
+            <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <span data-sidebar-target="navText">Logs</span>
+            <span class="sidebar-tooltip">Logs</span>
+          <% end %>
           <%= link_to base_deploys_path,
               class: "sidebar-nav-item group relative flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(base_deploys_path)}" do %>
             <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
