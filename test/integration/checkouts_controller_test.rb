@@ -87,4 +87,48 @@ class CheckoutsControllerTest < ActionDispatch::IntegrationTest
       assert flash[:alert].present?
     end
   end
+
+  test "POST create passes addon params to CheckoutCreator" do
+    mock_checkout = OpenStruct.new(url: "https://checkout.stripe.com/test")
+    params_received = {}
+
+    CheckoutCreator.stub(:new, ->(**args) {
+      params_received = args
+      OpenStruct.new(call: mock_checkout)
+    }) do
+      post checkouts_path, params: {
+        plan: "team",
+        interval: "month",
+        uptime_monitors: "10",
+        extra_errors: "200000",
+        session_replays: "5000"
+      }
+    end
+
+    assert_equal "10", params_received[:uptime_monitors]
+    assert_equal "200000", params_received[:extra_errors]
+    assert_equal "5000", params_received[:session_replays]
+  end
+
+  test "POST create passes ai param with addons" do
+    mock_checkout = OpenStruct.new(url: "https://checkout.stripe.com/test")
+    params_received = {}
+
+    CheckoutCreator.stub(:new, ->(**args) {
+      params_received = args
+      OpenStruct.new(call: mock_checkout)
+    }) do
+      post checkouts_path, params: {
+        plan: "team",
+        interval: "month",
+        ai: "1",
+        uptime_monitors: "5",
+        extra_errors: "0",
+        session_replays: "0"
+      }
+    end
+
+    assert_equal "1", params_received[:ai]
+    assert_equal "5", params_received[:uptime_monitors]
+  end
 end

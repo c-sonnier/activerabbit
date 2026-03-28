@@ -9,7 +9,7 @@ default:
   event_count: 150
   compressed_size: 5000
   uncompressed_size: 25000
-  storage_key: "replays/1/1/550e8400-e29b-41d4-a716-446655440001"
+  storage_key: "local://replays/1/1/550e8400-e29b-41d4-a716-446655440001"
   checksum_sha256: "abc123def456"
   retention_until: <%= 30.days.from_now.iso8601 %>
   url: "https://example.com/dashboard"

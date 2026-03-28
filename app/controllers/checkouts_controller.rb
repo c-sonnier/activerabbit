@@ -18,7 +18,12 @@ class CheckoutsController < ApplicationController
     end
 
     # For paid plans, go through Stripe checkout
-    url = CheckoutCreator.new(user: current_user, account:, plan:, interval:, ai:).call.url
+    url = CheckoutCreator.new(
+      user: current_user, account:, plan:, interval:, ai:,
+      uptime_monitors: params[:uptime_monitors],
+      extra_errors: params[:extra_errors],
+      session_replays: params[:session_replays]
+    ).call.url
     redirect_to url, allow_other_host: true, status: :see_other
   rescue => e
     redirect_to settings_path, alert: e.message

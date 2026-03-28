@@ -152,17 +152,21 @@
 
   <!-- Transport controls bar -->
   <div id="replay-controls" class="hidden border-t border-gray-200 bg-gray-50 px-4 py-3">
-    <!-- Event density timeline -->
+    <!-- Inactivity skip overlay -->
+    <div id="replay-skip-overlay" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:20; background:rgba(0,0,0,0.75); color:#fff; padding:8px 20px; border-radius:8px; font-size:13px; font-weight:600; pointer-events:none; white-space:nowrap;">
+      <span id="replay-skip-text"></span>
+    </div>
+    <!-- Event density timeline (segmented bar) -->
     <div class="flex items-center gap-3 mb-1">
       <span class="text-xs font-mono text-gray-500 w-12"></span>
-      <div id="event-density-bar" class="flex-1 flex items-end justify-between h-5 px-0.5" title="Event density per segment"></div>
+      <div id="event-density-bar" class="flex-1 flex items-end gap-px h-5 px-0.5" title="Event density &mdash; gray = inactive"></div>
       <span class="text-xs font-mono text-gray-500 w-12"></span>
     </div>
     <!-- Timeline slider -->
     <div class="flex items-center gap-3 mb-3">
       <span id="replay-time-current" class="text-xs font-mono text-gray-500 w-12 text-right">0:00</span>
       <input type="range" id="replay-progress" min="0" max="<%= @replay.duration_ms %>" value="0" class="flex-1 cursor-pointer" />
-      <span class="text-xs font-mono text-gray-500 w-12"><%= "#{minutes}:%02d" % seconds %></span>
+      <span id="replay-time-total" class="text-xs font-mono text-gray-500 w-12"><%= "#{minutes}:%02d" % seconds %></span>
     </div>
     <!-- Buttons -->
     <div class="flex items-center justify-center gap-2">
@@ -191,16 +195,46 @@
   var controls = document.getElementById('replay-controls');
   var progressBar = document.getElementById('replay-progress');
   var timeCurrent = document.getElementById('replay-time-current');
+  var timeTotal = document.getElementById('replay-time-total');
   var iconPlay = document.getElementById('replay-icon-play');
   var iconPause = document.getElementById('replay-icon-pause');
+  var skipOverlay = document.getElementById('replay-skip-overlay');
+  var skipText = document.getElementById('replay-skip-text');
   var isPlaying = false;
-  var totalMs = <%= @replay.duration_ms %>;
+  var lastRealTimeMs = 0; // tracks real-time position via event-cast
+  var baseTimestamp = 0;  // first event's absolute timestamp
+  var realDurationMs = 0; // last event timestamp - first event timestamp
+  var INACTIVE_THRESHOLD_MS = 5000; // 5s gap = inactive
+  var skipOverlayTimer = null;
 
   function formatTime(ms) {
-    var s = Math.floor(ms / 1000);
-    var m = Math.floor(s / 60);
-    s = s % 60;
+    var totalSec = Math.floor(Math.abs(ms) / 1000);
+    var h = Math.floor(totalSec / 3600);
+    var m = Math.floor((totalSec % 3600) / 60);
+    var s = totalSec % 60;
+    if (h > 0) return h + ':' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
     return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  function formatDuration(ms) {
+    var sec = Math.round(ms / 1000);
+    if (sec < 60) return sec + 's';
+    var m = Math.floor(sec / 60);
+    var s = sec % 60;
+    if (m < 60) return s > 0 ? m + 'm ' + s + 's' : m + 'm';
+    var h = Math.floor(m / 60);
+    m = m % 60;
+    return h + 'h ' + m + 'm';
+  }
+
+  function showSkipOverlay(gapMs) {
+    if (!skipOverlay) return;
+    skipText.textContent = formatDuration(gapMs) + ' of inactivity skipped';
+    skipOverlay.style.display = 'block';
+    clearTimeout(skipOverlayTimer);
+    skipOverlayTimer = setTimeout(function() {
+      skipOverlay.style.display = 'none';
+    }, 1500);
   }
 
   window._replayToggle = function() {
@@ -228,25 +262,22 @@
     });
   };
 
-  // Update progress bar periodically
+  // Update progress bar using real-time position tracked via event-cast
   function updateProgress() {
-    if (window._replayPlayer && window._replayPlayer.getMetaData) {
-      var meta = window._replayPlayer.getMetaData();
-      var current = window._replayPlayer.getCurrentTime ? window._replayPlayer.getCurrentTime() : 0;
-      if (current > 0) {
-        progressBar.value = current;
-        timeCurrent.textContent = formatTime(current);
-      }
+    if (isPlaying && realDurationMs > 0) {
+      progressBar.value = lastRealTimeMs;
+      timeCurrent.textContent = formatTime(lastRealTimeMs);
     }
     requestAnimationFrame(updateProgress);
   }
 
-  // Seek on scrub
+  // Seek on scrub — play() accepts real-time offset from first event
   progressBar.addEventListener('input', function() {
     if (window._replayPlayer && window._replayPlayer.play) {
       var t = parseInt(this.value);
       window._replayPlayer.pause();
       window._replayPlayer.play(t);
+      lastRealTimeMs = t;
       isPlaying = true;
       iconPlay.classList.add('hidden');
       iconPause.classList.remove('hidden');
@@ -254,39 +285,72 @@
     }
   });
 
-  function buildEventDensity(events, durationMs) {
+  // Build density bar with inactive segments shown as gray
+  function buildEventDensity(events, durationMs, inactiveRanges) {
     var bar = document.getElementById('event-density-bar');
     if (!bar || !events.length) return;
-    var bucketCount = 80; // number of dots across the timeline
+    var bucketCount = 100;
     var bucketMs = durationMs / bucketCount;
     var buckets = new Array(bucketCount).fill(0);
-    var baseTs = events[0].timestamp;
+    var bts = events[0].timestamp;
     for (var i = 0; i < events.length; i++) {
-      var offset = (events[i].timestamp || 0) - baseTs;
+      var offset = (events[i].timestamp || 0) - bts;
       var idx = Math.min(Math.floor(offset / bucketMs), bucketCount - 1);
       if (idx >= 0) buckets[idx]++;
     }
-    var maxCount = Math.max.apply(null, buckets) || 1;
+
+    // Mark which buckets are inactive
+    var inactiveBuckets = new Array(bucketCount).fill(false);
+    for (var r = 0; r < inactiveRanges.length; r++) {
+      var range = inactiveRanges[r];
+      var startIdx = Math.floor(range.start / bucketMs);
+      var endIdx = Math.ceil(range.end / bucketMs);
+      for (var k = startIdx; k < endIdx && k < bucketCount; k++) {
+        if (k >= 0) inactiveBuckets[k] = true;
+      }
+    }
+
+    var maxCount = 1;
+    for (var m = 0; m < buckets.length; m++) {
+      if (buckets[m] > maxCount) maxCount = buckets[m];
+    }
+
     bar.innerHTML = '';
     for (var b = 0; b < bucketCount; b++) {
-      var ratio = buckets[b] / maxCount;
-      var size = buckets[b] === 0 ? 2 : Math.round(3 + ratio * 11); // 3px min, 14px max
-      var opacity = buckets[b] === 0 ? 0.2 : (0.35 + ratio * 0.65);
-      var dot = document.createElement('div');
-      dot.style.width = size + 'px';
-      dot.style.height = size + 'px';
-      dot.style.borderRadius = '50%';
-      dot.style.backgroundColor = 'rgb(99, 102, 241)';
-      dot.style.opacity = opacity;
-      dot.style.flexShrink = '0';
-      dot.style.cursor = 'pointer';
-      dot.title = buckets[b] + ' event' + (buckets[b] !== 1 ? 's' : '');
+      var seg = document.createElement('div');
+      seg.style.flex = '1';
+      seg.style.cursor = 'pointer';
+      seg.style.borderRadius = '1px';
+      seg.style.minWidth = '0';
+
+      if (inactiveBuckets[b]) {
+        // Inactive segment — thin gray bar
+        seg.style.height = '3px';
+        seg.style.backgroundColor = '#d1d5db';
+        seg.style.alignSelf = 'center';
+        seg.title = 'Inactive';
+      } else if (buckets[b] === 0) {
+        seg.style.height = '3px';
+        seg.style.backgroundColor = '#e5e7eb';
+        seg.style.alignSelf = 'center';
+        seg.title = 'No events';
+      } else {
+        var ratio = buckets[b] / maxCount;
+        var h = Math.round(4 + ratio * 16); // 4px min, 20px max
+        seg.style.height = h + 'px';
+        seg.style.backgroundColor = 'rgb(99, 102, 241)';
+        seg.style.opacity = (0.4 + ratio * 0.6).toString();
+        seg.style.alignSelf = 'flex-end';
+        seg.title = buckets[b] + ' event' + (buckets[b] !== 1 ? 's' : '');
+      }
+
       (function(bucketIdx) {
-        dot.addEventListener('click', function() {
+        seg.addEventListener('click', function() {
           var seekMs = Math.round(bucketIdx * bucketMs);
           if (window._replayPlayer) {
             window._replayPlayer.pause();
             window._replayPlayer.play(seekMs);
+            lastRealTimeMs = seekMs;
             isPlaying = true;
             iconPlay.classList.add('hidden');
             iconPause.classList.remove('hidden');
@@ -295,8 +359,25 @@
           }
         });
       })(b);
-      bar.appendChild(dot);
+      bar.appendChild(seg);
     }
+  }
+
+  // Detect inactive ranges from event timestamps
+  function findInactiveRanges(events) {
+    var ranges = [];
+    var base = events[0].timestamp;
+    for (var i = 1; i < events.length; i++) {
+      var gap = events[i].timestamp - events[i - 1].timestamp;
+      if (gap > INACTIVE_THRESHOLD_MS) {
+        ranges.push({
+          start: events[i - 1].timestamp - base,
+          end: events[i].timestamp - base,
+          durationMs: gap
+        });
+      }
+    }
+    return ranges;
   }
 
   function waitForRrweb(cb, n) {
@@ -341,6 +422,22 @@
         return;
       }
 
+      // Compute real duration from event timestamps (more accurate than duration_ms from client)
+      baseTimestamp = events[0].timestamp;
+      var lastTimestamp = events[events.length - 1].timestamp;
+      realDurationMs = lastTimestamp - baseTimestamp;
+
+      // Use the larger of server-reported vs computed duration
+      var serverDurationMs = <%= @replay.duration_ms %>;
+      if (realDurationMs < serverDurationMs) realDurationMs = serverDurationMs;
+
+      // Update progress bar max and total time display
+      progressBar.max = realDurationMs;
+      timeTotal.textContent = formatTime(realDurationMs);
+
+      // Find inactive periods
+      var inactiveRanges = findInactiveRanges(events);
+
       waitForRrweb(function() {
         var meta = events.find(function(e) { return e.type === 4; });
         var recW = (meta && meta.data && meta.data.width) || 1920;
@@ -366,15 +463,62 @@
         mount.style.flexShrink = '0';
         container.appendChild(mount);
 
-        window._replayPlayer = new window.rrweb.Replayer(events, {
+        var player = new window.rrweb.Replayer(events, {
           root: mount,
           skipInactive: true,
           showWarning: false,
           speed: 4
         });
+        window._replayPlayer = player;
+
+        // Track real-time position via event-cast listener
+        var prevEventTs = baseTimestamp;
+        try {
+          player.on('event-cast', function(event) {
+            if (event && event.timestamp) {
+              var realOffset = event.timestamp - baseTimestamp;
+              // Detect inactivity skip: if the gap between consecutive played events
+              // is larger than the threshold, show the skip overlay
+              var gap = event.timestamp - prevEventTs;
+              if (gap > INACTIVE_THRESHOLD_MS) {
+                showSkipOverlay(gap);
+              }
+              prevEventTs = event.timestamp;
+              lastRealTimeMs = realOffset;
+            }
+          });
+        } catch(e) {
+          // Fallback if event-cast not supported in this rrweb version
+          console.warn('[ReplayPlayer] event-cast listener not available, using fallback');
+        }
+
+        // Fallback: also poll getCurrentTime and map through metadata
+        // rrweb Replayer.play(timeOffset) uses real time offsets from first event,
+        // so getCurrentTime() should also return real time offsets
+        var fallbackUpdate = setInterval(function() {
+          if (!isPlaying) return;
+          try {
+            var ct = player.getCurrentTime();
+            if (ct > 0 && ct > lastRealTimeMs) {
+              lastRealTimeMs = ct;
+            }
+          } catch(e) {}
+        }, 250);
+
+        // Detect playback end
+        try {
+          player.on('finish', function() {
+            isPlaying = false;
+            iconPlay.classList.remove('hidden');
+            iconPause.classList.add('hidden');
+            lastRealTimeMs = realDurationMs;
+            progressBar.value = realDurationMs;
+            timeCurrent.textContent = formatTime(realDurationMs);
+          });
+        } catch(e) {}
 
         controls.classList.remove('hidden');
-        buildEventDensity(events, totalMs);
+        buildEventDensity(events, realDurationMs, inactiveRanges);
         updateProgress();
       });
     } catch(err) {

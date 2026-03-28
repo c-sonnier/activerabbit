@@ -7,7 +7,9 @@ export default class extends Controller {
     "errorsSlider", "errorsPrice", "errorsValue", "errorsCard",
     "replaySlider", "replayPrice", "replayValue", "replayCard",
     "totalMonthly", "totalSection", "summaryBox", "itemList",
-    "tierTeam", "tierBusiness", "freqAnnual", "freqMonthly"
+    "tierTeam", "tierBusiness", "freqAnnual", "freqMonthly",
+    "subscribeForm", "formPlan", "formInterval", "formAi",
+    "formUptime", "formErrors", "formReplays"
   ]
 
   static prices = {
@@ -27,7 +29,7 @@ export default class extends Controller {
     // Initialize card highlights for default values
     var uptimeVal = parseInt(this.uptimeSliderTarget.value)
     this._highlightCard(this.uptimeCardTarget, uptimeVal > 0, "#059669", "#f0fdf4")
-    this.uptimePriceTarget.textContent = "$" + ((uptimeVal / 10) * 10)
+    this.uptimePriceTarget.textContent = "$" + ((uptimeVal / 5) * 5)
 
     var replayVal = parseInt(this.replaySliderTarget.value)
     this._highlightCard(this.replayCardTarget, replayVal > 0, "#2563eb", "#eff6ff")
@@ -85,7 +87,7 @@ export default class extends Controller {
 
   updateUptime() {
     var val = parseInt(this.uptimeSliderTarget.value)
-    var price = (val / 10) * 10
+    var price = (val / 5) * 5
     this.uptimePriceTarget.textContent = "$" + price
     this.uptimeValueTarget.textContent = val + " monitors"
     this._highlightCard(this.uptimeCardTarget, val > 0, "#059669", "#f0fdf4")
@@ -150,7 +152,7 @@ export default class extends Controller {
 
     var uptime = parseInt(this.uptimeSliderTarget.value)
     if (uptime > 0) {
-      var p = (uptime / 10) * 10
+      var p = (uptime / 5) * 5
       addonTotal += p
       items.push({ name: uptime + " Uptime Monitors", price: p })
     }
@@ -213,5 +215,13 @@ export default class extends Controller {
       html += '</div>'
     }
     this.itemListTarget.innerHTML = html
+
+    // Sync hidden form fields
+    this.formPlanTarget.value = this.selectedTier
+    this.formIntervalTarget.value = this.selectedFrequency === "annual" ? "year" : "month"
+    this.formAiTarget.value = this.aiEnabled ? "1" : "0"
+    this.formUptimeTarget.value = uptime
+    this.formErrorsTarget.value = errors
+    this.formReplaysTarget.value = replay
   }
 }
