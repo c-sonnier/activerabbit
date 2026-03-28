@@ -84,6 +84,10 @@ class SlackNotificationService
     "#{host}/#{@project.slug}"
   end
 
+  def deploy_list_url
+    "#{project_url}/deploys"
+  end
+
   def performance_action_url(target)
     return "#{project_url}/performance" if target.blank? || target == "Unknown"
     "#{project_url}/performance/actions/#{URI.encode_www_form_component(target)}"

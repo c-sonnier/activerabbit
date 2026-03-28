@@ -191,6 +191,19 @@ class Project < ApplicationRecord
     settings.dig("notifications", "channels", "discord") != false
   end
 
+  # Deploy hooks (POST /api/v1/deploys) — Slack/Discord when enabled below and channel toggles allow.
+  def notify_deploy_started?
+    return false unless notifications_enabled?
+
+    settings.dig("notifications", "deploy", "started") != false
+  end
+
+  def notify_deploy_finished?
+    return false unless notifications_enabled?
+
+    settings.dig("notifications", "deploy", "finished") != false
+  end
+
   # ---- Auto-fix (opt-in) ----
   # Disabled by default. User enables it in Project Settings.
   #
