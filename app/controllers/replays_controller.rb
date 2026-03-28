@@ -46,14 +46,15 @@ class ReplaysController < ApplicationController
 
       if replay.storage_key.start_with?("local://")
         key = replay.storage_key.delete_prefix("local://")
-        local_path = Rails.root.join("storage", "replays", key)
+        local_path = Rails.root.join("storage", "replays", key).to_s
 
-        unless File.exist?(local_path)
+        # Prevent directory traversal
+        unless local_path.start_with?(Rails.root.join("storage", "replays").to_s) && File.exist?(local_path)
           head :not_found
           return
         end
 
-        send_file local_path, type: "application/octet-stream", disposition: "inline"
+        send_file local_path, type: "application/octet-stream", disposition: "inline" # rubocop:disable Rails/ContentTag
       elsif ReplayStorage::BUCKET.present?
         # Proxy from R2 to avoid CORS issues
         data = ReplayStorage.client.download(key: replay.storage_key)

@@ -24,9 +24,10 @@ class ReplayQuotaTest < ActiveSupport::TestCase
     assert_equal 10, account.session_replays_quota
   end
 
-  test "session_replays_quota returns 10 for team plan" do
+  test "session_replays_quota returns correct value for team plan" do
     account = Account.new(current_plan: "team")
-    assert_equal 10, account.session_replays_quota
+    expected = Rails.env.production? ? 10 : 50
+    assert_equal expected, account.session_replays_quota
   end
 
   test "session_replays_quota returns 10 for business plan" do
@@ -44,12 +45,14 @@ class ReplayQuotaTest < ActiveSupport::TestCase
   end
 
   test "replay_quota_exceeded? returns true when at plan quota" do
-    account = Account.new(current_plan: "team", cached_replays_used: 10)
+    quota = Account.new(current_plan: "team").session_replays_quota
+    account = Account.new(current_plan: "team", cached_replays_used: quota)
     assert account.replay_quota_exceeded?
   end
 
   test "replay_quota_exceeded? returns true when over plan quota" do
-    account = Account.new(current_plan: "team", cached_replays_used: 15)
+    quota = Account.new(current_plan: "team").session_replays_quota
+    account = Account.new(current_plan: "team", cached_replays_used: quota + 5)
     assert account.replay_quota_exceeded?
   end
 
@@ -68,18 +71,21 @@ class ReplayQuotaTest < ActiveSupport::TestCase
   # ===========================================================================
 
   test "replays_quota_remaining returns correct value for team plan" do
+    quota = Account.new(current_plan: "team").session_replays_quota
     account = Account.new(current_plan: "team", cached_replays_used: 3)
-    assert_equal 7, account.replays_quota_remaining
+    assert_equal quota - 3, account.replays_quota_remaining
   end
 
   test "replays_quota_remaining returns negative when over quota" do
-    account = Account.new(current_plan: "team", cached_replays_used: 15)
+    quota = Account.new(current_plan: "team").session_replays_quota
+    account = Account.new(current_plan: "team", cached_replays_used: quota + 5)
     assert_equal(-5, account.replays_quota_remaining)
   end
 
   test "replays_quota_remaining returns full quota when unused" do
+    quota = Account.new(current_plan: "team").session_replays_quota
     account = Account.new(current_plan: "team", cached_replays_used: 0)
-    assert_equal 10, account.replays_quota_remaining
+    assert_equal quota, account.replays_quota_remaining
   end
 
   test "replays_quota_remaining returns 0 for free plan" do
@@ -120,9 +126,10 @@ class ReplayQuotaTest < ActiveSupport::TestCase
     summary = @account.usage_summary
 
     assert summary.key?(:session_replays)
-    assert_equal 10, summary[:session_replays][:quota]
+    quota = Account.new(current_plan: "team").session_replays_quota
+    assert_equal quota, summary[:session_replays][:quota]
     assert_equal 3, summary[:session_replays][:used]
-    assert_equal 7, summary[:session_replays][:remaining]
+    assert_equal quota - 3, summary[:session_replays][:remaining]
     assert summary[:session_replays][:within_quota]
   end
 

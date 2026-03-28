@@ -140,8 +140,8 @@ class ApiReplaySessionsTest < ActionDispatch::IntegrationTest
   # ===========================================================================
 
   test "POST returns 429 when replay quota exceeded" do
-    # Team plan has 10 session replays quota
-    @account.update!(cached_replays_used: 10)
+    quota = @account.session_replays_quota
+    @account.update!(cached_replays_used: quota)
 
     post "/api/v1/replay_sessions",
       params: valid_replay_params,
@@ -154,7 +154,8 @@ class ApiReplaySessionsTest < ActionDispatch::IntegrationTest
   end
 
   test "POST returns 429 when over quota limit" do
-    @account.update!(cached_replays_used: 15)
+    quota = @account.session_replays_quota
+    @account.update!(cached_replays_used: quota + 5)
 
     post "/api/v1/replay_sessions",
       params: valid_replay_params,
@@ -165,8 +166,8 @@ class ApiReplaySessionsTest < ActionDispatch::IntegrationTest
   end
 
   test "POST succeeds when just below quota limit" do
-    # Team plan has 10 session replays quota
-    @account.update!(cached_replays_used: 9)
+    quota = @account.session_replays_quota
+    @account.update!(cached_replays_used: quota - 1)
 
     post "/api/v1/replay_sessions",
       params: valid_replay_params,

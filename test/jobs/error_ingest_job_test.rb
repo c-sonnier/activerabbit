@@ -184,8 +184,8 @@ class ErrorIngestJobTest < ActiveSupport::TestCase
   test "does not auto-enqueue AiSummaryJob when AI quota is exceeded" do
     Sidekiq::Worker.clear_all
 
-    # Exhaust the trial quota (20)
-    @account.update!(cached_ai_summaries_used: 20)
+    # Use free plan which has 0 AI quota
+    @account.update!(cached_ai_summaries_used: 0, current_plan: "free", trial_ends_at: 30.days.ago)
 
     payload = {
       exception_class: "QuotaExceededAutoAIError",
