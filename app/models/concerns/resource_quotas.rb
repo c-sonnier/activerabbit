@@ -24,14 +24,16 @@ module ResourceQuotas
   # AI summaries (Generate AI):
   #   free     → 0   (not available — upgrade required)
   #   trial    → 20  (14-day trial period)
-  #   team     → 20  (first 20 unique errors, then "Buy more")
-  #   business → 100
+  #   team     → unlimited (with AI addon, $40/mo)
+  #   business → unlimited (with AI addon, $40/mo)
   PLAN_QUOTAS = {
     free: {
       events: 5_000,
+      log_entries: 10_000,
       ai_summaries: 0,
       pull_requests: 0,
-      uptime_monitors: 1,
+      uptime_monitors: 0,
+      session_replays: 0,
       status_pages: 0,
       projects: 999_999,
       users: 1,
@@ -40,30 +42,36 @@ module ResourceQuotas
     },
     trial: {
       events: 50_000,
+      log_entries: 100_000,
       ai_summaries: 20,
       pull_requests: 20,
-      uptime_monitors: 20,
-      status_pages: 5,
+      uptime_monitors: 3,
+      session_replays: 10,
+      status_pages: 0,
       projects: 10,
       data_retention_days: 31,
       slack_notifications: true
     },
     team: {
       events: 50_000,
-      ai_summaries: 20,
+      log_entries: 100_000,
+      ai_summaries: Float::INFINITY,
       pull_requests: 20,
-      uptime_monitors: 20,
-      status_pages: 5,
+      uptime_monitors: 3,
+      session_replays: Rails.env.production? ? 10 : 50,
+      status_pages: 0,
       projects: 10,
       data_retention_days: 31,
       slack_notifications: true
     },
     business: {
       events: 100_000,
-      ai_summaries: 100,
+      log_entries: 500_000,
+      ai_summaries: Float::INFINITY,
       pull_requests: 250,
       uptime_monitors: 5,
-      status_pages: 1,
+      session_replays: 10,
+      status_pages: 0,
       projects: 50,
       data_retention_days: 31,
       slack_notifications: true
@@ -95,6 +103,26 @@ module ResourceQuotas
 
   def status_pages_quota
     quota_for_resource(:status_pages)
+  end
+
+  def log_entries_quota
+    quota_for_resource(:log_entries)
+  end
+
+  def session_replays_quota
+    quota_for_resource(:session_replays)
+  end
+
+  def replays_quota_remaining
+    session_replays_quota - (cached_replays_used || 0)
+  end
+
+  def replay_quota_exceeded?
+    (cached_replays_used || 0) >= session_replays_quota
+  end
+
+  def increment_replay_usage!
+    increment!(:cached_replays_used)
   end
 
   def projects_quota
@@ -211,6 +239,14 @@ module ResourceQuotas
     cached_projects_used || 0
   end
 
+  def log_entries_used_in_period
+    cached_log_entries_used || 0
+  end
+
+  def replays_used_in_period
+    cached_replays_used || 0
+  end
+
   # Check if usage data has been cached yet
   def usage_data_available?
     usage_cached_at.present?
@@ -270,7 +306,7 @@ module ResourceQuotas
       plan_key = effective_plan_key
       plan_quotas = PLAN_QUOTAS[plan_key] || PLAN_QUOTAS[DEFAULT_PLAN]
 
-      %i[events ai_summaries pull_requests uptime_monitors status_pages projects].each_with_object({}) do |resource, hash|
+      %i[events log_entries ai_summaries pull_requests uptime_monitors session_replays status_pages projects].each_with_object({}) do |resource, hash|
         quota = plan_quotas[resource] || 0
         used = usage_for_resource(resource)
 
@@ -310,10 +346,14 @@ module ResourceQuotas
       pull_requests_used_in_period
     when :uptime_monitors
       uptime_monitors_used
+    when :session_replays
+      cached_replays_used || 0
     when :status_pages
       status_pages_used
     when :projects
       projects_used
+    when :log_entries
+      log_entries_used_in_period
     else
       0
     end
@@ -333,10 +373,14 @@ module ResourceQuotas
       pull_requests_quota
     when :uptime_monitors
       uptime_monitors_quota
+    when :session_replays
+      session_replays_quota
     when :status_pages
       status_pages_quota
     when :projects
       projects_quota
+    when :log_entries
+      log_entries_quota
     else
       0
     end

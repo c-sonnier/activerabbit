@@ -91,6 +91,12 @@ if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present? && !ActiveModel::Type::B
       "cron_timezone" => "America/Los_Angeles"
     },
 
+    "log_archive_daily" => {
+      "cron" => "0 4 * * *",  # Daily at 4:00 AM PST - archive expired logs to R2 then delete
+      "class" => "LogArchiveJob",
+      "cron_timezone" => "America/Los_Angeles"
+    },
+
     # ========================================
     # Reports
     # ========================================

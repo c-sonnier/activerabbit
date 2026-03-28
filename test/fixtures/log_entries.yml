@@ -1,0 +1,31 @@
+default:
+  account: default
+  project: default
+  level: 2
+  message: "Processing payment for customer cus_123"
+  params: '{"customer_id": "cus_123"}'
+  context: '{}'
+  environment: "production"
+  occurred_at: <%= 1.hour.ago.iso8601 %>
+
+error_log:
+  account: default
+  project: default
+  level: 4
+  message: "Stripe::CardError after 2 retries"
+  message_template: "Stripe::CardError after %{retry_count} retries"
+  params: '{"retry_count": "2", "payment_id": "pay_456"}'
+  context: '{"card_last4": "4242"}'
+  trace_id: "tr_abc123"
+  request_id: "req_xyz789"
+  environment: "production"
+  source: "StripeService"
+  occurred_at: <%= 30.minutes.ago.iso8601 %>
+
+old_log:
+  account: default
+  project: default
+  level: 2
+  message: "Old log entry for retention testing"
+  environment: "production"
+  occurred_at: <%= 40.days.ago.iso8601 %>

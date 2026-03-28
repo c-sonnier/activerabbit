@@ -1,0 +1,73 @@
+<h2>Addon Section Layout</h2>
+<p class="subtitle">Where should the addons appear on the pricing page, and how should the sliders work?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Below Pricing Cards (Sentry-style)</h3>
+      <p>Addons section appears after the 3 plan cards, as a separate "Customize Your Plan" block with sliders. Each addon has a slider to adjust quantity and shows the price updating live.</p>
+      <div style="margin-top: 12px; padding: 16px; background: #f3f4f6; border-radius: 8px; font-size: 13px;">
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <div style="flex:1; background: white; border: 2px solid #6366f1; border-radius: 8px; padding: 12px; text-align: center;">
+            <div style="font-weight: 600;">Free</div><div style="font-size: 18px; font-weight: 800;">$0</div>
+          </div>
+          <div style="flex:1; background: white; border: 2px solid #6366f1; border-radius: 8px; padding: 12px; text-align: center;">
+            <div style="font-weight: 600;">Team</div><div style="font-size: 18px; font-weight: 800;">$29</div>
+          </div>
+          <div style="flex:1; background: white; border: 2px solid #6366f1; border-radius: 8px; padding: 12px; text-align: center;">
+            <div style="font-weight: 600;">Business</div><div style="font-size: 18px; font-weight: 800;">$80</div>
+          </div>
+        </div>
+        <div style="background: white; border-radius: 8px; padding: 16px; border: 1px solid #e5e7eb;">
+          <div style="font-weight: 700; font-size: 15px; margin-bottom: 12px;">Customize Your Plan</div>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+            <span>AI Error Analysis (200/mo)</span>
+            <span style="color: #6366f1; font-weight: 600;">+$40/mo</span>
+            <span style="background: #eef2ff; padding: 2px 8px; border-radius: 4px; font-size: 11px;">ON / OFF</span>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+            <span>Uptime Monitors</span>
+            <span style="background: #e5e7eb; height: 4px; width: 120px; border-radius: 4px; display: inline-block;"></span>
+            <span style="color: #6366f1; font-weight: 600;">+$10/mo</span>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+            <span>Extra Errors (50K)</span>
+            <span style="background: #e5e7eb; height: 4px; width: 120px; border-radius: 4px; display: inline-block;"></span>
+            <span style="color: #6366f1; font-weight: 600;">+$14/mo</span>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0;">
+            <span>Session Replay (5K)</span>
+            <span style="background: #e5e7eb; height: 4px; width: 120px; border-radius: 4px; display: inline-block;"></span>
+            <span style="color: #6366f1; font-weight: 600;">+$14/mo</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Integrated Into Plan Cards</h3>
+      <p>Each plan card shows its included quotas, and addon sliders appear inside or attached to the selected plan card. More compact but tighter.</p>
+      <div style="margin-top: 12px; padding: 16px; background: #f3f4f6; border-radius: 8px; font-size: 13px;">
+        <div style="display: flex; gap: 8px;">
+          <div style="flex:1; background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px;">
+            <div style="font-weight: 600;">Team — $29/mo</div>
+            <div style="font-size: 11px; color: #6b7280; margin: 4px 0 8px;">50K errors, 20 AI summaries...</div>
+            <div style="border-top: 1px solid #e5e7eb; padding-top: 8px; font-size: 11px;">
+              <div style="margin-bottom: 4px;">+ AI Analysis <span style="float:right; color: #6366f1;">$40</span></div>
+              <div style="margin-bottom: 4px;">+ 10 Uptime <span style="float:right; color: #6366f1;">$10</span></div>
+              <div style="margin-bottom: 4px;">+ 50K Errors <span style="float:right; color: #6366f1;">$14</span></div>
+              <div>+ 5K Replays <span style="float:right; color: #6366f1;">$14</span></div>
+              <div style="border-top: 1px solid #e5e7eb; margin-top: 8px; padding-top: 8px; font-weight: 700;">
+                Total: $107/mo
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

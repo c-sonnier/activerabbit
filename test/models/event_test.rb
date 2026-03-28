@@ -1,6 +1,12 @@
 require "test_helper"
 
 class EventTest < ActiveSupport::TestCase
+  test "event has trace_id and request_id columns" do
+    event = events(:default)
+    assert event.respond_to?(:trace_id)
+    assert event.respond_to?(:request_id)
+  end
+
   # ingest_error
 
   test "ingest_error creates an issue and an event" do

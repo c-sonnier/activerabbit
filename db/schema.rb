@@ -13,6 +13,7 @@
 ActiveRecord::Schema[8.0].define(version: 2026_03_27_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+  enable_extension "pg_trgm"
 
   create_table "accounts", force: :cascade do |t|
     t.string "name", null: false
@@ -39,6 +40,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_27_120000) do
     t.integer "cached_projects_used", default: 0, null: false
     t.datetime "usage_cached_at"
     t.integer "cached_performance_events_used", default: 0, null: false
+    t.integer "cached_log_entries_used", default: 0
+    t.integer "replay_quota", default: 100
+    t.integer "cached_replays_used", default: 0
     t.index ["name"], name: "index_accounts_on_name"
   end
 
@@ -241,6 +245,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_27_120000) do
     t.string "request_id"
     t.bigint "account_id", null: false
     t.bigint "deploy_id"
+    t.string "trace_id"
+    t.uuid "replay_id"
+    t.uuid "session_id"
     t.string "source", default: "backend", null: false
     t.index "((context)::jsonb)", name: "idx_events_context_gin", using: :gin
     t.index ["account_id", "occurred_at"], name: "idx_events_account_occurred_at", order: { occurred_at: :desc }
@@ -258,8 +265,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_27_120000) do
     t.index ["project_id"], name: "index_events_on_project_id"
     t.index ["release_id"], name: "index_events_on_release_id"
     t.index ["release_version"], name: "index_events_on_release_version"
+    t.index ["replay_id"], name: "index_events_on_replay_id"
     t.index ["request_id"], name: "index_events_on_request_id"
     t.index ["server_name"], name: "index_events_on_server_name"
+    t.index ["trace_id"], name: "index_events_on_trace_id"
     t.index ["source"], name: "index_events_on_source"
   end
 
@@ -326,6 +335,34 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_27_120000) do
     t.index ["severity"], name: "index_issues_on_severity"
     t.index ["source"], name: "index_issues_on_source"
     t.index ["status"], name: "index_issues_on_status"
+  end
+
+  create_table "log_entries", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "project_id", null: false
+    t.integer "level", default: 2, null: false
+    t.text "message", null: false
+    t.text "message_template"
+    t.jsonb "params", default: {}
+    t.jsonb "context", default: {}
+    t.string "trace_id"
+    t.string "span_id"
+    t.string "request_id"
+    t.bigint "issue_id"
+    t.string "environment", default: "production"
+    t.string "release"
+    t.string "source"
+    t.datetime "occurred_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_log_entries_on_account_id"
+    t.index ["context"], name: "index_log_entries_on_context", using: :gin
+    t.index ["issue_id", "occurred_at"], name: "index_log_entries_on_issue_id_and_occurred_at"
+    t.index ["message"], name: "index_log_entries_on_message_trgm", opclass: :gin_trgm_ops, using: :gin
+    t.index ["params"], name: "index_log_entries_on_params", using: :gin
+    t.index ["project_id", "level", "occurred_at"], name: "index_log_entries_on_project_id_and_level_and_occurred_at"
+    t.index ["project_id", "occurred_at"], name: "index_log_entries_on_project_id_and_occurred_at"
+    t.index ["trace_id"], name: "index_log_entries_on_trace_id"
   end
 
   create_table "notification_preferences", force: :cascade do |t|
@@ -465,6 +502,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_27_120000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "account_id", null: false
+    t.string "trace_id"
     t.index ["account_id", "project_id"], name: "index_performance_events_on_account_id_and_project_id"
     t.index ["account_id"], name: "index_performance_events_on_account_id"
     t.index ["duration_ms"], name: "index_performance_events_on_duration_ms"
@@ -477,6 +515,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_27_120000) do
     t.index ["release_id"], name: "index_performance_events_on_release_id"
     t.index ["request_id"], name: "index_performance_events_on_request_id"
     t.index ["target"], name: "index_performance_events_on_target"
+    t.index ["trace_id"], name: "index_performance_events_on_trace_id"
   end
 
   create_table "performance_incidents", force: :cascade do |t|
@@ -561,6 +600,47 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_27_120000) do
     t.index ["project_id", "version"], name: "index_releases_on_project_id_and_version", unique: true
     t.index ["project_id"], name: "index_releases_on_project_id"
     t.index ["regression_detected"], name: "index_releases_on_regression_detected"
+  end
+
+  create_table "replays", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "project_id", null: false
+    t.bigint "issue_id"
+    t.uuid "replay_id", null: false
+    t.uuid "session_id", null: false
+    t.integer "segment_index", default: 0
+    t.string "trigger_type"
+    t.string "trigger_error_class"
+    t.string "trigger_error_short"
+    t.string "status", default: "pending", null: false
+    t.string "storage_key"
+    t.integer "compressed_size"
+    t.integer "uncompressed_size"
+    t.integer "event_count"
+    t.datetime "started_at", null: false
+    t.datetime "captured_at"
+    t.datetime "uploaded_at"
+    t.integer "duration_ms", null: false
+    t.integer "trigger_offset_ms"
+    t.text "url"
+    t.text "user_agent"
+    t.integer "viewport_width"
+    t.integer "viewport_height"
+    t.string "environment"
+    t.string "release_version"
+    t.string "sdk_version"
+    t.string "rrweb_version"
+    t.integer "schema_version", default: 1
+    t.string "checksum_sha256"
+    t.datetime "retention_until"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "project_id", "created_at"], name: "idx_replays_account_project_created"
+    t.index ["issue_id"], name: "index_replays_on_issue_id"
+    t.index ["project_id", "status", "environment", "created_at"], name: "idx_replays_project_status_env_created"
+    t.index ["replay_id"], name: "index_replays_on_replay_id", unique: true
+    t.index ["session_id"], name: "index_replays_on_session_id"
+    t.index ["status", "retention_until"], name: "idx_replays_status_retention"
   end
 
   create_table "sql_fingerprints", force: :cascade do |t|
@@ -719,6 +799,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_27_120000) do
   add_foreign_key "healthchecks", "projects"
   add_foreign_key "issues", "accounts"
   add_foreign_key "issues", "projects"
+  add_foreign_key "log_entries", "accounts"
+  add_foreign_key "log_entries", "projects"
   add_foreign_key "notification_preferences", "projects"
   add_foreign_key "pay_charges", "pay_customers", column: "customer_id"
   add_foreign_key "pay_payment_methods", "pay_customers", column: "customer_id"

@@ -19,6 +19,7 @@ class Project < ApplicationRecord
   has_many :deploys, dependent: :destroy
   has_many :notification_preferences, dependent: :destroy
   has_many :uptime_monitors, class_name: "Uptime::Monitor", dependent: :destroy
+  has_many :replays
   has_many :check_ins, dependent: :destroy
 
   validates :name, presence: true

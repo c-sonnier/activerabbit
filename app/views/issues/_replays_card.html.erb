@@ -1,0 +1,29 @@
+<% replays = issue.replays.ready.recent.limit(5) %>
+<% if replays.any? %>
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+  <h3 class="text-lg font-medium text-gray-900 mb-4">Session Replays</h3>
+  <div class="divide-y divide-gray-200">
+    <% replays.each do |replay| %>
+      <%= link_to project_replay_path(@project.slug, replay), class: "block py-3 hover:bg-gray-50 -mx-6 px-6" do %>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <!-- Play icon -->
+            <svg class="w-5 h-5 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8.118v3.764a1 1 0 001.555.832l3.197-1.882a1 1 0 000-1.664l-3.197-1.882z" clip-rule="evenodd"/>
+            </svg>
+            <div>
+              <p class="text-sm font-medium text-gray-900"><%= replay.url&.truncate(50) || "Unknown page" %></p>
+              <p class="text-xs text-gray-500">
+                <% duration_s = replay.duration_ms / 1000 %>
+                <%= duration_s >= 60 ? "#{duration_s / 60}m #{duration_s % 60}s" : "#{duration_s}s" %>
+                · <%= time_ago_in_words(replay.created_at) %> ago
+              </p>
+            </div>
+          </div>
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</div>
+<% end %>

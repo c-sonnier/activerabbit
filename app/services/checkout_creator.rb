@@ -1,12 +1,15 @@
 class CheckoutCreator
   Result = Struct.new(:url)
 
-  def initialize(user:, account:, plan:, interval:, ai: false)
+  def initialize(user:, account:, plan:, interval:, ai: false, uptime_monitors: 0, extra_errors: 0, session_replays: 0)
     @user = user
     @account = account
     @plan = plan # "team"|"business"
     @interval = interval # "month"|"year"
     @ai = ActiveModel::Type::Boolean.new.cast(ai)
+    @uptime_monitors = uptime_monitors.to_i
+    @extra_errors = extra_errors.to_i
+    @session_replays = session_replays.to_i
   end
 
   def call
@@ -42,6 +45,18 @@ class CheckoutCreator
       items << { price: ai_base_price, quantity: 1 }
       items << { price: ENV.fetch("STRIPE_PRICE_AI_OVERAGE_METERED"), quantity: 1 }
     end
+    if @uptime_monitors > 0
+      qty = (@uptime_monitors / 5.0).ceil # packs of 5
+      items << { price: uptime_price, quantity: qty }
+    end
+    if @extra_errors > 0
+      qty = (@extra_errors / 100_000.0).ceil # packs of 100K
+      items << { price: errors_price, quantity: qty }
+    end
+    if @session_replays > 0
+      qty = (@session_replays / 5_000.0).ceil # packs of 5K
+      items << { price: replays_price, quantity: qty }
+    end
     items
   end
 
@@ -61,7 +76,10 @@ class CheckoutCreator
           account_id: @account.id,
           plan: @plan,
           interval: @interval,
-          ai: @ai
+          ai: @ai,
+          uptime_monitors: @uptime_monitors,
+          extra_errors: @extra_errors,
+          session_replays: @session_replays
         }
       },
       line_items: build_line_items
@@ -108,6 +126,18 @@ class CheckoutCreator
 
   def ai_base_price
     @interval == "year" ? ENV.fetch("STRIPE_PRICE_AI_ANNUAL") : ENV.fetch("STRIPE_PRICE_AI_MONTHLY")
+  end
+
+  def uptime_price
+    @interval == "year" ? ENV.fetch("STRIPE_PRICE_UPTIME_ANNUAL", ENV["STRIPE_PRICE_UPTIME_MONTHLY"]) : ENV.fetch("STRIPE_PRICE_UPTIME_MONTHLY")
+  end
+
+  def errors_price
+    @interval == "year" ? ENV.fetch("STRIPE_PRICE_ERRORS_ANNUAL", ENV["STRIPE_PRICE_ERRORS_MONTHLY"]) : ENV.fetch("STRIPE_PRICE_ERRORS_MONTHLY")
+  end
+
+  def replays_price
+    @interval == "year" ? ENV.fetch("STRIPE_PRICE_REPLAYS_ANNUAL", ENV["STRIPE_PRICE_REPLAYS_MONTHLY"]) : ENV.fetch("STRIPE_PRICE_REPLAYS_MONTHLY")
   end
 
   def idempotency_key

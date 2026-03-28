@@ -7,11 +7,11 @@ image: nextsoft-io/activerabbit
 # Deploy to these servers.
 servers:
   web:
-    - 178.156.252.39
+    - 157.245.80.51
   # High-volume ingest worker — dedicated to processing SDK events
   job:
     hosts:
-      - 178.156.252.39
+      - 157.245.80.51
     cmd: bundle exec sidekiq -c 25 -q ingest
   # Mixed worker — alerts/default first, then helps with ingest overflow
   job-secondary:
@@ -81,6 +81,10 @@ env:
     - AR_GH_APP_SLUG
     - GITHUB_APP_CLIENT_ID
     - AR_GH_APP_PK_BASE64
+    - R2_REPLAY_BUCKET
+    - R2_REPLAY_ENDPOINT
+    - R2_REPLAY_ACCESS_KEY_ID
+    - R2_REPLAY_SECRET_ACCESS_KEY
   clear:
     RAILS_ENV: production
     RAILS_LOG_TO_STDOUT: true
@@ -144,7 +148,7 @@ builder:
 accessories:
   redis:
     image: redis:7.0
-    host: 178.156.252.39
+    host: 157.245.80.51
     port: 6379
     cmd: redis-server --maxmemory 512mb --maxmemory-policy noeviction --save 60 1000 --appendonly yes --replicaof "no one"
     directories:

@@ -1,0 +1,226 @@
+<h2>Addons Section Mockup</h2>
+<p class="subtitle">This is how it would appear below the pricing cards. Sliders are interactive — try them!</p>
+
+<div style="max-width: 800px; margin: 24px auto;">
+  <!-- Section Header -->
+  <div style="text-align: center; margin-bottom: 32px;">
+    <h3 style="font-size: 24px; font-weight: 800; color: #111827; margin: 0;">Customize Your Plan</h3>
+    <p style="color: #6b7280; margin-top: 4px; font-size: 14px;">Add only what you need. All addons are billed monthly.</p>
+  </div>
+
+  <!-- Addon Cards Container -->
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+
+    <!-- AI Error Analysis — Toggle -->
+    <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s;" id="ai-card">
+      <div style="display: flex; align-items: center; gap: 16px; flex: 1;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, #a78bfa, #7c3aed); display: flex; align-items: center; justify-content: center;">
+          <svg width="22" height="22" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 00.659 1.591L19 14.5M14.25 3.104c.251.023.501.05.75.082M19 14.5l-2.47 2.47a2.25 2.25 0 01-1.59.659H9.06a2.25 2.25 0 01-1.591-.659L5 14.5m14 0V17a2.25 2.25 0 01-2.25 2.25H7.25A2.25 2.25 0 015 17v-2.5"/></svg>
+        </div>
+        <div>
+          <div style="font-weight: 700; font-size: 16px; color: #111827;">AI Error Analysis</div>
+          <div style="font-size: 13px; color: #6b7280; margin-top: 2px;">LLM-powered explanations & fix suggestions for 200 errors/mo</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <div style="text-align: right;">
+          <span style="font-size: 22px; font-weight: 800; color: #111827;">$40</span>
+          <span style="font-size: 13px; color: #6b7280;">/mo</span>
+        </div>
+        <!-- Toggle Switch -->
+        <div onclick="toggleAI(this)" style="width: 48px; height: 26px; background: #d1d5db; border-radius: 13px; cursor: pointer; position: relative; transition: background 0.2s;" id="ai-toggle">
+          <div style="width: 22px; height: 22px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);" id="ai-knob"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Uptime Monitors — Slider -->
+    <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px;" id="uptime-card">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div style="width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, #6ee7b7, #059669); display: flex; align-items: center; justify-content: center;">
+            <svg width="22" height="22" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div>
+            <div style="font-weight: 700; font-size: 16px; color: #111827;">Uptime Monitors</div>
+            <div style="font-size: 13px; color: #6b7280; margin-top: 2px;">$10 per 10 monitors</div>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <span style="font-size: 22px; font-weight: 800; color: #111827;" id="uptime-price">$0</span>
+          <span style="font-size: 13px; color: #6b7280;">/mo</span>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <input type="range" min="0" max="100" step="10" value="0" id="uptime-slider"
+          oninput="updateUptime(this.value)"
+          style="flex: 1; height: 6px; accent-color: #059669; cursor: pointer;">
+        <div style="min-width: 80px; text-align: right; font-size: 14px; font-weight: 600; color: #059669; background: #ecfdf5; padding: 4px 12px; border-radius: 6px;" id="uptime-value">0 monitors</div>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 11px; color: #9ca3af; margin-top: 4px; padding: 0 2px;">
+        <span>0</span><span>50</span><span>100</span>
+      </div>
+    </div>
+
+    <!-- Extra Errors — Slider -->
+    <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px;" id="errors-card">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div style="width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, #fca5a5, #dc2626); display: flex; align-items: center; justify-content: center;">
+            <svg width="22" height="22" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+          </div>
+          <div>
+            <div style="font-weight: 700; font-size: 16px; color: #111827;">Extra Errors</div>
+            <div style="font-size: 13px; color: #6b7280; margin-top: 2px;">$14 per 100K errors</div>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <span style="font-size: 22px; font-weight: 800; color: #111827;" id="errors-price">$0</span>
+          <span style="font-size: 13px; color: #6b7280;">/mo</span>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <input type="range" min="0" max="1000000" step="100000" value="0" id="errors-slider"
+          oninput="updateErrors(this.value)"
+          style="flex: 1; height: 6px; accent-color: #dc2626; cursor: pointer;">
+        <div style="min-width: 80px; text-align: right; font-size: 14px; font-weight: 600; color: #dc2626; background: #fef2f2; padding: 4px 12px; border-radius: 6px;" id="errors-value">0 errors</div>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 11px; color: #9ca3af; margin-top: 4px; padding: 0 2px;">
+        <span>0</span><span>500K</span><span>1M</span>
+      </div>
+    </div>
+
+    <!-- Session Replay — Slider -->
+    <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px;" id="replay-card">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div style="width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, #93c5fd, #2563eb); display: flex; align-items: center; justify-content: center;">
+            <svg width="22" height="22" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"/></svg>
+          </div>
+          <div>
+            <div style="font-weight: 700; font-size: 16px; color: #111827;">Session Replay</div>
+            <div style="font-size: 13px; color: #6b7280; margin-top: 2px;">$14 per 5K sessions</div>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <span style="font-size: 22px; font-weight: 800; color: #111827;" id="replay-price">$0</span>
+          <span style="font-size: 13px; color: #6b7280;">/mo</span>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <input type="range" min="0" max="1000000" step="10000" value="0" id="replay-slider"
+          oninput="updateReplay(this.value)"
+          style="flex: 1; height: 6px; accent-color: #2563eb; cursor: pointer;">
+        <div style="min-width: 90px; text-align: right; font-size: 14px; font-weight: 600; color: #2563eb; background: #eff6ff; padding: 4px 12px; border-radius: 6px;" id="replay-value">0 sessions</div>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 11px; color: #9ca3af; margin-top: 4px; padding: 0 2px;">
+        <span>0</span><span>500K</span><span>1M</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Total Summary Bar -->
+  <div style="margin-top: 24px; background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 12px; padding: 20px 28px; display: flex; align-items: center; justify-content: space-between;">
+    <div>
+      <div style="font-size: 13px; color: rgba(255,255,255,0.7);">Total addon cost</div>
+      <div style="font-size: 28px; font-weight: 800; color: white;" id="total-price">$0<span style="font-size: 14px; font-weight: 400;">/mo</span></div>
+    </div>
+    <div style="font-size: 13px; color: rgba(255,255,255,0.8); text-align: right;" id="total-summary">No addons selected</div>
+  </div>
+</div>
+
+<script>
+  let aiEnabled = false;
+
+  function toggleAI(el) {
+    aiEnabled = !aiEnabled;
+    const toggle = document.getElementById('ai-toggle');
+    const knob = document.getElementById('ai-knob');
+    const card = document.getElementById('ai-card');
+    if (aiEnabled) {
+      toggle.style.background = '#7c3aed';
+      knob.style.transform = 'translateX(22px)';
+      card.style.borderColor = '#7c3aed';
+      card.style.background = '#faf5ff';
+    } else {
+      toggle.style.background = '#d1d5db';
+      knob.style.transform = 'translateX(0)';
+      card.style.borderColor = '#e5e7eb';
+      card.style.background = 'white';
+    }
+    updateTotal();
+  }
+
+  function updateUptime(val) {
+    const price = (val / 10) * 10;
+    document.getElementById('uptime-price').textContent = '$' + price;
+    document.getElementById('uptime-value').textContent = val + ' monitors';
+    const card = document.getElementById('uptime-card');
+    if (parseInt(val) > 0) {
+      card.style.borderColor = '#059669';
+      card.style.background = '#f0fdf4';
+    } else {
+      card.style.borderColor = '#e5e7eb';
+      card.style.background = 'white';
+    }
+    updateTotal();
+  }
+
+  function updateErrors(val) {
+    const price = (val / 100000) * 14;
+    document.getElementById('errors-price').textContent = '$' + price;
+    if (val >= 1000000) {
+      document.getElementById('errors-value').textContent = '1M errors';
+    } else if (val > 0) {
+      document.getElementById('errors-value').textContent = (val/1000) + 'K errors';
+    } else {
+      document.getElementById('errors-value').textContent = '0 errors';
+    }
+    const card = document.getElementById('errors-card');
+    if (parseInt(val) > 0) {
+      card.style.borderColor = '#dc2626';
+      card.style.background = '#fef2f2';
+    } else {
+      card.style.borderColor = '#e5e7eb';
+      card.style.background = 'white';
+    }
+    updateTotal();
+  }
+
+  function updateReplay(val) {
+    const price = (val / 5000) * 14;
+    document.getElementById('replay-price').textContent = '$' + Math.round(price);
+    if (val >= 1000000) {
+      document.getElementById('replay-value').textContent = '1M sessions';
+    } else if (val > 0) {
+      document.getElementById('replay-value').textContent = (val/1000) + 'K sessions';
+    } else {
+      document.getElementById('replay-value').textContent = '0 sessions';
+    }
+    const card = document.getElementById('replay-card');
+    if (parseInt(val) > 0) {
+      card.style.borderColor = '#2563eb';
+      card.style.background = '#eff6ff';
+    } else {
+      card.style.borderColor = '#e5e7eb';
+      card.style.background = 'white';
+    }
+    updateTotal();
+  }
+
+  function updateTotal() {
+    let total = 0;
+    let parts = [];
+    if (aiEnabled) { total += 40; parts.push('AI Analysis'); }
+    const uptime = parseInt(document.getElementById('uptime-slider').value);
+    if (uptime > 0) { total += (uptime/10)*10; parts.push(uptime + ' Uptime Monitors'); }
+    const errors = parseInt(document.getElementById('errors-slider').value);
+    if (errors > 0) { total += (errors/100000)*14; parts.push((errors>=1000000?'1M':(errors/1000)+'K') + ' Extra Errors'); }
+    const replay = parseInt(document.getElementById('replay-slider').value);
+    if (replay > 0) { total += (replay/5000)*14; parts.push((replay>=1000000?'1M':(replay/1000)+'K') + ' Session Replays'); }
+
+    document.getElementById('total-price').innerHTML = '$' + total + '<span style="font-size:14px;font-weight:400">/mo</span>';
+    document.getElementById('total-summary').textContent = parts.length > 0 ? parts.join(' + ') : 'No addons selected';
+  }
+</script>

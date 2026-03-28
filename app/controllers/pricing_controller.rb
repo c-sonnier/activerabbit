@@ -112,6 +112,11 @@ class PricingController < ApplicationController
     @projects_used = plan_quotas[:projects][:used]
     @projects_remaining = plan_quotas[:projects][:remaining]
 
+    # Session Replays usage
+    @session_replays_quota = plan_quotas[:session_replays][:quota]
+    @session_replays_used = plan_quotas[:session_replays][:used]
+    @session_replays_remaining = plan_quotas[:session_replays][:remaining]
+
     # Plan feature metadata (for usage page cards)
     @data_retention_days = @account.data_retention_days
     @slack_allowed = @account.slack_notifications_allowed?

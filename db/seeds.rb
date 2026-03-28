@@ -677,6 +677,104 @@ ActsAsTenant.with_tenant(account) do
   puts "    Open:        #{open_count}"
   puts "    Closed:      #{closed_count}"
   puts "    Failed jobs: #{job_count}"
+
+  # ---------------------------------------------------------------------------
+  # Log Entries (structured logs for the Log Explorer)
+  # ---------------------------------------------------------------------------
+  puts "\n  Seeding log entries..."
+
+  log_scenarios = [
+    # Info-level application logs
+    { level: 2, message: "Processing payment for customer cus_123", source: "PaymentService", environment: "production", params: { "customer_id" => "cus_123", "amount" => "49.99" } },
+    { level: 2, message: "User signed in successfully", source: "SessionsController", environment: "production", params: { "user_agent" => "Mozilla/5.0" } },
+    { level: 2, message: "Order #4521 shipped via USPS", source: "ShippingService", environment: "production", params: { "order_id" => "4521", "carrier" => "USPS" } },
+    { level: 2, message: "Cache miss for user_preferences:882", source: "CacheService", environment: "production" },
+    { level: 2, message: "Email queued: welcome_email to user@example.com", source: "NotificationMailer", environment: "production" },
+    { level: 2, message: "Background job completed: DailyReportJob in 2340ms", source: "Sidekiq", environment: "production", params: { "duration_ms" => "2340" } },
+    { level: 2, message: "API request: GET /api/v1/products (200 OK, 45ms)", source: "ApiLogger", environment: "production" },
+    { level: 2, message: "Database connection pool: 3/10 active", source: "ConnectionMonitor", environment: "production" },
+
+    # Warning-level logs
+    { level: 3, message: "Slow query detected: SELECT * FROM orders WHERE... (1250ms)", source: "QueryMonitor", environment: "production", params: { "duration_ms" => "1250", "table" => "orders" } },
+    { level: 3, message: "Rate limit approaching: 450/500 requests for API key ak_live_xxx", source: "RateLimiter", environment: "production" },
+    { level: 3, message: "Memory usage above 80%: 1.6GB / 2GB", source: "ResourceMonitor", environment: "production" },
+    { level: 3, message: "Deprecated method called: User#legacy_role (use User#role instead)", source: "DeprecationTracker", environment: "production" },
+    { level: 3, message: "Redis connection pool exhausted, waiting for available connection", source: "Redis", environment: "production" },
+    { level: 3, message: "Stripe webhook delivery delayed: retry #2 for evt_1234", source: "WebhookProcessor", environment: "production" },
+
+    # Error-level logs
+    { level: 4, message: "Stripe::CardError after 2 retries: card_declined", source: "StripeService", environment: "production", params: { "retry_count" => "2", "error_code" => "card_declined" }, trace_id: "tr_stripe_001" },
+    { level: 4, message: "Failed to connect to smtp.sendgrid.net:587 - Connection refused", source: "ActionMailer", environment: "production" },
+    { level: 4, message: "ActiveRecord::RecordInvalid: Validation failed: Email has already been taken", source: "RegistrationsController", environment: "production", trace_id: "tr_reg_002" },
+    { level: 4, message: "Elasticsearch cluster health: RED - 2 unassigned shards", source: "SearchService", environment: "production" },
+    { level: 4, message: "S3 upload failed: Access Denied for bucket acme-uploads", source: "StorageService", environment: "production" },
+    { level: 4, message: "JWT token expired for user_id=4421", source: "AuthMiddleware", environment: "production", params: { "user_id" => "4421" } },
+
+    # Debug-level logs
+    { level: 1, message: "SQL: SELECT \"users\".* FROM \"users\" WHERE \"users\".\"id\" = $1 LIMIT 1 [[\"id\", 42]]", source: "ActiveRecord", environment: "development" },
+    { level: 1, message: "Cache write: views/products/index-abc123 (3.2ms)", source: "Rails.cache", environment: "development" },
+    { level: 1, message: "ActionCable: client connected via WebSocket (user_id=42)", source: "ActionCable", environment: "development" },
+
+    # Fatal-level logs
+    { level: 5, message: "FATAL: PostgreSQL connection lost - all queries failing", source: "DatabaseMonitor", environment: "production" },
+    { level: 5, message: "FATAL: Out of memory - process killed by OOM killer", source: "SystemMonitor", environment: "production" },
+
+    # Staging environment logs
+    { level: 2, message: "Deployment started: v2.14.0-rc1", source: "Deployer", environment: "staging" },
+    { level: 3, message: "Feature flag 'new_checkout' enabled for 10% of users", source: "FeatureFlags", environment: "staging" },
+    { level: 4, message: "Migration failed: column already exists on users table", source: "ActiveRecord::Migration", environment: "staging" },
+  ]
+
+  total_logs = 0
+  log_scenarios.each do |scenario|
+    # Create multiple entries spread over the last 24 hours
+    count = rand(3..15)
+    count.times do
+      occurred = rand(24.hours.ago..Time.current)
+      project = [web_app, api_app, admin_app].sample
+
+      LogEntry.create!(
+        account: account,
+        project: project,
+        level: scenario[:level],
+        message: scenario[:message],
+        source: scenario[:source],
+        environment: scenario[:environment] || "production",
+        params: scenario[:params] || {},
+        context: {},
+        trace_id: scenario[:trace_id] || (rand < 0.3 ? "tr_#{SecureRandom.hex(6)}" : nil),
+        request_id: rand < 0.5 ? "req_#{SecureRandom.hex(8)}" : nil,
+        occurred_at: occurred
+      )
+      total_logs += 1
+    end
+  end
+
+  # Also create some logs linked to existing issues via trace_id
+  Issue.open.limit(5).each do |issue|
+    trace_id = "tr_issue_#{issue.id}"
+    rand(3..8).times do
+      LogEntry.create!(
+        account: account,
+        project: issue.project,
+        issue: issue,
+        level: [2, 3, 4].sample,
+        message: "#{issue.exception_class}: #{issue.title.truncate(80)}",
+        source: issue.controller_action&.split("#")&.first || "Application",
+        environment: "production",
+        trace_id: trace_id,
+        occurred_at: rand(24.hours.ago..Time.current)
+      )
+      total_logs += 1
+    end
+  end
+
+  puts "  Total log entries created: #{total_logs}"
+  puts "    Info:     #{LogEntry.where(level: 2).count}"
+  puts "    Warning:  #{LogEntry.where(level: 3).count}"
+  puts "    Error:    #{LogEntry.where(level: 4).count}"
+  puts "    Debug:    #{LogEntry.where(level: 1).count}"
+  puts "    Fatal:    #{LogEntry.where(level: 5).count}"
 end
 
 puts "\n#{'=' * 60}"

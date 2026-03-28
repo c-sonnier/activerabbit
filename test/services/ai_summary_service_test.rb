@@ -97,4 +97,25 @@ class AiSummaryServiceTest < ActiveSupport::TestCase
     assert_includes AiSummaryService::SYSTEM_PROMPT, "### File 1:"
     assert_includes AiSummaryService::SYSTEM_PROMPT, "**Line:**"
   end
+
+  test "call uses claude-haiku-4-5 model" do
+    api_response = {
+      "content" => [{
+        "type" => "text",
+        "text" => "## Root Cause\n\nTest\n\n## Suggested Fix\n\nTest\n\n## Prevention\n\nTest"
+      }]
+    }
+
+    stub_request(:post, "https://api.anthropic.com/v1/messages")
+      .with(body: hash_including("model" => "claude-haiku-4-5-20251001"))
+      .to_return(status: 200, body: api_response.to_json, headers: { "Content-Type" => "application/json" })
+
+    ENV["ANTHROPIC_API_KEY"] = "test-api-key"
+    service = AiSummaryService.new(issue: @issue, sample_event: @event)
+    result = service.call
+
+    assert result[:summary].present?
+  ensure
+    ENV["ANTHROPIC_API_KEY"] = nil
+  end
 end

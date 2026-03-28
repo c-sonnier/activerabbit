@@ -1,0 +1,716 @@
+#!/bin/sh
+# ActiveRabbit CLI — AI-powered monitoring from your terminal
+# https://activerabbit.ai/cli
+# Version: 1.0.0
+
+set -e
+
+VERSION="1.0.0"
+BASE_URL_DEFAULT="https://app.activerabbit.ai"
+
+# ─── Colors ───────────────────────────────────────────────────────────────────
+
+setup_colors() {
+  if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[0;33m'
+    BLUE='\033[0;34m'
+    MAGENTA='\033[0;35m'
+    CYAN='\033[0;36m'
+    WHITE='\033[1;37m'
+    DIM='\033[2m'
+    BOLD='\033[1m'
+    RESET='\033[0m'
+  else
+    RED='' GREEN='' YELLOW='' BLUE='' MAGENTA='' CYAN='' WHITE='' DIM='' BOLD='' RESET=''
+  fi
+}
+
+# ─── Config ───────────────────────────────────────────────────────────────────
+
+config_dir() {
+  echo "${XDG_CONFIG_HOME:-$HOME/.config}/activerabbit"
+}
+
+config_file() {
+  echo "$(config_dir)/config"
+}
+
+ensure_config_dir() {
+  dir=$(config_dir)
+  if [ ! -d "$dir" ]; then
+    mkdir -p "$dir"
+    chmod 700 "$dir"
+  fi
+}
+
+config_get() {
+  key="$1"
+  file=$(config_file)
+  [ -f "$file" ] || return 1
+  value=$(grep "^${key}=" "$file" 2>/dev/null | head -1 | cut -d'=' -f2-)
+  [ -n "$value" ] && echo "$value" && return 0
+  return 1
+}
+
+config_set() {
+  key="$1"
+  value="$2"
+  ensure_config_dir
+  file=$(config_file)
+
+  if [ -f "$file" ] && grep -q "^${key}=" "$file" 2>/dev/null; then
+    # Update existing key — portable sed in-place
+    tmp="${file}.tmp"
+    sed "s|^${key}=.*|${key}=${value}|" "$file" > "$tmp" && mv "$tmp" "$file"
+  else
+    echo "${key}=${value}" >> "$file"
+  fi
+  chmod 600 "$file"
+}
+
+get_api_key() {
+  # CLI flag > env var > config file
+  if [ -n "${ACTIVERABBIT_API_KEY:-}" ]; then
+    echo "$ACTIVERABBIT_API_KEY"
+  else
+    config_get "api_key" 2>/dev/null || true
+  fi
+}
+
+get_base_url() {
+  if [ -n "${ACTIVERABBIT_BASE_URL:-}" ]; then
+    echo "$ACTIVERABBIT_BASE_URL"
+  else
+    config_get "base_url" 2>/dev/null || echo "$BASE_URL_DEFAULT"
+  fi
+}
+
+get_app() {
+  if [ -n "${ACTIVERABBIT_APP:-}" ]; then
+    echo "$ACTIVERABBIT_APP"
+  else
+    config_get "app" 2>/dev/null || true
+  fi
+}
+
+require_api_key() {
+  key=$(get_api_key)
+  if [ -z "$key" ]; then
+    printf "${RED}Error:${RESET} No API key configured.\n" >&2
+    printf "Run ${CYAN}activerabbit login${RESET} to authenticate.\n" >&2
+    exit 1
+  fi
+  echo "$key"
+}
+
+require_app() {
+  app=$(get_app)
+  if [ -z "$app" ]; then
+    printf "${RED}Error:${RESET} No app selected.\n" >&2
+    printf "Run ${CYAN}activerabbit use-app <slug>${RESET} to set a default app.\n" >&2
+    printf "Run ${CYAN}activerabbit apps${RESET} to see available apps.\n" >&2
+    exit 1
+  fi
+  echo "$app"
+}
+
+# ─── HTTP Client ──────────────────────────────────────────────────────────────
+
+http_get() {
+  url="$1"
+  api_key="$2"
+
+  if command -v curl >/dev/null 2>&1; then
+    response=$(curl -sS --connect-timeout 10 --max-time 30 \
+      -H "X-Project-Token: ${api_key}" \
+      -H "Accept: application/json" \
+      -w "\n%{http_code}" \
+      "$url" 2>&1) || {
+        printf "${RED}Error:${RESET} Could not connect to ActiveRabbit API.\n" >&2
+        printf "Check your internet connection and try again.\n" >&2
+        exit 1
+      }
+  elif command -v wget >/dev/null 2>&1; then
+    tmp=$(mktemp)
+    http_code=$(wget -q --timeout=30 \
+      --header="X-Project-Token: ${api_key}" \
+      --header="Accept: application/json" \
+      -O "$tmp" -S "$url" 2>&1 | grep "HTTP/" | tail -1 | awk '{print $2}')
+    response="$(cat "$tmp")
+${http_code:-000}"
+    rm -f "$tmp"
+  else
+    printf "${RED}Error:${RESET} Neither curl nor wget found.\n" >&2
+    exit 1
+  fi
+
+  # Split response body and status code
+  http_code=$(echo "$response" | tail -1)
+  body=$(echo "$response" | sed '$d')
+
+  case "$http_code" in
+    200|201)
+      echo "$body"
+      ;;
+    401)
+      printf "${RED}Error:${RESET} Invalid API key. Run ${CYAN}activerabbit login${RESET} to re-authenticate.\n" >&2
+      exit 1
+      ;;
+    404)
+      printf "${RED}Error:${RESET} Not found. Check your app slug and try again.\n" >&2
+      exit 1
+      ;;
+    429)
+      printf "${YELLOW}Rate limited.${RESET} Try again in a few seconds.\n" >&2
+      exit 1
+      ;;
+    5*)
+      printf "${RED}Server error (${http_code}).${RESET} Try again later.\n" >&2
+      exit 1
+      ;;
+    *)
+      printf "${RED}Error:${RESET} Unexpected response (HTTP ${http_code}).\n" >&2
+      if [ -n "$body" ]; then
+        printf "${DIM}%s${RESET}\n" "$body" >&2
+      fi
+      exit 1
+      ;;
+  esac
+}
+
+# ─── Formatting Helpers ───────────────────────────────────────────────────────
+
+severity_badge() {
+  case "$1" in
+    critical) printf "${RED}${BOLD}CRITICAL${RESET}" ;;
+    high)     printf "${RED}HIGH${RESET}" ;;
+    medium)   printf "${YELLOW}MEDIUM${RESET}" ;;
+    low)      printf "${GREEN}LOW${RESET}" ;;
+    *)        printf "${DIM}$1${RESET}" ;;
+  esac
+}
+
+health_badge() {
+  case "$1" in
+    healthy)  printf "${GREEN}● healthy${RESET}" ;;
+    warning)  printf "${YELLOW}◐ warning${RESET}" ;;
+    critical) printf "${RED}● critical${RESET}" ;;
+    *)        printf "${DIM}● $1${RESET}" ;;
+  esac
+}
+
+deploy_badge() {
+  case "$1" in
+    stable)     printf "${GREEN}✓ stable${RESET}" ;;
+    warning)    printf "${YELLOW}◐ warning${RESET}" ;;
+    regression) printf "${RED}✗ regression${RESET}" ;;
+    *)          printf "${DIM}? $1${RESET}" ;;
+  esac
+}
+
+relative_time() {
+  ts="$1"
+  [ -z "$ts" ] && echo "—" && return
+
+  # Parse ISO 8601 timestamp to epoch
+  if command -v date >/dev/null 2>&1; then
+    if date -j -f "%Y-%m-%dT%H:%M:%S" "$(echo "$ts" | cut -c1-19)" "+%s" >/dev/null 2>&1; then
+      # macOS
+      then_epoch=$(date -j -f "%Y-%m-%dT%H:%M:%S" "$(echo "$ts" | cut -c1-19)" "+%s" 2>/dev/null || echo "0")
+    else
+      # Linux
+      then_epoch=$(date -d "$ts" "+%s" 2>/dev/null || echo "0")
+    fi
+    now_epoch=$(date "+%s")
+
+    if [ "$then_epoch" = "0" ]; then
+      echo "$ts"
+      return
+    fi
+
+    diff=$((now_epoch - then_epoch))
+
+    if [ $diff -lt 60 ]; then
+      echo "just now"
+    elif [ $diff -lt 3600 ]; then
+      echo "$((diff / 60))m ago"
+    elif [ $diff -lt 86400 ]; then
+      echo "$((diff / 3600))h ago"
+    else
+      echo "$((diff / 86400))d ago"
+    fi
+  else
+    echo "$ts"
+  fi
+}
+
+print_divider() {
+  printf "${DIM}────────────────────────────────────────────────────${RESET}\n"
+}
+
+# ─── Commands ─────────────────────────────────────────────────────────────────
+
+cmd_login() {
+  printf "${BOLD}ActiveRabbit Login${RESET}\n\n"
+  printf "Enter your API key (from Project Settings > API Token):\n"
+  printf "${DIM}> ${RESET}"
+
+  # Read API key (hide input if possible)
+  stty -echo 2>/dev/null || true
+  read -r api_key
+  stty echo 2>/dev/null || true
+  printf "\n"
+
+  if [ -z "$api_key" ]; then
+    printf "${RED}Error:${RESET} API key cannot be empty.\n"
+    exit 1
+  fi
+
+  # Validate by calling the apps endpoint
+  printf "${DIM}Validating...${RESET}\n"
+  base_url=$(get_base_url)
+  body=$(http_get "${base_url}/api/v1/cli/apps" "$api_key")
+
+  config_set "api_key" "$api_key"
+  config_set "base_url" "$base_url"
+
+  # Show available apps
+  app_count=$(echo "$body" | jq -r '.data.apps | length' 2>/dev/null || echo "0")
+
+  printf "${GREEN}✓ Authenticated successfully!${RESET}\n"
+  printf "  ${DIM}Config saved to $(config_file)${RESET}\n\n"
+
+  if [ "$app_count" -gt 0 ]; then
+    printf "Available apps:\n"
+    echo "$body" | jq -r '.data.apps[] | "  \(.slug) — \(.name)"' 2>/dev/null
+    printf "\nRun ${CYAN}activerabbit use-app <slug>${RESET} to set your default app.\n"
+  fi
+}
+
+cmd_apps() {
+  api_key=$(require_api_key)
+  base_url=$(get_base_url)
+
+  body=$(http_get "${base_url}/api/v1/cli/apps" "$api_key")
+
+  app_count=$(echo "$body" | jq -r '.data.apps | length' 2>/dev/null || echo "0")
+
+  if [ "$app_count" = "0" ]; then
+    printf "${YELLOW}No apps found.${RESET}\n"
+    printf "Create a project at ${CYAN}${base_url}${RESET} first.\n"
+    return
+  fi
+
+  current_app=$(get_app)
+
+  printf "${BOLD}Your Apps${RESET}\n"
+  print_divider
+  printf "${DIM}%-20s %-25s %-12s %s${RESET}\n" "SLUG" "NAME" "ENV" "ERRORS (24h)"
+  print_divider
+
+  echo "$body" | jq -r '.data.apps[] | "\(.slug)\t\(.name)\t\(.environment)\t\(.error_count_24h)"' 2>/dev/null | while IFS="$(printf '\t')" read -r slug name env errors; do
+    marker=""
+    if [ "$slug" = "$current_app" ]; then
+      marker=" ${GREEN}◀${RESET}"
+    fi
+    printf "%-20s %-25s %-12s %s%b\n" "$slug" "$name" "$env" "$errors" "$marker"
+  done
+}
+
+cmd_use_app() {
+  slug="$1"
+  if [ -z "$slug" ]; then
+    printf "${RED}Usage:${RESET} activerabbit use-app <slug>\n"
+    printf "Run ${CYAN}activerabbit apps${RESET} to see available slugs.\n"
+    exit 1
+  fi
+
+  config_set "app" "$slug"
+  printf "${GREEN}✓${RESET} Default app set to ${CYAN}${slug}${RESET}\n"
+}
+
+cmd_status() {
+  api_key=$(require_api_key)
+  app=$(require_app)
+  base_url=$(get_base_url)
+
+  body=$(http_get "${base_url}/api/v1/cli/apps/${app}/status" "$api_key")
+
+  name=$(echo "$body" | jq -r '.data.name // empty')
+  health=$(echo "$body" | jq -r '.data.health // "unknown"')
+  errors=$(echo "$body" | jq -r '.data.error_count_24h // 0')
+  p95=$(echo "$body" | jq -r '.data.p95_latency_ms // 0')
+  deploy_status=$(echo "$body" | jq -r '.data.deploy_status // "unknown"')
+  last_deploy=$(echo "$body" | jq -r '.data.last_deploy_at // empty')
+  top_title=$(echo "$body" | jq -r '.data.top_issue.title // empty')
+  top_count=$(echo "$body" | jq -r '.data.top_issue.count // 0')
+  top_severity=$(echo "$body" | jq -r '.data.top_issue.severity // empty')
+
+  printf "\n${BOLD}${WHITE} %s ${RESET}" "$name"
+  printf " "
+  health_badge "$health"
+  printf "\n"
+  print_divider
+
+  printf "  ${DIM}Errors (24h):${RESET}    %s\n" "$errors"
+  printf "  ${DIM}P95 Latency:${RESET}     %sms\n" "$p95"
+  printf "  ${DIM}Deploy Status:${RESET}   "
+  deploy_badge "$deploy_status"
+  printf "\n"
+
+  if [ -n "$last_deploy" ]; then
+    printf "  ${DIM}Last Deploy:${RESET}     %s\n" "$(relative_time "$last_deploy")"
+  fi
+
+  if [ -n "$top_title" ]; then
+    printf "\n  ${DIM}Top Issue:${RESET}       "
+    severity_badge "$top_severity"
+    printf " %s ${DIM}(%s occurrences)${RESET}\n" "$top_title" "$top_count"
+  fi
+
+  printf "\n"
+}
+
+cmd_incidents() {
+  api_key=$(require_api_key)
+  app=$(require_app)
+  base_url=$(get_base_url)
+  limit="${1:-10}"
+
+  body=$(http_get "${base_url}/api/v1/cli/apps/${app}/incidents?limit=${limit}" "$api_key")
+
+  count=$(echo "$body" | jq -r '.data.incidents | length' 2>/dev/null || echo "0")
+
+  if [ "$count" = "0" ]; then
+    printf "${GREEN}✓ No open incidents.${RESET}\n"
+    return
+  fi
+
+  printf "\n${BOLD}Incidents${RESET} ${DIM}(%s)${RESET}\n" "$app"
+  print_divider
+
+  echo "$body" | jq -c '.data.incidents[]' 2>/dev/null | while read -r incident; do
+    id=$(echo "$incident" | jq -r '.id')
+    severity=$(echo "$incident" | jq -r '.severity // "unknown"')
+    title=$(echo "$incident" | jq -r '.title')
+    cnt=$(echo "$incident" | jq -r '.count // 0')
+    last_seen=$(echo "$incident" | jq -r '.last_seen_at // empty')
+    endpoint=$(echo "$incident" | jq -r '.endpoint // empty')
+
+    printf "  "
+    severity_badge "$severity"
+    printf "  ${WHITE}%s${RESET}\n" "$title"
+    printf "     ${DIM}%s  |  %s occurrences  |  %s${RESET}\n" "$id" "$cnt" "$(relative_time "$last_seen")"
+    if [ -n "$endpoint" ] && [ "$endpoint" != "null" ]; then
+      printf "     ${DIM}→ %s${RESET}\n" "$endpoint"
+    fi
+    printf "\n"
+  done
+}
+
+cmd_show() {
+  id="$1"
+  if [ -z "$id" ]; then
+    printf "${RED}Usage:${RESET} activerabbit show <incident-id>\n"
+    exit 1
+  fi
+
+  api_key=$(require_api_key)
+  app=$(require_app)
+  base_url=$(get_base_url)
+
+  body=$(http_get "${base_url}/api/v1/cli/apps/${app}/incidents/${id}" "$api_key")
+
+  title=$(echo "$body" | jq -r '.data.title // "Unknown"')
+  severity=$(echo "$body" | jq -r '.data.severity // "unknown"')
+  status=$(echo "$body" | jq -r '.data.status // "unknown"')
+  exc_class=$(echo "$body" | jq -r '.data.exception_class // empty')
+  message=$(echo "$body" | jq -r '.data.message // empty')
+  endpoint=$(echo "$body" | jq -r '.data.endpoint // empty')
+  count=$(echo "$body" | jq -r '.data.count // 0')
+  affected=$(echo "$body" | jq -r '.data.affected_users // 0')
+  first_seen=$(echo "$body" | jq -r '.data.first_seen_at // empty')
+  last_seen=$(echo "$body" | jq -r '.data.last_seen_at // empty')
+  inc_id=$(echo "$body" | jq -r '.data.id // empty')
+
+  printf "\n${BOLD}${WHITE} %s ${RESET}\n" "$title"
+  print_divider
+  printf "  ${DIM}ID:${RESET}              %s\n" "$inc_id"
+  printf "  ${DIM}Severity:${RESET}        "
+  severity_badge "$severity"
+  printf "\n"
+  printf "  ${DIM}Status:${RESET}          %s\n" "$status"
+
+  if [ -n "$exc_class" ] && [ "$exc_class" != "null" ]; then
+    printf "  ${DIM}Exception:${RESET}       ${CYAN}%s${RESET}\n" "$exc_class"
+  fi
+  if [ -n "$endpoint" ] && [ "$endpoint" != "null" ]; then
+    printf "  ${DIM}Endpoint:${RESET}        %s\n" "$endpoint"
+  fi
+
+  printf "  ${DIM}Occurrences:${RESET}     %s\n" "$count"
+  printf "  ${DIM}Affected Users:${RESET}  %s\n" "$affected"
+  printf "  ${DIM}First Seen:${RESET}      %s\n" "$(relative_time "$first_seen")"
+  printf "  ${DIM}Last Seen:${RESET}       %s\n" "$(relative_time "$last_seen")"
+
+  if [ -n "$message" ] && [ "$message" != "null" ]; then
+    printf "\n  ${DIM}Message:${RESET}\n"
+    printf "  ${YELLOW}%s${RESET}\n" "$message"
+  fi
+
+  # Backtrace
+  bt_count=$(echo "$body" | jq -r '.data.backtrace | length' 2>/dev/null || echo "0")
+  if [ "$bt_count" -gt 0 ]; then
+    printf "\n  ${DIM}Backtrace:${RESET}\n"
+    echo "$body" | jq -r '.data.backtrace[]' 2>/dev/null | while read -r frame; do
+      printf "    ${DIM}%s${RESET}\n" "$frame"
+    done
+  fi
+
+  # Tags
+  tags=$(echo "$body" | jq -r '.data.tags // empty' 2>/dev/null)
+  if [ -n "$tags" ] && [ "$tags" != "null" ] && [ "$tags" != "{}" ]; then
+    printf "\n  ${DIM}Tags:${RESET}\n"
+    echo "$body" | jq -r '.data.tags | to_entries[] | "    \(.key): \(.value)"' 2>/dev/null
+  fi
+
+  printf "\n  ${DIM}Run ${CYAN}activerabbit explain %s${DIM} for AI analysis.${RESET}\n\n" "$inc_id"
+}
+
+cmd_explain() {
+  id="$1"
+  if [ -z "$id" ]; then
+    printf "${RED}Usage:${RESET} activerabbit explain <incident-id>\n"
+    exit 1
+  fi
+
+  api_key=$(require_api_key)
+  app=$(require_app)
+  base_url=$(get_base_url)
+
+  printf "${DIM}Analyzing incident...${RESET}\n"
+  body=$(http_get "${base_url}/api/v1/cli/apps/${app}/incidents/${id}/explain" "$api_key")
+
+  title=$(echo "$body" | jq -r '.data.title // "Unknown"')
+  severity=$(echo "$body" | jq -r '.data.severity // "unknown"')
+  root_cause=$(echo "$body" | jq -r '.data.root_cause // "No analysis available"')
+  confidence=$(echo "$body" | jq -r '.data.confidence_score // 0')
+  fix=$(echo "$body" | jq -r '.data.suggested_fix // "No fix suggested"')
+  risk=$(echo "$body" | jq -r '.data.regression_risk // "unknown"')
+  impact=$(echo "$body" | jq -r '.data.estimated_impact // empty')
+
+  printf "\n${BOLD}${MAGENTA}AI Analysis${RESET} — %s\n" "$title"
+  print_divider
+
+  printf "  ${DIM}Severity:${RESET}     "
+  severity_badge "$severity"
+  printf "\n"
+  printf "  ${DIM}Confidence:${RESET}   %s\n" "$confidence"
+  printf "  ${DIM}Risk:${RESET}         %s\n" "$risk"
+
+  if [ -n "$impact" ] && [ "$impact" != "null" ]; then
+    printf "  ${DIM}Impact:${RESET}       %s\n" "$impact"
+  fi
+
+  printf "\n  ${BOLD}Root Cause${RESET}\n"
+  printf "  %s\n" "$root_cause"
+
+  printf "\n  ${BOLD}Suggested Fix${RESET}\n"
+  printf "  %s\n" "$fix"
+
+  # Tests to run
+  test_count=$(echo "$body" | jq -r '.data.tests_to_run | length' 2>/dev/null || echo "0")
+  if [ "$test_count" -gt 0 ]; then
+    printf "\n  ${BOLD}Tests to Run${RESET}\n"
+    echo "$body" | jq -r '.data.tests_to_run[]' 2>/dev/null | while read -r test; do
+      printf "    ${CYAN}%s${RESET}\n" "$test"
+    done
+  fi
+
+  printf "\n  ${DIM}⚠ AI-generated analysis. Always verify before implementing fixes.${RESET}\n\n"
+}
+
+cmd_deploy_check() {
+  api_key=$(require_api_key)
+  app=$(require_app)
+  base_url=$(get_base_url)
+
+  printf "${DIM}Checking deploy readiness...${RESET}\n"
+  body=$(http_get "${base_url}/api/v1/cli/apps/${app}/deploy_check" "$api_key")
+
+  ready=$(echo "$body" | jq -r '.data.ready // false')
+  new_errors=$(echo "$body" | jq -r '.data.new_errors_since_deploy // 0')
+  last_deploy=$(echo "$body" | jq -r '.data.last_deploy_at // empty')
+  warning_count=$(echo "$body" | jq -r '.data.warnings | length' 2>/dev/null || echo "0")
+
+  printf "\n${BOLD}Deploy Check${RESET} — %s\n" "$app"
+  print_divider
+
+  if [ "$ready" = "true" ]; then
+    printf "\n  ${GREEN}${BOLD}✓ READY TO DEPLOY${RESET}\n\n"
+  else
+    printf "\n  ${RED}${BOLD}✗ NOT READY TO DEPLOY${RESET}\n\n"
+  fi
+
+  if [ -n "$last_deploy" ] && [ "$last_deploy" != "null" ]; then
+    printf "  ${DIM}Last deploy:${RESET}              %s\n" "$(relative_time "$last_deploy")"
+  fi
+  printf "  ${DIM}New errors since deploy:${RESET}   %s\n" "$new_errors"
+
+  if [ "$warning_count" -gt 0 ]; then
+    printf "\n  ${YELLOW}${BOLD}Warnings:${RESET}\n"
+    echo "$body" | jq -r '.data.warnings[]' 2>/dev/null | while read -r warning; do
+      printf "    ${YELLOW}⚠ %s${RESET}\n" "$warning"
+    done
+  fi
+
+  printf "\n"
+
+  # Exit with non-zero for CI/CD usage
+  if [ "$ready" != "true" ]; then
+    exit 1
+  fi
+}
+
+cmd_doctor() {
+  printf "${BOLD}ActiveRabbit Doctor${RESET}\n"
+  print_divider
+  errors=0
+
+  # Check config file
+  file=$(config_file)
+  if [ -f "$file" ]; then
+    printf "  ${GREEN}✓${RESET} Config file: %s\n" "$file"
+  else
+    printf "  ${YELLOW}!${RESET} Config file: not found ${DIM}(run 'activerabbit login')${RESET}\n"
+    errors=$((errors + 1))
+  fi
+
+  # Check API key
+  api_key=$(get_api_key)
+  if [ -n "$api_key" ]; then
+    masked="${api_key%"${api_key#????}"}...${api_key#"${api_key%????}"}"
+    printf "  ${GREEN}✓${RESET} API key: %s\n" "$masked"
+  else
+    printf "  ${RED}✗${RESET} API key: not set\n"
+    errors=$((errors + 1))
+  fi
+
+  # Check app
+  app=$(get_app)
+  if [ -n "$app" ]; then
+    printf "  ${GREEN}✓${RESET} Default app: %s\n" "$app"
+  else
+    printf "  ${YELLOW}!${RESET} Default app: not set ${DIM}(run 'activerabbit use-app <slug>')${RESET}\n"
+  fi
+
+  # Check jq
+  if command -v jq >/dev/null 2>&1; then
+    printf "  ${GREEN}✓${RESET} jq: %s\n" "$(jq --version 2>/dev/null || echo 'installed')"
+  else
+    printf "  ${RED}✗${RESET} jq: not found ${DIM}(required for JSON parsing)${RESET}\n"
+    errors=$((errors + 1))
+  fi
+
+  # Check curl/wget
+  if command -v curl >/dev/null 2>&1; then
+    printf "  ${GREEN}✓${RESET} HTTP client: curl\n"
+  elif command -v wget >/dev/null 2>&1; then
+    printf "  ${GREEN}✓${RESET} HTTP client: wget\n"
+  else
+    printf "  ${RED}✗${RESET} HTTP client: neither curl nor wget found\n"
+    errors=$((errors + 1))
+  fi
+
+  # Test connectivity
+  base_url=$(get_base_url)
+  printf "  ${DIM}Checking connectivity to %s...${RESET}\n" "$base_url"
+  if [ -n "$api_key" ]; then
+    if body=$(http_get "${base_url}/api/v1/cli/apps" "$api_key" 2>/dev/null); then
+      printf "  ${GREEN}✓${RESET} API connection: OK\n"
+
+      # Check app access
+      if [ -n "$app" ]; then
+        if status_body=$(http_get "${base_url}/api/v1/cli/apps/${app}/status" "$api_key" 2>/dev/null); then
+          printf "  ${GREEN}✓${RESET} App access: OK\n"
+        else
+          printf "  ${RED}✗${RESET} App access: could not reach app '${app}'\n"
+          errors=$((errors + 1))
+        fi
+      fi
+    else
+      printf "  ${RED}✗${RESET} API connection: failed\n"
+      errors=$((errors + 1))
+    fi
+  else
+    printf "  ${DIM}—${RESET} API connection: skipped (no API key)\n"
+  fi
+
+  print_divider
+  if [ $errors -eq 0 ]; then
+    printf "  ${GREEN}${BOLD}All checks passed!${RESET}\n\n"
+  else
+    printf "  ${RED}${BOLD}%s issue(s) found.${RESET}\n\n" "$errors"
+    exit 1
+  fi
+}
+
+cmd_version() {
+  printf "activerabbit %s\n" "$VERSION"
+}
+
+cmd_help() {
+  printf "${BOLD}ActiveRabbit CLI${RESET} v%s\n" "$VERSION"
+  printf "AI-powered monitoring from your terminal\n\n"
+  printf "${BOLD}USAGE${RESET}\n"
+  printf "  activerabbit <command> [options]\n\n"
+  printf "${BOLD}COMMANDS${RESET}\n"
+  printf "  ${CYAN}login${RESET}              Authenticate with your API key\n"
+  printf "  ${CYAN}apps${RESET}               List all your apps\n"
+  printf "  ${CYAN}use-app${RESET} <slug>     Set the default app\n"
+  printf "  ${CYAN}status${RESET}             Health snapshot for your app\n"
+  printf "  ${CYAN}incidents${RESET} [limit]  List recent incidents\n"
+  printf "  ${CYAN}show${RESET} <id>          Show incident details\n"
+  printf "  ${CYAN}explain${RESET} <id>       AI-powered root cause analysis\n"
+  printf "  ${CYAN}deploy-check${RESET}       Pre-deploy safety check\n"
+  printf "  ${CYAN}doctor${RESET}             Validate your setup\n"
+  printf "  ${CYAN}version${RESET}            Show CLI version\n"
+  printf "  ${CYAN}help${RESET}               Show this help\n\n"
+  printf "${BOLD}ENVIRONMENT${RESET}\n"
+  printf "  ACTIVERABBIT_API_KEY     API key (overrides config)\n"
+  printf "  ACTIVERABBIT_BASE_URL    API base URL\n"
+  printf "  ACTIVERABBIT_APP         Default app slug\n"
+  printf "  NO_COLOR                 Disable colored output\n\n"
+  printf "${BOLD}CONFIG${RESET}\n"
+  printf "  %s\n\n" "$(config_file)"
+  printf "${BOLD}DOCS${RESET}\n"
+  printf "  https://activerabbit.ai/cli\n\n"
+}
+
+# ─── Main Dispatcher ──────────────────────────────────────────────────────────
+
+setup_colors
+
+command="${1:-help}"
+shift 2>/dev/null || true
+
+case "$command" in
+  login)         cmd_login "$@" ;;
+  apps)          cmd_apps "$@" ;;
+  use-app)       cmd_use_app "$@" ;;
+  status)        cmd_status "$@" ;;
+  incidents)     cmd_incidents "$@" ;;
+  show)          cmd_show "$@" ;;
+  explain)       cmd_explain "$@" ;;
+  deploy-check)  cmd_deploy_check "$@" ;;
+  doctor)        cmd_doctor "$@" ;;
+  version|-v|--version) cmd_version "$@" ;;
+  help|-h|--help)       cmd_help "$@" ;;
+  *)
+    printf "${RED}Unknown command:${RESET} %s\n" "$command"
+    printf "Run ${CYAN}activerabbit help${RESET} for usage.\n"
+    exit 1
+    ;;
+esac

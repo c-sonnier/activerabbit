@@ -1,0 +1,28 @@
+<%
+  log_entries = LogEntry.where(issue_id: issue.id)
+                        .where("occurred_at > ?", 24.hours.ago)
+                        .order(occurred_at: :desc)
+                        .limit(20)
+%>
+
+<div class="bg-white rounded-lg shadow">
+  <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+    <h3 class="text-lg font-medium text-gray-900">Related Logs</h3>
+    <% if log_entries.any? %>
+      <span class="text-xs text-gray-500"><%= log_entries.size %> entries (last 24h)</span>
+    <% end %>
+  </div>
+
+  <div class="divide-y divide-gray-100">
+    <% if log_entries.any? %>
+      <% log_entries.each do |log_entry| %>
+        <%= render "logs/log_entry_row", log_entry: log_entry %>
+      <% end %>
+    <% else %>
+      <div class="px-6 py-8 text-center">
+        <p class="text-sm text-gray-500">No log entries linked to this issue yet.</p>
+        <p class="text-xs text-gray-400 mt-1">Logs are linked automatically via trace_id or request_id.</p>
+      </div>
+    <% end %>
+  </div>
+</div>

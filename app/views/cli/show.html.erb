@@ -1,0 +1,344 @@
+<% content_for :title, "ActiveRabbit CLI — Monitor from your terminal" %>
+
+<div class="min-h-screen bg-[#0a0a0f]">
+  <!-- Header -->
+  <header class="py-4 px-4 sm:px-6 lg:px-8 border-b border-white/5">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <a href="https://www.activerabbit.ai/" class="flex items-center space-x-3">
+        <%= image_tag "faviicons/favicon-32.png", class: "rounded-full", alt: "ActiveRabbit" %>
+        <span class="text-xl font-bold text-white">ActiveRabbit</span>
+      </a>
+      <div class="flex items-center space-x-3">
+        <% if user_signed_in? %>
+          <%= link_to "Dashboard", dashboard_path, class: "text-gray-400 hover:text-white transition text-sm" %>
+        <% else %>
+          <%= link_to "Login", new_user_session_path, class: "text-gray-400 hover:text-white transition text-sm" %>
+          <%= link_to "Start Free Trial", new_user_registration_path, class: "px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-medium rounded-lg transition" %>
+        <% end %>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-b from-violet-600/10 via-transparent to-transparent"></div>
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-violet-600/20 blur-[120px] rounded-full"></div>
+
+    <div class="max-w-4xl mx-auto text-center relative z-10">
+      <div class="inline-flex items-center justify-center w-20 h-20 bg-white/5 backdrop-blur border border-white/10 rounded-2xl mb-4">
+        <svg class="w-10 h-10 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z" />
+        </svg>
+      </div></br>
+
+      <div class="inline-flex items-center px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-6">
+        <span class="text-emerald-400 text-sm font-medium">CLI TOOL</span>
+      </div>
+
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+        Monitor from your<br>terminal
+      </h1>
+      <p class="text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+        Check app health, investigate incidents, and get AI-powered root cause analysis — all without leaving your terminal.
+      </p>
+
+      <!-- Install Command -->
+      <div class="max-w-2xl mx-auto mb-8">
+        <div class="bg-[#1a1a2e] border border-white/10 rounded-xl p-1">
+          <div class="flex items-center justify-between bg-[#0d0d1a] rounded-lg px-5 py-4">
+            <code class="text-emerald-400 text-sm sm:text-base font-mono">curl -fsSL https://activerabbit.ai/cli/install.sh | sh</code>
+            <button onclick="navigator.clipboard.writeText('curl -fsSL https://activerabbit.ai/cli/install.sh | sh').then(() => { this.innerHTML = '<svg class=\'w-5 h-5 text-emerald-400\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M5 13l4 4L19 7\'></path></svg>'; setTimeout(() => { this.innerHTML = '<svg class=\'w-5 h-5 text-gray-400 hover:text-white\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3\'></path></svg>'; }, 2000) })" class="ml-4 p-2 hover:bg-white/10 rounded-lg transition flex-shrink-0">
+              <svg class="w-5 h-5 text-gray-400 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <p class="text-gray-500 text-sm mt-3">Works on macOS, Linux, and WSL. Requires <code class="text-gray-400">curl</code> or <code class="text-gray-400">wget</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Terminal Demo -->
+  <section class="py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-3xl mx-auto">
+      <div class="bg-[#1a1a2e] border border-white/10 rounded-2xl overflow-hidden shadow-2xl shadow-violet-500/5">
+        <!-- Terminal Header -->
+        <div class="flex items-center px-4 py-3 bg-[#0d0d1a] border-b border-white/5">
+          <div class="flex space-x-2">
+            <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+            <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+            <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+          </div>
+          <span class="ml-4 text-gray-500 text-xs font-mono">Terminal</span>
+        </div>
+        <!-- Terminal Content -->
+        <div class="p-6 font-mono text-sm leading-relaxed">
+          <p><span class="text-gray-500">$</span> <span class="text-white">activerabbit status</span></p>
+          <p class="mt-3"><span class="text-white font-bold"> My Rails App </span> <span class="text-emerald-400">● healthy</span></p>
+          <p class="text-gray-600">────────────────────────────────────────</p>
+          <p>  <span class="text-gray-500">Errors (24h):</span>    <span class="text-white">12</span></p>
+          <p>  <span class="text-gray-500">P95 Latency:</span>     <span class="text-white">142ms</span></p>
+          <p>  <span class="text-gray-500">Deploy Status:</span>   <span class="text-emerald-400">✓ stable</span></p>
+          <p>  <span class="text-gray-500">Last Deploy:</span>     <span class="text-white">2h ago</span></p>
+          <p class="mt-2">  <span class="text-gray-500">Top Issue:</span>       <span class="text-red-400">HIGH</span> <span class="text-white">NoMethodError in UsersController</span> <span class="text-gray-600">(47 occurrences)</span></p>
+
+          <p class="mt-5"><span class="text-gray-500">$</span> <span class="text-white">activerabbit explain inc_42</span></p>
+          <p class="text-gray-500 mt-1">Analyzing incident...</p>
+          <p class="mt-3"><span class="text-violet-400 font-bold">AI Analysis</span> — NoMethodError in UsersController</p>
+          <p class="text-gray-600">────────────────────────────────────────</p>
+          <p>  <span class="text-gray-500">Severity:</span>     <span class="text-red-400">HIGH</span></p>
+          <p>  <span class="text-gray-500">Confidence:</span>   <span class="text-white">0.87</span></p>
+          <p class="mt-2">  <span class="text-white font-bold">Root Cause</span></p>
+          <p>  <span class="text-gray-300">Nil user object accessed in #show action</span></p>
+          <p>  <span class="text-gray-300">when user session expires mid-request.</span></p>
+          <p class="mt-2">  <span class="text-white font-bold">Suggested Fix</span></p>
+          <p>  <span class="text-gray-300">Add null check before accessing user attributes</span></p>
+          <p>  <span class="text-gray-300">in UsersController#show.</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Commands Section -->
+  <section class="py-20 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">Everything you need</h2>
+        <p class="text-gray-400 max-w-2xl mx-auto">A complete monitoring toolkit right in your terminal.</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="bg-white/5 border border-white/10 rounded-xl p-6 hover:border-violet-500/30 transition">
+          <code class="text-emerald-400 text-sm font-mono bg-emerald-500/10 px-2 py-1 rounded">activerabbit status</code>
+          <h3 class="text-lg font-semibold text-white mt-4 mb-2">Health Snapshot</h3>
+          <p class="text-gray-400 text-sm">Error counts, P95 latency, deploy status, and top issues at a glance.</p>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 rounded-xl p-6 hover:border-violet-500/30 transition">
+          <code class="text-emerald-400 text-sm font-mono bg-emerald-500/10 px-2 py-1 rounded">activerabbit incidents</code>
+          <h3 class="text-lg font-semibold text-white mt-4 mb-2">Incident List</h3>
+          <p class="text-gray-400 text-sm">See all open incidents with severity, occurrence count, and timestamps.</p>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 rounded-xl p-6 hover:border-violet-500/30 transition">
+          <code class="text-violet-400 text-sm font-mono bg-violet-500/10 px-2 py-1 rounded">activerabbit explain &lt;id&gt;</code>
+          <h3 class="text-lg font-semibold text-white mt-4 mb-2">AI Analysis</h3>
+          <p class="text-gray-400 text-sm">Get AI-powered root cause analysis with confidence scoring and fix suggestions.</p>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 rounded-xl p-6 hover:border-violet-500/30 transition">
+          <code class="text-emerald-400 text-sm font-mono bg-emerald-500/10 px-2 py-1 rounded">activerabbit deploy-check</code>
+          <h3 class="text-lg font-semibold text-white mt-4 mb-2">Deploy Gate</h3>
+          <p class="text-gray-400 text-sm">Pre-deploy safety check. Returns exit code 1 if issues found — perfect for CI/CD.</p>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 rounded-xl p-6 hover:border-violet-500/30 transition">
+          <code class="text-emerald-400 text-sm font-mono bg-emerald-500/10 px-2 py-1 rounded">activerabbit show &lt;id&gt;</code>
+          <h3 class="text-lg font-semibold text-white mt-4 mb-2">Incident Detail</h3>
+          <p class="text-gray-400 text-sm">Full details: exception class, backtrace, affected users, and recent events.</p>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 rounded-xl p-6 hover:border-violet-500/30 transition">
+          <code class="text-emerald-400 text-sm font-mono bg-emerald-500/10 px-2 py-1 rounded">activerabbit doctor</code>
+          <h3 class="text-lg font-semibold text-white mt-4 mb-2">Self-Diagnostics</h3>
+          <p class="text-gray-400 text-sm">Validate your config, API connectivity, and app access in one command.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Start -->
+  <section class="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-transparent via-violet-600/5 to-transparent">
+    <div class="max-w-3xl mx-auto">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">Quick Start</h2>
+        <p class="text-gray-400">Up and running in under a minute.</p>
+      </div>
+
+      <div class="space-y-6">
+        <!-- Step 1 -->
+        <div class="flex items-start">
+          <span class="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-4">1</span>
+          <div class="flex-1">
+            <strong class="text-white">Install the CLI</strong>
+            <div class="mt-2 bg-[#0d0d1a] border border-white/10 rounded-lg px-4 py-3">
+              <code class="text-emerald-400 text-sm font-mono">curl -fsSL https://activerabbit.ai/cli/install.sh | sh</code>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="flex items-start">
+          <span class="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-4">2</span>
+          <div class="flex-1">
+            <strong class="text-white">Authenticate</strong>
+            <span class="text-gray-400"> — grab your API token from Project Settings</span>
+            <div class="mt-2 bg-[#0d0d1a] border border-white/10 rounded-lg px-4 py-3">
+              <code class="text-emerald-400 text-sm font-mono">activerabbit login</code>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="flex items-start">
+          <span class="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-4">3</span>
+          <div class="flex-1">
+            <strong class="text-white">Select your app</strong>
+            <div class="mt-2 bg-[#0d0d1a] border border-white/10 rounded-lg px-4 py-3">
+              <code class="text-emerald-400 text-sm font-mono">activerabbit apps<br>activerabbit use-app my-app</code>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="flex items-start">
+          <span class="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-4">4</span>
+          <div class="flex-1">
+            <strong class="text-white">Start monitoring</strong>
+            <div class="mt-2 bg-[#0d0d1a] border border-white/10 rounded-lg px-4 py-3">
+              <code class="text-emerald-400 text-sm font-mono">activerabbit status</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CI/CD Integration -->
+  <section class="py-20 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-3xl mx-auto">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">CI/CD Integration</h2>
+        <p class="text-gray-400">Add a deploy gate to your pipeline in 3 lines.</p>
+      </div>
+
+      <div class="bg-[#1a1a2e] border border-white/10 rounded-2xl overflow-hidden">
+        <div class="flex items-center px-4 py-3 bg-[#0d0d1a] border-b border-white/5">
+          <span class="text-gray-500 text-xs font-mono">.github/workflows/deploy.yml</span>
+        </div>
+        <div class="p-6 font-mono text-sm leading-relaxed">
+          <p class="text-gray-500"># Add to your deploy workflow</p>
+          <p><span class="text-violet-400">- name:</span> <span class="text-emerald-300">Deploy Check</span></p>
+          <p>  <span class="text-violet-400">run:</span> <span class="text-gray-300">|</span></p>
+          <p>    <span class="text-gray-300">curl -fsSL https://activerabbit.ai/cli/install.sh | sh</span></p>
+          <p>    <span class="text-gray-300">activerabbit deploy-check</span></p>
+          <p>  <span class="text-violet-400">env:</span></p>
+          <p>    <span class="text-violet-400">ACTIVERABBIT_API_KEY:</span> <span class="text-gray-300">${{ secrets.ACTIVERABBIT_API_KEY }}</span></p>
+          <p>    <span class="text-violet-400">ACTIVERABBIT_APP:</span> <span class="text-gray-300">my-app</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Environment Variables -->
+  <section class="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-transparent via-violet-600/5 to-transparent">
+    <div class="max-w-3xl mx-auto">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">Configuration</h2>
+        <p class="text-gray-400">Config file, environment variables, or CLI flags — your choice.</p>
+      </div>
+
+      <div class="bg-white/5 border border-white/10 rounded-2xl p-8">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-white/10">
+              <th class="text-left text-gray-400 font-medium pb-3">Variable</th>
+              <th class="text-left text-gray-400 font-medium pb-3">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/5">
+            <tr>
+              <td class="py-3"><code class="text-violet-300 text-xs font-mono bg-violet-500/10 px-2 py-0.5 rounded">ACTIVERABBIT_API_KEY</code></td>
+              <td class="py-3 text-gray-400 pl-4">API token (overrides config file)</td>
+            </tr>
+            <tr>
+              <td class="py-3"><code class="text-violet-300 text-xs font-mono bg-violet-500/10 px-2 py-0.5 rounded">ACTIVERABBIT_APP</code></td>
+              <td class="py-3 text-gray-400 pl-4">Default app slug</td>
+            </tr>
+            <tr>
+              <td class="py-3"><code class="text-violet-300 text-xs font-mono bg-violet-500/10 px-2 py-0.5 rounded">ACTIVERABBIT_BASE_URL</code></td>
+              <td class="py-3 text-gray-400 pl-4">API base URL (default: app.activerabbit.ai)</td>
+            </tr>
+            <tr>
+              <td class="py-3"><code class="text-violet-300 text-xs font-mono bg-violet-500/10 px-2 py-0.5 rounded">NO_COLOR</code></td>
+              <td class="py-3 text-gray-400 pl-4">Disable colored output</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="mt-6 pt-6 border-t border-white/10">
+          <p class="text-gray-500 text-sm">
+            Config is stored at <code class="text-gray-400">~/.config/activerabbit/config</code> with owner-only permissions (0600).
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Need Help -->
+  <section class="py-20 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-3xl mx-auto text-center">
+      <h2 class="text-3xl font-bold text-white mb-4">Need Help?</h2>
+      <p class="text-gray-400 mb-8">Our team is here to help you get the most out of the CLI.</p>
+
+      <div class="bg-white/5 border border-white/10 rounded-2xl p-8 mb-8">
+        <a href="mailto:support@activerabbit.app" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-medium rounded-lg transition shadow-lg shadow-violet-500/25">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+          </svg>
+          Contact Support
+        </a>
+        <p class="text-gray-500 text-sm mt-4">
+          Email: <a href="mailto:support@activerabbit.app" class="text-violet-400 hover:underline">support@activerabbit.app</a>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 px-4 sm:px-6 lg:px-8 border-t border-white/5">
+    <div class="max-w-6xl mx-auto">
+      <div class="grid md:grid-cols-4 gap-8 mb-12">
+        <div>
+          <a href="https://www.activerabbit.ai/" class="flex items-center space-x-2 mb-4">
+            <%= image_tag "faviicons/favicon-32.png", class: "w-8 h-8 rounded-lg", alt: "ActiveRabbit" %>
+            <span class="text-lg font-bold text-white">ActiveRabbit</span>
+          </a>
+          <p class="text-gray-500 text-sm">AI-powered bug detection and fixing for modern development teams.</p>
+        </div>
+
+        <div>
+          <h4 class="text-white font-semibold mb-4">Product</h4>
+          <ul class="space-y-2 text-sm">
+            <li><a href="https://www.activerabbit.ai/#features" class="text-gray-500 hover:text-white transition">Features</a></li>
+            <li><a href="https://www.activerabbit.ai/pricing" class="text-gray-500 hover:text-white transition">Pricing</a></li>
+            <li><a href="<%= slack_integration_path %>" class="text-gray-500 hover:text-white transition">Integrations</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-white font-semibold mb-4">Developers</h4>
+          <ul class="space-y-2 text-sm">
+            <li><a href="https://docs.activerabbit.ai" class="text-gray-500 hover:text-white transition">Documentation</a></li>
+            <li><a href="https://github.com/activerabbit/activerabbit" class="text-gray-500 hover:text-white transition">GitHub</a></li>
+            <li><a href="/cli" class="text-violet-400 hover:text-violet-300 transition">CLI</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-white font-semibold mb-4">Company</h4>
+          <ul class="space-y-2 text-sm">
+            <li><a href="<%= support_path %>" class="text-gray-500 hover:text-white transition">Support</a></li>
+            <li><a href="https://www.activerabbit.ai/privacy" class="text-gray-500 hover:text-white transition">Privacy Policy</a></li>
+            <li><a href="https://www.activerabbit.ai/terms" class="text-gray-500 hover:text-white transition">Terms of Service</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="pt-8 border-t border-white/5 text-center text-gray-500 text-sm">
+        <p>&copy; <%= Date.current.year %> ActiveRabbit. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</div>

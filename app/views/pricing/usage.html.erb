@@ -123,37 +123,23 @@
             </div>
           </div>
         <% else %>
-          <% ai_pct = @account.usage_percentage(:ai_summaries) %>
-          <% ai_over = ai_pct >= 100 %>
-          <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 <%= ai_over ? 'border-red-500 ring-2 ring-red-200' : 'border-purple-500' %>">
+          <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 border-purple-500">
             <div class="flex items-center justify-between mb-3">
-              <h3 class="text-lg font-semibold text-gray-900">AI Summaries</h3>
-              <% if ai_over %>
-                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">OVER LIMIT</span>
-              <% else %>
-                <svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                </svg>
-              <% end %>
+              <h3 class="text-lg font-semibold text-gray-900">AI Error Analysis</h3>
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700">UNLIMITED</span>
             </div>
             <div class="space-y-2">
               <div class="flex justify-between text-sm">
                 <span class="text-gray-600">Used (billing period):</span>
-                <span class="font-bold <%= ai_over ? 'text-red-600' : 'text-gray-900' %>"><%= @ai_summaries_used %></span>
+                <span class="font-bold text-gray-900"><%= @ai_summaries_used %></span>
               </div>
               <div class="flex justify-between text-sm">
                 <span class="text-gray-600">Quota:</span>
-                <span class="font-medium text-gray-700"><%= @ai_summaries_quota %></span>
+                <span class="font-medium text-purple-600">Unlimited</span>
               </div>
               <div class="flex justify-between text-xs text-gray-500">
                 <span>Last 30 days:</span>
                 <span><%= number_with_delimiter(@ai_summaries_last_30_days) %></span>
-              </div>
-              <div class="w-full bg-gray-200 rounded-full h-3 mt-2">
-                <div class="<%= ai_over ? 'bg-red-500' : 'bg-purple-500' %> h-3 rounded-full transition-all" style="width: <%= [ai_pct, 100].min %>%"></div>
-              </div>
-              <div class="text-right text-sm font-bold <%= ai_over ? 'text-red-600' : (ai_pct >= 90 ? 'text-orange-500' : ai_pct >= 80 ? 'text-yellow-500' : 'text-green-500') %>">
-                <%= ai_pct.round(1) %>%
               </div>
             </div>
           </div>
@@ -216,95 +202,140 @@
           </div>
         <% end %>
 
-        <!-- Projects -->
-        <% proj_unlimited = @projects_quota.to_i >= 999_999 || @is_free_plan %>
-        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 border-green-500">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-lg font-semibold text-gray-900">Projects</h3>
-            <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-            </svg>
-          </div>
-          <div class="space-y-2">
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-600">Active projects:</span>
-              <span class="font-bold text-gray-900"><%= @projects_used %></span>
+        <!-- Session Replay -->
+        <% if @is_free_plan %>
+          <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 border-orange-400">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-lg font-semibold text-gray-900">Session Replay</h3>
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">NOT AVAILABLE</span>
             </div>
-            <% if proj_unlimited %>
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-600">Limit:</span>
-                <span class="font-medium text-green-600">Unlimited</span>
+            <div class="space-y-3">
+              <p class="text-sm text-gray-500">Session replay is not included in the Free plan.</p>
+              <div class="flex items-center gap-2 text-xs text-gray-500">
+                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"/>
+                </svg>
+                Team: 10 replays &bull; Business: 10 replays
               </div>
-            <% else %>
+              <a href="<%= plan_path %>" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md shadow hover:from-indigo-700 hover:to-violet-700 transition-all">
+                Upgrade to unlock
+              </a>
+            </div>
+          </div>
+        <% else %>
+          <%
+            replay_pct = @session_replays_quota.to_i > 0 ? ((@session_replays_used.to_f / @session_replays_quota) * 100).round(1) : 100
+            replay_over = replay_pct >= 100
+          %>
+          <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 <%= replay_over ? 'border-red-500 ring-2 ring-red-200' : 'border-blue-500' %>">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"/>
+                </svg>
+                <h3 class="text-lg font-semibold text-gray-900">Session Replay</h3>
+              </div>
+              <% if replay_over %>
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">LIMIT REACHED</span>
+              <% end %>
+            </div>
+            <div class="space-y-2">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Replays used:</span>
+                <span class="font-bold text-gray-900"><%= number_with_delimiter(@session_replays_used) %></span>
+              </div>
               <div class="flex justify-between text-sm">
                 <span class="text-gray-600">Quota:</span>
-                <span class="font-medium text-gray-700"><%= number_with_delimiter(@projects_quota) %></span>
+                <span class="font-medium text-gray-700"><%= number_with_delimiter(@session_replays_quota) %></span>
               </div>
-              <% proj_pct = @account.usage_percentage(:projects) %>
-              <% proj_over = proj_pct >= 100 %>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Remaining:</span>
+                <span class="font-medium <%= @session_replays_remaining.to_i <= 0 ? 'text-red-600' : 'text-blue-600' %>"><%= number_with_delimiter([@session_replays_remaining, 0].max) %></span>
+              </div>
               <div class="w-full bg-gray-200 rounded-full h-3 mt-3">
-                <div class="<%= proj_over ? 'bg-red-500' : 'bg-green-500' %> h-3 rounded-full transition-all" style="width: <%= [proj_pct, 100].min %>%"></div>
+                <div class="<%= replay_over ? 'bg-red-500' : (replay_pct >= 80 ? 'bg-yellow-500' : 'bg-blue-500') %> h-3 rounded-full transition-all" style="width: <%= [replay_pct, 100].min %>%"></div>
               </div>
-              <div class="text-right text-sm font-bold <%= proj_over ? 'text-red-600' : (proj_pct >= 90 ? 'text-orange-500' : proj_pct >= 80 ? 'text-yellow-500' : 'text-green-500') %>">
-                <%= proj_pct.round(1) %>%
+              <div class="text-right text-sm font-bold <%= replay_over ? 'text-red-600' : (replay_pct >= 90 ? 'text-orange-500' : replay_pct >= 80 ? 'text-yellow-500' : 'text-blue-600') %>">
+                <%= replay_pct %>%
               </div>
-            <% end %>
+            </div>
           </div>
-        </div>
+        <% end %>
         <!-- Uptime Monitoring -->
-        <%
-          uptime_pct = @uptime_monitors_quota.to_i > 0 ? ((@uptime_monitors_used.to_f / @uptime_monitors_quota) * 100).round(1) : 0
-          uptime_over = uptime_pct >= 100
-        %>
-        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 <%= uptime_over ? 'border-red-500 ring-2 ring-red-200' : 'border-emerald-500' %>">
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-2">
-              <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-              </svg>
+        <% if @is_free_plan %>
+          <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 border-orange-400">
+            <div class="flex items-center justify-between mb-3">
               <h3 class="text-lg font-semibold text-gray-900">Uptime Monitoring</h3>
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">NOT AVAILABLE</span>
             </div>
-            <% if uptime_over %>
-              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">LIMIT REACHED</span>
-            <% end %>
+            <div class="space-y-3">
+              <p class="text-sm text-gray-500">Uptime monitoring is not included in the Free plan.</p>
+              <div class="flex items-center gap-2 text-xs text-gray-500">
+                <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+                Team: 3 monitors &bull; Business: 5 monitors
+              </div>
+              <a href="<%= plan_path %>" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md shadow hover:from-indigo-700 hover:to-violet-700 transition-all">
+                Upgrade to unlock
+              </a>
+            </div>
           </div>
-          <div class="space-y-2">
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-600">Active monitors:</span>
-              <span class="font-bold <%= uptime_over ? 'text-red-600' : 'text-gray-900' %>"><%= @uptime_monitors_used %></span>
-            </div>
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-600">Quota:</span>
-              <span class="font-medium text-gray-700"><%= @uptime_monitors_quota %></span>
-            </div>
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-600">Remaining:</span>
-              <span class="font-medium <%= @uptime_monitors_remaining > 0 ? 'text-green-600' : 'text-red-600' %>"><%= @uptime_monitors_remaining %></span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-3 mt-2">
-              <div class="<%= uptime_over ? 'bg-red-500' : 'bg-emerald-500' %> h-3 rounded-full transition-all" style="width: <%= [uptime_pct, 100].min %>%"></div>
-            </div>
-            <div class="text-right text-sm font-bold <%= uptime_over ? 'text-red-600' : (uptime_pct >= 90 ? 'text-orange-500' : uptime_pct >= 80 ? 'text-yellow-500' : 'text-green-500') %>">
-              <%= uptime_pct %>%
-            </div>
-            <div class="flex items-center gap-2 text-xs text-gray-500 mt-1">
-              <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              Check data retained for <%= @data_retention_days %> days
-            </div>
-            <div class="flex items-center justify-between mt-2">
-              <%= link_to uptime_index_path, class: "text-xs text-indigo-600 hover:text-indigo-800 font-medium" do %>
-                View monitors &rarr;
-              <% end %>
+        <% else %>
+          <%
+            uptime_pct = @uptime_monitors_quota.to_i > 0 ? ((@uptime_monitors_used.to_f / @uptime_monitors_quota) * 100).round(1) : 100
+            uptime_over = uptime_pct >= 100
+          %>
+          <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 <%= uptime_over ? 'border-red-500 ring-2 ring-red-200' : 'border-emerald-500' %>">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+                <h3 class="text-lg font-semibold text-gray-900">Uptime Monitoring</h3>
+              </div>
               <% if uptime_over %>
-                <a href="<%= plan_path %>" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md shadow hover:from-indigo-700 hover:to-violet-700 transition-all">
-                  Upgrade for more
-                </a>
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">LIMIT REACHED</span>
               <% end %>
             </div>
+            <div class="space-y-2">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Active monitors:</span>
+                <span class="font-bold <%= uptime_over ? 'text-red-600' : 'text-gray-900' %>"><%= @uptime_monitors_used %></span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Quota:</span>
+                <span class="font-medium text-gray-700"><%= @uptime_monitors_quota %></span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Remaining:</span>
+                <span class="font-medium <%= @uptime_monitors_remaining.to_i > 0 ? 'text-green-600' : 'text-red-600' %>"><%= [@uptime_monitors_remaining, 0].max %></span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-3 mt-2">
+                <div class="<%= uptime_over ? 'bg-red-500' : 'bg-emerald-500' %> h-3 rounded-full transition-all" style="width: <%= [uptime_pct, 100].min %>%"></div>
+              </div>
+              <div class="text-right text-sm font-bold <%= uptime_over ? 'text-red-600' : (uptime_pct >= 90 ? 'text-orange-500' : uptime_pct >= 80 ? 'text-yellow-500' : 'text-green-500') %>">
+                <%= uptime_pct %>%
+              </div>
+              <div class="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Check data retained for <%= @data_retention_days %> days
+              </div>
+              <div class="flex items-center justify-between mt-2">
+                <%= link_to uptime_index_path, class: "text-xs text-indigo-600 hover:text-indigo-800 font-medium" do %>
+                  View monitors &rarr;
+                <% end %>
+                <% if uptime_over %>
+                  <a href="<%= plan_path %>" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md shadow hover:from-indigo-700 hover:to-violet-700 transition-all">
+                    Upgrade for more
+                  </a>
+                <% end %>
+              </div>
+            </div>
           </div>
-        </div>
+        <% end %>
 
         <!-- Requests Total (last 30 days, all sources incl. performance) -->
         <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 border-gray-500">

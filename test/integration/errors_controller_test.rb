@@ -251,7 +251,7 @@ class ErrorsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "show page renders quota exceeded UI when over quota" do
-    @account.update_columns(cached_ai_summaries_used: 100, current_plan: "team")
+    @account.update_columns(cached_ai_summaries_used: 0, current_plan: "free", trial_ends_at: 30.days.ago)
     issue = issues(:open_issue)
     issue.update_columns(ai_summary: nil)
 
@@ -279,7 +279,7 @@ class ErrorsControllerTest < ActionDispatch::IntegrationTest
   # === regenerate_ai_summary — quota exceeded returns simple JSON ===
 
   test "regenerate_ai_summary returns simple JSON on quota exceeded" do
-    @account.update_columns(cached_ai_summaries_used: 100, current_plan: "team")
+    @account.update_columns(cached_ai_summaries_used: 0, current_plan: "free", trial_ends_at: 30.days.ago)
     issue = issues(:open_issue)
 
     post regenerate_ai_summary_error_path(issue),
@@ -296,7 +296,7 @@ class ErrorsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "regenerate_ai_summary redirects with flash on HTML quota exceeded" do
-    @account.update_columns(cached_ai_summaries_used: 100, current_plan: "team")
+    @account.update_columns(cached_ai_summaries_used: 0, current_plan: "free", trial_ends_at: 30.days.ago)
     issue = issues(:open_issue)
 
     post regenerate_ai_summary_error_path(issue)

@@ -7,7 +7,7 @@ class DataRetentionJob < ApplicationJob
   DEFAULT_RETENTION_DAYS = 31
   FREE_PLAN_RETENTION_DAYS = 5
   BATCH_SIZE = 50_000  # Larger batches since we have indexes on occurred_at
-  PURGEABLE_TABLES = %w[events performance_events].freeze
+  PURGEABLE_TABLES = %w[events performance_events log_entries].freeze
 
   # Delete events and performance events based on plan-specific retention.
   # Runs daily via Sidekiq Cron.
@@ -32,8 +32,9 @@ class DataRetentionJob < ApplicationJob
         events_deleted = delete_old_events_for_accounts(free_cutoff, free_account_ids)
         perf_deleted = delete_old_performance_events_for_accounts(free_cutoff, free_account_ids)
         uptime_deleted = delete_old_uptime_checks_for_accounts(free_cutoff, free_account_ids)
+        logs_deleted = delete_in_batches_for_accounts("log_entries", free_cutoff, free_account_ids)
 
-        Rails.logger.info "[DataRetention] Free plan completed: deleted #{events_deleted} events, #{perf_deleted} performance events, #{uptime_deleted} uptime checks"
+        Rails.logger.info "[DataRetention] Free plan completed: deleted #{events_deleted} events, #{perf_deleted} performance events, #{uptime_deleted} uptime checks, #{logs_deleted} log entries"
       end
 
       # Phase 2: Delete old data for ALL accounts (31 days global max)
@@ -43,8 +44,9 @@ class DataRetentionJob < ApplicationJob
       events_deleted = delete_old_events(global_cutoff)
       perf_deleted = delete_old_performance_events(global_cutoff)
       uptime_deleted = delete_old_uptime_checks(global_cutoff)
+      logs_deleted = delete_in_batches("log_entries", global_cutoff)
 
-      Rails.logger.info "[DataRetention] Global completed: deleted #{events_deleted} events, #{perf_deleted} performance events, #{uptime_deleted} uptime checks"
+      Rails.logger.info "[DataRetention] Global completed: deleted #{events_deleted} events, #{perf_deleted} performance events, #{uptime_deleted} uptime checks, #{logs_deleted} log entries"
     end
   end
 

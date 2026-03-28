@@ -1,0 +1,162 @@
+<%
+  level = log_entry.level_name || "info"
+  level_bg = {
+    "trace" => "bg-gray-50 border-gray-200",
+    "debug" => "bg-gray-50 border-gray-200",
+    "info"  => "bg-blue-50 border-blue-200",
+    "warn"  => "bg-yellow-50 border-yellow-200",
+    "error" => "bg-red-50 border-red-200",
+    "fatal" => "bg-red-50 border-red-300"
+  }
+  level_text = {
+    "trace" => "text-gray-700",
+    "debug" => "text-gray-700",
+    "info"  => "text-blue-800",
+    "warn"  => "text-yellow-800",
+    "error" => "text-red-800",
+    "fatal" => "text-red-900"
+  }
+  level_badge = {
+    "trace" => "bg-gray-100 text-gray-700 ring-gray-300",
+    "debug" => "bg-gray-100 text-gray-700 ring-gray-300",
+    "info"  => "bg-blue-100 text-blue-700 ring-blue-300",
+    "warn"  => "bg-yellow-100 text-yellow-800 ring-yellow-300",
+    "error" => "bg-red-100 text-red-700 ring-red-300",
+    "fatal" => "bg-red-200 text-red-900 ring-red-400"
+  }
+%>
+
+<div class="rounded-lg border <%= level_bg[level] || 'bg-gray-50 border-gray-200' %> overflow-hidden">
+  <!-- Header bar -->
+  <div class="px-4 py-3 flex items-center justify-between border-b <%= level_bg[level] || 'border-gray-200' %>">
+    <div class="flex items-center gap-3">
+      <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold ring-1 ring-inset <%= level_badge[level] || 'bg-gray-100 text-gray-700 ring-gray-300' %>">
+        <%= level.upcase %>
+      </span>
+      <span class="text-xs font-mono text-gray-500">
+        <%= log_entry.occurred_at.strftime("%Y-%m-%d %H:%M:%S.%3N %Z") %>
+      </span>
+    </div>
+    <div class="flex items-center gap-2">
+      <% if log_entry.environment.present? %>
+        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-white text-gray-600 ring-1 ring-inset ring-gray-200">
+          <%= log_entry.environment %>
+        </span>
+      <% end %>
+      <% if log_entry.source.present? %>
+        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-white text-gray-600 ring-1 ring-inset ring-gray-200">
+          <%= log_entry.source %>
+        </span>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Message -->
+  <div class="px-4 py-3">
+    <pre class="text-sm font-mono <%= level_text[level] || 'text-gray-800' %> whitespace-pre-wrap break-words leading-relaxed"><%= log_entry.message %></pre>
+  </div>
+
+  <% if log_entry.message_template.present? %>
+    <div class="px-4 pb-3">
+      <span class="text-xs text-gray-500">Template:</span>
+      <code class="ml-1 text-xs bg-white/60 px-2 py-0.5 rounded font-mono text-gray-600"><%= log_entry.message_template %></code>
+    </div>
+  <% end %>
+
+  <!-- Trace / Request / Span IDs -->
+  <% if log_entry.trace_id.present? || log_entry.request_id.present? || log_entry.span_id.present? %>
+    <div class="px-4 pb-3 flex flex-wrap gap-4">
+      <% if log_entry.trace_id.present? %>
+        <div class="flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+          </svg>
+          <span class="text-xs text-gray-500">trace</span>
+          <code class="text-xs font-mono text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded"><%= log_entry.trace_id %></code>
+        </div>
+      <% end %>
+      <% if log_entry.span_id.present? %>
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs text-gray-500">span</span>
+          <code class="text-xs font-mono text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded"><%= log_entry.span_id %></code>
+        </div>
+      <% end %>
+      <% if log_entry.request_id.present? %>
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs text-gray-500">request</span>
+          <code class="text-xs font-mono text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded"><%= log_entry.request_id %></code>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <!-- Linked Issue -->
+  <% if log_entry.issue_id.present? %>
+    <div class="px-4 pb-3">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-white rounded-md ring-1 ring-inset ring-gray-200">
+        <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.268 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+        </svg>
+        <span class="text-xs text-gray-500">Linked Issue</span>
+        <%= link_to "##{log_entry.issue_id}", errors_path(log_entry.issue_id), class: "text-xs font-medium text-indigo-600 hover:text-indigo-800" %>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Params & Context in side-by-side panels -->
+  <% has_params = log_entry.params.present? && log_entry.params != {} %>
+  <% has_context = log_entry.context.present? && log_entry.context != {} %>
+  <% if has_params || has_context %>
+    <div class="border-t <%= level_bg[level] || 'border-gray-200' %>">
+      <div class="grid grid-cols-1 <%= 'md:grid-cols-2 md:divide-x' if has_params && has_context %> <%= level_bg[level]&.split(' ')&.last || 'divide-gray-200' %>">
+        <% if has_params %>
+          <div class="px-4 py-3">
+            <div class="flex items-center gap-1.5 mb-2">
+              <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+              </svg>
+              <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Parameters</span>
+            </div>
+            <div class="bg-white/80 rounded-md p-3 ring-1 ring-inset ring-gray-200/60">
+              <% log_entry.params.each do |key, value| %>
+                <div class="flex items-baseline gap-2 py-0.5">
+                  <span class="text-xs font-mono text-gray-500 flex-shrink-0"><%= key %>:</span>
+                  <span class="text-xs font-mono <%= level_text[level] || 'text-gray-800' %> break-all"><%= value.is_a?(Hash) || value.is_a?(Array) ? JSON.pretty_generate(value) : value %></span>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <% if has_context %>
+          <div class="px-4 py-3">
+            <div class="flex items-center gap-1.5 mb-2">
+              <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+              <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Context</span>
+            </div>
+            <div class="bg-white/80 rounded-md p-3 ring-1 ring-inset ring-gray-200/60">
+              <% log_entry.context.each do |key, value| %>
+                <div class="flex items-baseline gap-2 py-0.5">
+                  <span class="text-xs font-mono text-gray-500 flex-shrink-0"><%= key %>:</span>
+                  <span class="text-xs font-mono <%= level_text[level] || 'text-gray-800' %> break-all"><%= value.is_a?(Hash) || value.is_a?(Array) ? JSON.pretty_generate(value) : value %></span>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <% if log_entry.release.present? %>
+    <div class="px-4 py-2 border-t <%= level_bg[level] || 'border-gray-200' %> flex items-center gap-2">
+      <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+      </svg>
+      <span class="text-xs text-gray-500">Release</span>
+      <code class="text-xs font-mono text-gray-700 bg-white px-1.5 py-0.5 rounded ring-1 ring-inset ring-gray-200"><%= log_entry.release %></code>
+    </div>
+  <% end %>
+</div>

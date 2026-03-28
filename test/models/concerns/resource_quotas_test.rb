@@ -10,7 +10,7 @@ class ResourceQuotasTest < ActiveSupport::TestCase
   end
 
   test "PLAN_QUOTAS includes all resource types for every plan" do
-    expected_keys = %i[events ai_summaries pull_requests uptime_monitors status_pages projects]
+    expected_keys = %i[events ai_summaries pull_requests uptime_monitors session_replays status_pages projects]
     ResourceQuotas::PLAN_QUOTAS.each do |plan, quotas|
       expected_keys.each do |key|
         assert quotas.key?(key), "#{plan} plan is missing :#{key}"
@@ -76,14 +76,20 @@ class ResourceQuotasTest < ActiveSupport::TestCase
     assert_equal 20, account.ai_summaries_quota
   end
 
-  test "ai_summaries_quota returns 20 for team plan" do
+  test "ai_summaries_quota returns unlimited for team plan" do
     account = accounts(:team_account)
-    assert_equal 20, account.ai_summaries_quota
+    assert_equal Float::INFINITY, account.ai_summaries_quota
   end
 
-  test "ai_summaries_quota returns 100 for business plan" do
+  test "ai_summaries_quota returns unlimited for business plan" do
     account = Account.new(current_plan: "business")
-    assert_equal 100, account.ai_summaries_quota
+    assert_equal Float::INFINITY, account.ai_summaries_quota
+  end
+
+  test "ai_summaries within_quota always true for team plan" do
+    account = accounts(:team_account)
+    account.cached_ai_summaries_used = 999_999
+    assert account.within_quota?(:ai_summaries)
   end
 
   # ==========================================================================
@@ -114,19 +120,19 @@ class ResourceQuotasTest < ActiveSupport::TestCase
   # uptime_monitors_quota
   # ==========================================================================
 
-  test "uptime_monitors_quota returns 1 for free plan" do
+  test "uptime_monitors_quota returns 0 for free plan" do
     account = Account.new(current_plan: "free")
-    assert_equal 1, account.uptime_monitors_quota
+    assert_equal 0, account.uptime_monitors_quota
   end
 
-  test "uptime_monitors_quota returns 20 for trial plan" do
+  test "uptime_monitors_quota returns 3 for trial plan" do
     account = accounts(:trial_account)
-    assert_equal 20, account.uptime_monitors_quota
+    assert_equal 3, account.uptime_monitors_quota
   end
 
-  test "uptime_monitors_quota returns 20 for team plan" do
+  test "uptime_monitors_quota returns 3 for team plan" do
     account = accounts(:team_account)
-    assert_equal 20, account.uptime_monitors_quota
+    assert_equal 3, account.uptime_monitors_quota
   end
 
   test "uptime_monitors_quota returns 5 for business plan" do
@@ -143,19 +149,19 @@ class ResourceQuotasTest < ActiveSupport::TestCase
     assert_equal 0, account.status_pages_quota
   end
 
-  test "status_pages_quota returns 5 for trial plan" do
+  test "status_pages_quota returns 0 for trial plan" do
     account = accounts(:trial_account)
-    assert_equal 5, account.status_pages_quota
+    assert_equal 0, account.status_pages_quota
   end
 
-  test "status_pages_quota returns 5 for team plan" do
+  test "status_pages_quota returns 0 for team plan" do
     account = accounts(:team_account)
-    assert_equal 5, account.status_pages_quota
+    assert_equal 0, account.status_pages_quota
   end
 
-  test "status_pages_quota returns 1 for business plan" do
+  test "status_pages_quota returns 0 for business plan" do
     account = Account.new(current_plan: "business")
-    assert_equal 1, account.status_pages_quota
+    assert_equal 0, account.status_pages_quota
   end
 
   # ==========================================================================
@@ -289,16 +295,10 @@ class ResourceQuotasTest < ActiveSupport::TestCase
     assert_not account.within_quota?(:events)
   end
 
-  test "within_quota? returns true one below quota" do
+  test "within_quota? returns true for team plan ai_summaries (unlimited)" do
     account = accounts(:team_account)
-    account.cached_ai_summaries_used = 19 # team quota is 20
+    account.cached_ai_summaries_used = 999_999
     assert account.within_quota?(:ai_summaries)
-  end
-
-  test "within_quota? returns false at quota boundary for ai_summaries" do
-    account = accounts(:team_account)
-    account.cached_ai_summaries_used = 20
-    assert_not account.within_quota?(:ai_summaries)
   end
 
   test "within_quota? returns false for unknown resource type" do
@@ -312,16 +312,16 @@ class ResourceQuotasTest < ActiveSupport::TestCase
     assert account.within_quota?(:pull_requests)
   end
 
-  test "within_quota? for uptime_monitors on free plan allows 1" do
+  test "within_quota? for uptime_monitors on free plan is false" do
     account = Account.new(current_plan: "free", cached_uptime_monitors_used: 0)
-    # Free plan has 1 uptime_monitors quota, so 0 < 1 is true
-    assert account.within_quota?(:uptime_monitors)
+    # Free plan has 0 uptime_monitors quota
+    assert_not account.within_quota?(:uptime_monitors)
   end
 
   test "within_quota? for uptime_monitors on team plan with usage" do
     account = accounts(:team_account)
-    account.cached_uptime_monitors_used = 15
-    assert account.within_quota?(:uptime_monitors) # 15 < 20
+    account.cached_uptime_monitors_used = 2
+    assert account.within_quota?(:uptime_monitors) # 2 < 3
   end
 
   test "within_quota? for status_pages on free plan is always false" do
@@ -386,11 +386,11 @@ class ResourceQuotasTest < ActiveSupport::TestCase
     assert_not account.within_quota?(:ai_summaries)
   end
 
-  test "team plan gets 20 AI summaries" do
+  test "team plan gets unlimited AI summaries" do
     account = accounts(:team_account)
     account.cached_ai_summaries_used = 0
 
-    assert_equal 20, account.ai_summaries_quota
+    assert_equal Float::INFINITY, account.ai_summaries_quota
     assert account.within_quota?(:ai_summaries)
   end
 
@@ -402,30 +402,30 @@ class ResourceQuotasTest < ActiveSupport::TestCase
       "Team plan with 19/20 used should still be within quota"
   end
 
-  test "team plan with 20 used is over AI quota" do
+  test "team plan with high usage is still within AI quota (unlimited)" do
     account = accounts(:team_account)
-    account.cached_ai_summaries_used = 20
+    account.cached_ai_summaries_used = 100_000
 
-    assert_not account.within_quota?(:ai_summaries),
-      "Team plan with 20/20 used should be over quota"
+    assert account.within_quota?(:ai_summaries),
+      "Team plan AI summaries should be unlimited"
   end
 
-  test "business plan gets 100 AI summaries" do
+  test "business plan gets unlimited AI summaries" do
     account = accounts(:other_account)
     account.current_plan = "business"
     account.cached_ai_summaries_used = 0
 
-    assert_equal 100, account.ai_summaries_quota
+    assert_equal Float::INFINITY, account.ai_summaries_quota
     assert account.within_quota?(:ai_summaries)
   end
 
-  test "business plan with 100 used is over AI quota" do
+  test "business plan with high usage is still within AI quota (unlimited)" do
     account = accounts(:other_account)
     account.current_plan = "business"
-    account.cached_ai_summaries_used = 100
+    account.cached_ai_summaries_used = 100_000
 
-    assert_not account.within_quota?(:ai_summaries),
-      "Business plan with 100/100 used should be over quota"
+    assert account.within_quota?(:ai_summaries),
+      "Business plan AI summaries should be unlimited"
   end
 
   # ==========================================================================
@@ -460,10 +460,10 @@ class ResourceQuotasTest < ActiveSupport::TestCase
     assert_equal 150.0, account.usage_percentage(:events)
   end
 
-  test "usage_percentage returns correct value for free plan uptime monitors" do
+  test "usage_percentage returns 0 for free plan uptime monitors (zero quota)" do
     account = Account.new(current_plan: "free", cached_uptime_monitors_used: 1)
-    # Free plan has 1 uptime_monitors quota, 1 used = 100%
-    assert_equal 100.0, account.usage_percentage(:uptime_monitors)
+    # Free plan has 0 uptime_monitors quota
+    assert_equal 0.0, account.usage_percentage(:uptime_monitors)
   end
 
   test "usage_percentage returns 0.0 for unknown resource type" do
@@ -473,9 +473,9 @@ class ResourceQuotasTest < ActiveSupport::TestCase
 
   test "usage_percentage rounds to two decimal places" do
     account = accounts(:team_account)
-    account.cached_ai_summaries_used = 7 # 7/20 = 35.0
+    account.cached_ai_summaries_used = 7 # 7/Infinity = 0.0
 
-    assert_equal 35.0, account.usage_percentage(:ai_summaries)
+    assert_equal 0.0, account.usage_percentage(:ai_summaries)
   end
 
   # ==========================================================================
@@ -493,7 +493,7 @@ class ResourceQuotasTest < ActiveSupport::TestCase
 
     summary = account.usage_summary
 
-    assert_equal %i[events ai_summaries pull_requests uptime_monitors status_pages projects].sort,
+    assert_equal %i[events log_entries ai_summaries pull_requests uptime_monitors session_replays status_pages projects].sort,
                  summary.keys.sort
   end
 
@@ -503,10 +503,10 @@ class ResourceQuotasTest < ActiveSupport::TestCase
     summary = account.usage_summary
 
     assert_equal 50_000, summary[:events][:quota]
-    assert_equal 20, summary[:ai_summaries][:quota]
+    assert_equal Float::INFINITY, summary[:ai_summaries][:quota]
     assert_equal 20, summary[:pull_requests][:quota]
-    assert_equal 20, summary[:uptime_monitors][:quota]
-    assert_equal 5, summary[:status_pages][:quota]
+    assert_equal 3, summary[:uptime_monitors][:quota]
+    assert_equal 0, summary[:status_pages][:quota]
     assert_equal 10, summary[:projects][:quota]
   end
 
@@ -531,7 +531,7 @@ class ResourceQuotasTest < ActiveSupport::TestCase
     summary = account.usage_summary
 
     assert_equal 40_000, summary[:events][:remaining]
-    assert_equal 15, summary[:ai_summaries][:remaining]
+    assert_equal Float::INFINITY, summary[:ai_summaries][:remaining]
   end
 
   test "usage_summary remaining is clamped to 0 when over quota" do
@@ -560,7 +560,7 @@ class ResourceQuotasTest < ActiveSupport::TestCase
     summary = account.usage_summary
 
     assert summary[:events][:within_quota]
-    assert_not summary[:ai_summaries][:within_quota] # 25 >= 20
+    assert summary[:ai_summaries][:within_quota] # unlimited for team
   end
 
   test "usage_summary is memoized within the same instance" do
