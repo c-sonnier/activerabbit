@@ -16,7 +16,7 @@ class ReplayRecorderController < ActionController::Base
     js = <<~JS
       (function(){
         var s=document.createElement("script");
-        s.src="https://cdn.jsdelivr.net/npm/rrweb@2.0.0-alpha.4/dist/rrweb.min.js";
+        s.src="#{request.base_url}/rrweb.min.js";
         s.onload=function(){
           var T="#{token}",E="#{endpoint}",
               rid=crypto.randomUUID(),sid=crypto.randomUUID(),

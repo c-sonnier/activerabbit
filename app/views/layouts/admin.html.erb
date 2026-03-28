@@ -21,7 +21,7 @@
     <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/rrweb@2.0.0-alpha.4/dist/rrweb.min.css">
+    <link rel="stylesheet" href="/rrweb.min.css">
     <%= javascript_importmap_tags %>
 
     <script>
@@ -105,8 +105,12 @@
   </head>
 
   <body class="bg-gray-50"
-    <%# Replay recorder removed — was recording admin dashboard sessions as customer replays %>
+    <%# Test: load recorder via script tag (same way customers would) %>
+    <% replay_project = (defined?(@current_project) && @current_project) || selected_project_for_menu %>
   >
+    <% if replay_project&.api_token.present? %>
+      <script src="/replay/recorder.js?token=<%= replay_project.api_token %>" defer></script>
+    <% end %>
     <div id="flash_messages"></div>
     <div class="h-screen flex overflow-hidden" data-controller="sidebar" data-sidebar-account-id-value="<%= current_account&.id %>">
       <!-- Mobile overlay -->
