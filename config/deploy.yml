@@ -16,7 +16,7 @@ servers:
   # Mixed worker — alerts/default first, then helps with ingest overflow
   job-secondary:
     hosts:
-      - 178.156.252.39
+      - 157.245.80.51
     cmd: bundle exec sidekiq -c 15 -q priority,6 -q alerts,5 -q default,3 -q analysis,2 -q mailers -q ingest
 
 # Enable SSL auto certification via Let's Encrypt and allow for multiple apps on a single web server.
