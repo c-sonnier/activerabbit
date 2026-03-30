@@ -9,10 +9,6 @@
  * Consider organizing styles into separate files for maintainability.
  */
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 @layer base {
   button,
   [type="button"],
@@ -69,4 +65,362 @@
 .sidebar-collapsed .sidebar-nav-item:hover .sidebar-tooltip {
   visibility: visible;
   opacity: 1;
+}
+
+/* ===== Dark Mode Toggle Icon Switching ===== */
+html.dark .dark-moon { display: none !important; }
+html.dark .dark-sun  { display: block !important; }
+html:not(.dark) .dark-moon { display: block; }
+html:not(.dark) .dark-sun  { display: none; }
+
+/* ===== Dark Mode — override Tailwind v4 CSS custom properties ===== */
+html.dark {
+  /* Swap the gray scale: light grays become dark, dark grays become light */
+  --color-white: #171717;
+  --color-gray-50: #0f0f0f;
+  --color-gray-100: #1a1a1a;
+  --color-gray-200: #262626;
+  --color-gray-300: #333333;
+  --color-gray-400: #525252;
+  --color-gray-500: #a3a3a3;
+  --color-gray-600: #d4d4d4;
+  --color-gray-700: #e5e5e5;
+  --color-gray-800: #f0f0f0;
+  --color-gray-900: #fafafa;
+  --color-gray-950: #ffffff;
+  --color-black: #ffffff;
+
+  /* Subtle dark backgrounds for colored 50/100 shades */
+  --color-red-50: #1c0d0e;
+  --color-red-100: #2d1215;
+  --color-red-200: #3f1a1d;
+  --color-orange-50: #1c1308;
+  --color-orange-100: #2d1a05;
+  --color-orange-200: #3f2608;
+  --color-yellow-50: #1a1805;
+  --color-yellow-100: #2d2305;
+  --color-yellow-200: #3f3208;
+  --color-green-50: #071e0e;
+  --color-green-100: #052e16;
+  --color-green-200: #0a3d1e;
+  --color-emerald-50: #071e14;
+  --color-emerald-100: #052e1c;
+  --color-emerald-200: #0a3d26;
+  --color-cyan-50: #0a1a1f;
+  --color-cyan-100: #0c2129;
+  --color-cyan-200: #0e2c38;
+  --color-blue-50: #0a1324;
+  --color-blue-100: #0c1929;
+  --color-blue-200: #0e2241;
+  --color-indigo-50: #14112e;
+  --color-indigo-100: #1e1b4b;
+  --color-indigo-200: #28245c;
+  --color-violet-50: #170f2e;
+  --color-violet-100: #1e1136;
+  --color-violet-200: #2a1a4e;
+  --color-purple-50: #1a0f2e;
+  --color-purple-100: #1e1136;
+  --color-purple-200: #2a1a4e;
+  --color-pink-50: #1f0d18;
+  --color-pink-100: #2d1222;
+  --color-amber-50: #1c1508;
+  --color-amber-100: #2d2305;
+  --color-amber-200: #3f3208;
+  --color-sky-50: #0b1520;
+
+  /* Slate scale for dark mode */
+  --color-slate-50: #0f1115;
+  --color-slate-100: #1a1d24;
+  --color-slate-200: #262a33;
+
+  /* Brighten colored text for dark mode — near white */
+  --color-indigo-600: #e8ecff;
+  --color-indigo-700: #f0f2ff;
+  --color-indigo-800: #f5f5ff;
+  --color-indigo-900: #fafafe;
+  --color-violet-600: #f0eaff;
+  --color-violet-700: #f5f0ff;
+  --color-violet-800: #faf8ff;
+  --color-blue-600: #e0edff;
+  --color-blue-700: #edf4ff;
+  --color-blue-800: #f5f9ff;
+  --color-blue-900: #fafcff;
+  --color-red-600: #fcd5d5;
+  --color-red-700: #fee2e2;
+  --color-red-800: #fef0f0;
+  --color-orange-600: #fde0c4;
+  --color-orange-700: #feead5;
+  --color-orange-800: #fef3e8;
+  --color-yellow-600: #fef3a0;
+  --color-yellow-700: #fef9c3;
+  --color-yellow-800: #fefce8;
+  --color-green-600: #c8f7d5;
+  --color-green-700: #dcfce7;
+  --color-green-800: #ecfdf0;
+  --color-emerald-600: #c0f5df;
+  --color-emerald-700: #d1fae5;
+  --color-cyan-600: #c4f5fc;
+  --color-cyan-700: #daf8fc;
+  --color-cyan-800: #ecfeff;
+  --color-purple-600: #ead5ff;
+  --color-purple-700: #f3e8ff;
+  --color-purple-800: #faf5ff;
+  --color-purple-900: #fdfcfe;
+  --color-slate-600: #c0c0c0;
+  --color-slate-700: #e0e0e0;
+  --color-slate-800: #f0f0f0;
+  --color-slate-900: #fafafa;
+}
+
+/* Body default color in dark mode */
+html.dark body {
+  background-color: #0f0f0f !important;
+  color: #e5e5e5;
+}
+
+/* Dark toggle button */
+html.dark .dark-toggle {
+  color: #d4d4d4;
+}
+html.dark .dark-toggle:hover {
+  color: #ffffff;
+  background-color: #262626;
+}
+
+/* ---- Sidebar: restore original colors (it's already dark) ---- */
+html.dark [data-sidebar-target="sidebar"] {
+  background-color: #000000 !important;
+  --color-gray-300: oklch(87.2% .01 258.338);
+  --color-gray-400: oklch(70.7% .022 261.325);
+  --color-gray-500: oklch(55.1% .027 264.364);
+  --color-gray-700: oklch(37.3% .034 259.733);
+  --color-gray-800: oklch(27.8% .033 256.848);
+  --color-gray-900: oklch(21% .034 264.665);
+  --color-white: #fff;
+}
+/* Sidebar: subtle bg on hover and active */
+html.dark [data-sidebar-target="sidebar"] .sidebar-nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+html.dark [data-sidebar-target="sidebar"] .sidebar-nav-item.bg-gray-800 {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ---- Top header bar ---- */
+html.dark header {
+  background-color: #0a0a0a !important;
+  border-color: #262626 !important;
+}
+
+/* ---- Links: make them white/light in dark mode ---- */
+html.dark a {
+  color: inherit;
+}
+html.dark a.text-gray-700,
+html.dark a .text-gray-700 {
+  color: #d4d4d4 !important;
+}
+html.dark a.text-gray-600,
+html.dark a .text-gray-600 {
+  color: #a3a3a3 !important;
+}
+html.dark a.text-gray-500,
+html.dark a .text-gray-500 {
+  color: #737373 !important;
+}
+html.dark a:hover .text-gray-700,
+html.dark a:hover .text-gray-900,
+html.dark a:hover.text-gray-700,
+html.dark a:hover.text-gray-900 {
+  color: #ffffff !important;
+}
+html.dark .hover\:text-indigo-600:hover,
+html.dark .hover\:text-indigo-700:hover {
+  color: #ffffff !important;
+}
+
+/* Top menu buttons (project selector, filters, etc.) */
+html.dark button.text-gray-700,
+html.dark button .text-gray-700 {
+  color: #d4d4d4 !important;
+}
+
+/* ---- Dropdown menus ---- */
+html.dark [data-dropdown-target="menu"] {
+  background-color: #1a1a1a !important;
+  border-color: #333333 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+}
+html.dark [data-dropdown-target="menu"] a,
+html.dark [data-dropdown-target="menu"] button {
+  color: #d4d4d4 !important;
+}
+html.dark [data-dropdown-target="menu"] a:hover,
+html.dark [data-dropdown-target="menu"] button:hover {
+  background-color: #262626 !important;
+  color: #ffffff !important;
+}
+html.dark [data-dropdown-target="menu"] .font-medium {
+  color: #e5e5e5 !important;
+}
+
+/* ---- Form inputs ---- */
+html.dark input[type="search"],
+html.dark input[type="text"],
+html.dark input[type="email"],
+html.dark input[type="password"],
+html.dark input[type="number"],
+html.dark textarea,
+html.dark select {
+  background-color: #1a1a1a !important;
+  border-color: #333333 !important;
+  color: #e5e5e5 !important;
+}
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #525252 !important;
+}
+
+/* ---- Breadcrumb nav ---- */
+html.dark nav a,
+html.dark nav span {
+  color: #a3a3a3;
+}
+html.dark nav a:hover {
+  color: #ffffff !important;
+}
+
+/* ---- Table rows ---- */
+html.dark tbody tr:hover {
+  background-color: #1f1f1f !important;
+}
+html.dark thead th {
+  color: #a3a3a3 !important;
+}
+
+/* ---- Error detail page ---- */
+/* Job description / message text */
+html.dark .font-mono {
+  color: #d4d4d4 !important;
+}
+html.dark pre,
+html.dark code {
+  background-color: #1a1a1a !important;
+  color: #e5e5e5 !important;
+}
+
+/* Gradient header on error show page */
+html.dark .bg-gradient-to-r {
+  background: linear-gradient(to right, #0f0f0f, #171717) !important;
+}
+
+/* Active tab pill in error detail */
+html.dark .bg-white.text-indigo-600.shadow {
+  background-color: #262626 !important;
+  color: #818cf8 !important;
+}
+
+/* Impact metrics bar */
+html.dark .font-semibold {
+  color: #e5e5e5;
+}
+
+/* Text blue/indigo accents — brighter in dark */
+/* ---- AI Analysis panel ---- */
+/* AI summary text — force white */
+html.dark .ai-summary-content p,
+html.dark .ai-summary-content li,
+html.dark .ai-summary-content em,
+html.dark .ai-summary-content strong,
+html.dark .ai-summary-content h1,
+html.dark .ai-summary-content h2,
+html.dark .ai-summary-content h3,
+html.dark .ai-summary-content h4,
+html.dark .ai-summary-content blockquote {
+  color: #e8e8e8 !important;
+}
+/* AI inline code spans — light on dark */
+html.dark .ai-summary-content code:not(pre code) {
+  background-color: #2a2a2a !important;
+  color: #e0e7ff !important;
+  border: 1px solid #404040;
+}
+/* AI code blocks — keep dark style, sharpen contrast */
+html.dark .ai-summary-content pre {
+  background-color: #0a0a0a !important;
+  color: #f0f0f0 !important;
+  border: 1px solid #333 !important;
+}
+html.dark .ai-summary-content pre code {
+  color: #f0f0f0 !important;
+  background-color: transparent !important;
+}
+/* AI panel background */
+html.dark .ai-summary-content .bg-slate-800,
+html.dark .ai-summary-content [class*="bg-slate-8"] {
+  background-color: #1a1a1a !important;
+}
+/* AI panel border-b inside code block header */
+html.dark .ai-summary-content .border-slate-700 {
+  border-color: #333 !important;
+}
+/* AI blockquote */
+html.dark .ai-summary-content blockquote {
+  background-color: rgba(99, 102, 241, 0.08) !important;
+  border-left-color: #6366f1 !important;
+}
+/* AI panel outer wrapper gradient → solid dark */
+html.dark [data-ai-inline-target="panel"] > div {
+  background: #171717 !important;
+  border-color: #333 !important;
+}
+/* "Generated X ago" footer */
+html.dark .ai-summary-content + div,
+html.dark [data-ai-inline-target="content"] .bg-slate-100 {
+  background-color: #1a1a1a !important;
+}
+/* "Ready to push" emerald bar */
+html.dark .bg-emerald-50 {
+  background-color: #071e14 !important;
+}
+
+/* ---- Shadows ---- */
+html.dark .shadow,
+html.dark .shadow-sm,
+html.dark .shadow-lg {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.5), 0 1px 2px 0 rgba(0, 0, 0, 0.4) !important;
+}
+html.dark .shadow-inner {
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ---- Ring overrides ---- */
+html.dark .ring-1 {
+  --tw-ring-color: #333333 !important;
+}
+html.dark .ring-black {
+  --tw-ring-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ---- KBD (keyboard shortcuts) ---- */
+html.dark kbd {
+  background-color: #262626 !important;
+  border-color: #333333 !important;
+  color: #737373 !important;
+}
+
+/* ---- Scrollbar ---- */
+html.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html.dark ::-webkit-scrollbar-track {
+  background: #0f0f0f;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #333333;
+  border-radius: 4px;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #404040;
 }
