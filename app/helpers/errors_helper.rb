@@ -58,10 +58,15 @@ module ErrorsHelper
 
   # Normalize a frame hash from client's structured_stack_trace
   def normalize_client_frame(frame)
-    # Handle both string and symbol keys
-    file = frame["file"] || frame[:file]
-    line = frame["line"] || frame[:line]
-    method_name = frame["method"] || frame[:method]
+    # Handle both string and symbol keys.
+    # Ruby activerabbit-ai gem: file, line, method.
+    # JavaScript SDK (@activerabbit/*): filename, lineno, function.
+    file = frame["file"] || frame[:file] ||
+           frame["filename"] || frame[:filename]
+    line = frame["line"] || frame[:line] ||
+           frame["lineno"] || frame[:lineno]
+    method_name = frame["method"] || frame[:method] ||
+                   frame["function"] || frame[:function]
     raw = frame["raw"] || frame[:raw]
     in_app = frame["in_app"] || frame[:in_app]
     frame_type = (frame["frame_type"] || frame[:frame_type])&.to_sym || classify_frame(file)

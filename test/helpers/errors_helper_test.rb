@@ -48,6 +48,22 @@ class ErrorsHelperTest < ActionView::TestCase
     assert frame[:source_context][:file_exists]
   end
 
+  test "handles JavaScript SDK frame keys (filename, lineno, function)" do
+    js_frame = {
+      "filename" => "http://localhost:3002/_next/static/chunks/app_page.js",
+      "lineno" => 120,
+      "function" => "runDemo",
+      "in_app" => true
+    }
+
+    frame = parse_backtrace_frame(js_frame)
+
+    assert_equal "http://localhost:3002/_next/static/chunks/app_page.js", frame[:file]
+    assert_equal 120, frame[:line]
+    assert_equal "runDemo", frame[:method]
+    assert frame[:in_app]
+  end
+
   test "returns nil for blank input" do
     assert_nil parse_backtrace_frame(nil)
     assert_nil parse_backtrace_frame("")
