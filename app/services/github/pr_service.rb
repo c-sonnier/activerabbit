@@ -270,6 +270,22 @@ module Github
       match[1].to_i if match
     end
 
+    # Convert "TaskSheet::SubmittedEvaluationsController#index" →
+    #         "app/controllers/task_sheet/submitted_evaluations_controller.rb"
+    def infer_file_path_from_controller(controller_action)
+      return nil if controller_action.blank?
+
+      controller_part = controller_action.to_s.split("#").first
+      return nil if controller_part.blank?
+
+      path = controller_part.underscore
+      path = "app/controllers/#{path}.rb" unless path.start_with?("app/")
+      path
+    rescue => e
+      Rails.logger.debug "[PrService] Could not infer file path from #{controller_action}: #{e.message}"
+      nil
+    end
+
     def update_stored_pr_url(issue, new_pr_url)
       settings = @project.settings || {}
       issue_pr_urls = settings["issue_pr_urls"] || {}
@@ -350,6 +366,27 @@ module Github
         else
           Rails.logger.info "[GitHub API] Smart fix failed for primary file: #{fix_result[:reason]}"
           primary_file_path = fix_result[:file_path]
+        end
+      end
+
+      # When no in-app frame (e.g. ActionNotFound, RoutingError), infer file
+      # path from controller_action and attempt an AI-assisted fix directly.
+      if !actual_fix_applied && primary_file_path.nil? && issue.controller_action.present?
+        inferred_path = infer_file_path_from_controller(issue.controller_action)
+        if inferred_path
+          Rails.logger.info "[GitHub API] Inferred file path #{inferred_path} from #{issue.controller_action}"
+          fix_result = code_fix_applier.try_apply_fix_to_file(owner, repo, inferred_path, before_code, code_fix)
+          if fix_result[:success]
+            tree_entries << fix_result[:tree_entry]
+            commit_msg_parts << "fix: #{fix_result[:file_path]}"
+            files_fixed << fix_result[:file_path]
+            actual_fix_applied = true
+            primary_file_path = fix_result[:file_path]
+            Rails.logger.info "[GitHub API] Inferred-path fix succeeded for #{fix_result[:file_path]}"
+          else
+            primary_file_path = inferred_path
+            Rails.logger.info "[GitHub API] Inferred-path fix failed for #{inferred_path}: #{fix_result[:reason]}"
+          end
         end
       end
 

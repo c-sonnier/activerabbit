@@ -58,7 +58,7 @@ class LogEntryTest < ActiveSupport::TestCase
   end
 
   test "scrub_pii scrubs sensitive fields" do
-    result = LogEntry.scrub_pii({"email" => "user@example.com", "name" => "Alex"})
+    result = LogEntry.scrub_pii({ "email" => "user@example.com", "name" => "Alex" })
     assert_equal "[SCRUBBED]", result["email"]
     assert_equal "Alex", result["name"]
   end
