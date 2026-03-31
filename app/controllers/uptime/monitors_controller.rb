@@ -95,10 +95,10 @@ module Uptime
       @monitor.project = @current_project || @project
       authorize @monitor, policy_class: Uptime::MonitorPolicy
 
-      monitor_count = Uptime::Monitor.where(account: current_account).count
+      monitor_count = Uptime::Monitor.where(account: current_account).count + CheckIn.where(account: current_account).count
       monitor_quota = current_account.uptime_monitors_quota
       unless monitor_count < monitor_quota
-        flash.now[:alert] = "You've reached your uptime monitor limit (#{monitor_count}/#{monitor_quota}). Please upgrade your plan."
+        flash.now[:alert] = "You've reached your monitor limit (#{monitor_count}/#{monitor_quota}). Uptime monitors and cron check-ins share this quota. Please upgrade your plan."
         render :new, status: :unprocessable_entity
         return
       end

@@ -95,10 +95,11 @@ class PricingController < ApplicationController
     @pull_requests_used = plan_quotas[:pull_requests][:used]
     @pull_requests_remaining = plan_quotas[:pull_requests][:remaining]
 
-    # Uptime Monitors usage (use real count, not cached Healthcheck count)
+    # Monitors usage (uptime monitors + check-ins share one quota)
     @uptime_monitors_quota = plan_quotas[:uptime_monitors][:quota]
     ActsAsTenant.without_tenant do
-      @uptime_monitors_used = Uptime::Monitor.where(account_id: @account.id).count
+      @uptime_monitors_used = Uptime::Monitor.where(account_id: @account.id).count +
+                              CheckIn.where(account_id: @account.id).count
     end
     @uptime_monitors_remaining = [@uptime_monitors_quota - @uptime_monitors_used, 0].max
 

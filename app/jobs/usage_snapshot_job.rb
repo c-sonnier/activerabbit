@@ -56,8 +56,9 @@ class UsageSnapshotJob < ApplicationJob
                                      .where(occurred_at: start_at..end_at)
                                      .count
 
-      # Count active uptime monitors (current count, not time-based)
-      uptime_monitors_count = Healthcheck.where(account_id: account.id, enabled: true).count
+      # Count active monitors: uptime monitors + check-ins share one quota
+      uptime_monitors_count = Healthcheck.where(account_id: account.id, enabled: true).count +
+                              CheckIn.where(account_id: account.id).count
 
       # Count status pages (current count, not time-based)
       status_pages_count = Project.where(account_id: account.id)

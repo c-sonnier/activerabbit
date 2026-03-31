@@ -45,6 +45,15 @@ class CheckInsController < ApplicationController
     @check_in = ::CheckIn.new(check_in_params)
     assign_check_in_project(@check_in)
 
+    monitor_count = Uptime::Monitor.where(account: current_account).count + CheckIn.where(account: current_account).count
+    monitor_quota = current_account.uptime_monitors_quota
+    unless monitor_count < monitor_quota
+      flash.now[:alert] = "You've reached your monitor limit (#{monitor_count}/#{monitor_quota}). Uptime monitors and cron check-ins share this quota. Please upgrade your plan."
+      @check_in_project_locked = current_project.present?
+      render :new, status: :unprocessable_entity
+      return
+    end
+
     if @check_in.save
       redirect_to check_in_path(@check_in), notice: "Check-in created. Follow the setup steps on this page — same API key as error tracking, one monitor slug line in your app."
     else
