@@ -86,7 +86,7 @@ module ResourceQuotas
   # ============================================================================
 
   def event_quota_value
-    quota_for_resource(:events)
+    quota_for_resource(:events) + (addon_extra_errors || 0)
   end
 
   def ai_summaries_quota
@@ -98,7 +98,7 @@ module ResourceQuotas
   end
 
   def uptime_monitors_quota
-    quota_for_resource(:uptime_monitors)
+    quota_for_resource(:uptime_monitors) + (addon_uptime_monitors || 0)
   end
 
   def status_pages_quota
@@ -110,7 +110,7 @@ module ResourceQuotas
   end
 
   def session_replays_quota
-    quota_for_resource(:session_replays)
+    quota_for_resource(:session_replays) + (addon_session_replays || 0)
   end
 
   def replays_quota_remaining
@@ -307,7 +307,7 @@ module ResourceQuotas
       plan_quotas = PLAN_QUOTAS[plan_key] || PLAN_QUOTAS[DEFAULT_PLAN]
 
       %i[events log_entries ai_summaries pull_requests uptime_monitors session_replays status_pages projects].each_with_object({}) do |resource, hash|
-        quota = plan_quotas[resource] || 0
+        quota = quota_for_resource_by_type(resource)
         used = usage_for_resource(resource)
 
         hash[resource] = {

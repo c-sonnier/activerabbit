@@ -30,6 +30,32 @@
             Next payment on <%= @next_payment_date %>
           </p>
         <% end %>
+        <% has_addons = @account.ai_mode_enabled? || @account.addon_uptime_monitors.to_i > 0 || @account.addon_extra_errors.to_i > 0 || @account.addon_session_replays.to_i > 0 %>
+        <% if has_addons %>
+          <p class="text-xs font-semibold text-indigo-800 mt-3 mb-1">Active Add-ons</p>
+          <div class="flex flex-wrap gap-2">
+            <% if @account.ai_mode_enabled? %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                AI Error Analysis (Unlimited)
+              </span>
+            <% end %>
+            <% if @account.addon_uptime_monitors.to_i > 0 %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                +<%= @account.addon_uptime_monitors %> Uptime Monitors (total: <%= @account.uptime_monitors_quota %>)
+              </span>
+            <% end %>
+            <% if @account.addon_extra_errors.to_i > 0 %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                +<%= number_with_delimiter(@account.addon_extra_errors) %> Errors (total: <%= number_with_delimiter(@account.event_quota_value) %>/mo)
+              </span>
+            <% end %>
+            <% if @account.addon_session_replays.to_i > 0 %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                +<%= number_with_delimiter(@account.addon_session_replays) %> Session Replays (total: <%= number_with_delimiter(@account.session_replays_quota) %>)
+              </span>
+            <% end %>
+          </div>
+        <% end %>
       </div>
       <div class="flex space-x-2">
         <%= link_to usage_path, class: "inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-purple-700 bg-purple-100 hover:bg-purple-200" do %>
@@ -87,7 +113,7 @@
         <li class="flex items-start"><svg class="w-4 h-4 text-gray-400 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg><span class="text-gray-400">No Slack notifications</span></li>
       </ul>
       <div class="mt-auto pt-4">
-        <% if @account&.current_plan == 'free' %>
+        <% if @account&.effective_plan_name == 'Free' %>
           <%= button_to "Current Plan",
                 checkouts_path,
                 params: { plan: "free" },
@@ -114,16 +140,16 @@
       <p class="text-gray-600 mt-1">For growing engineering teams</p>
       <ul class="mt-4 space-y-2 text-sm text-gray-700">
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Unlimited projects &amp; users</span></li>
-        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>50,000 errors/month</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span><%= @account ? number_with_delimiter(@account.event_quota_value) : '50,000' %> errors/month</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Unlimited AI error analysis</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>20 pull requests</span></li>
-        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>3 uptime monitors</span></li>
-        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>10 session replays</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span><%= @account ? @account.uptime_monitors_quota : 3 %> uptime monitors</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span><%= @account ? number_with_delimiter(@account.session_replays_quota) : 10 %> session replays</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>31 days data retention</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Email + Slack notifications</span></li>
       </ul>
       <div class="mt-auto pt-4">
-        <% if @account&.current_plan == 'team' %>
+        <% if @account&.effective_plan_name == 'Team' %>
           <%= button_to "Current Plan",
                 checkouts_path,
                 params: { plan: "team", interval: "month" },
@@ -158,7 +184,7 @@
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Email + Slack notifications</span></li>
         </ul>
         <div class="mt-auto pt-4">
-        <% if @account&.current_plan == 'business' %>
+        <% if @account&.effective_plan_name == 'Business' %>
           <%= button_to "Current Plan",
                 checkouts_path,
                 params: { plan: "business", interval: "month" },
@@ -176,7 +202,12 @@
   </div>
 
   <!-- Addons Section -->
-  <div class="mt-16" data-controller="addons">
+  <div class="mt-16" data-controller="addons"
+       data-addons-current-plan-value="<%= @account&.current_plan %>"
+       data-addons-current-ai-value="<%= @account&.ai_mode_enabled? ? 'true' : 'false' %>"
+       data-addons-current-uptime-value="<%= @account&.addon_uptime_monitors.to_i %>"
+       data-addons-current-errors-value="<%= @account&.addon_extra_errors.to_i %>"
+       data-addons-current-replays-value="<%= @account&.addon_session_replays.to_i %>">
     <div class="text-center mb-8">
       <h2 class="text-3xl font-extrabold text-gray-900 tracking-tight">Customize Your Plan</h2>
       <p class="mt-2 text-lg text-gray-600">Add only what you need. All addons are billed monthly.</p>
@@ -360,17 +391,18 @@
 
             <!-- Subscribe Button -->
             <div style="margin-top: 20px;">
-              <%= form_with url: checkouts_path, method: :post, local: true, data: { turbo: false, addons_target: "subscribeForm" } do %>
+              <%= form_with url: checkouts_path, method: :post, local: true, data: { turbo: false, addons_target: "subscribeForm", action: "submit->addons#onSubmit" } do %>
                 <input type="hidden" name="plan" value="team" data-addons-target="formPlan">
                 <input type="hidden" name="interval" value="month" data-addons-target="formInterval">
                 <input type="hidden" name="ai" value="0" data-addons-target="formAi">
                 <input type="hidden" name="uptime_monitors" value="0" data-addons-target="formUptime">
                 <input type="hidden" name="extra_errors" value="0" data-addons-target="formErrors">
                 <input type="hidden" name="session_replays" value="0" data-addons-target="formReplays">
-                <button type="submit" data-action="click->addons#subscribe"
+                <button type="submit"
+                        data-addons-target="submitButton"
                         style="width: 100%; padding: 12px 0; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; font-size: 15px; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; transition: opacity 0.15s; letter-spacing: 0.01em;"
-                        onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-                  Subscribe
+                        onmouseover="if(!this.disabled)this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                  <%= @account&.current_plan.in?(%w[team business]) ? "Update Plan" : "Subscribe" %>
                 </button>
               <% end %>
             </div>

@@ -426,4 +426,243 @@ class StripeEventHandlerTest < ActiveSupport::TestCase
   ensure
     ENV["STRIPE_PRICE_TEAM_MONTHLY"] = original_env
   end
+
+  # ============================================================================
+  # Addon quota updates from subscription items
+  # ============================================================================
+
+  test "sets addon_uptime_monitors from subscription items" do
+    @account.update!(current_plan: "free", trial_ends_at: 1.month.ago)
+
+    original_team = ENV["STRIPE_PRICE_TEAM_MONTHLY"]
+    original_uptime = ENV["STRIPE_PRICE_UPTIME_MONTHLY"]
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = "price_team_m"
+    ENV["STRIPE_PRICE_UPTIME_MONTHLY"] = "price_uptime_m"
+
+    subscription_event = {
+      "type" => "customer.subscription.created",
+      "data" => {
+        "object" => {
+          "customer" => "cus_123",
+          "id" => "sub_addon_uptime_1",
+          "status" => "active",
+          "trial_end" => nil,
+          "current_period_start" => Time.current.to_i,
+          "current_period_end" => 1.month.from_now.to_i,
+          "items" => {
+            "data" => [
+              { "price" => { "id" => "price_team_m" }, "quantity" => 1 },
+              { "price" => { "id" => "price_uptime_m" }, "quantity" => 2 }
+            ]
+          }
+        }
+      }
+    }
+
+    StripeEventHandler.new(event: subscription_event).call
+    @account.reload
+
+    assert_equal 10, @account.addon_uptime_monitors, "2 packs x 5 = 10 uptime monitors"
+  ensure
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = original_team
+    ENV["STRIPE_PRICE_UPTIME_MONTHLY"] = original_uptime
+  end
+
+  test "sets addon_extra_errors from subscription items" do
+    @account.update!(current_plan: "free", trial_ends_at: 1.month.ago)
+
+    original_team = ENV["STRIPE_PRICE_TEAM_MONTHLY"]
+    original_errors = ENV["STRIPE_PRICE_ERRORS_MONTHLY"]
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = "price_team_m"
+    ENV["STRIPE_PRICE_ERRORS_MONTHLY"] = "price_errors_m"
+
+    subscription_event = {
+      "type" => "customer.subscription.created",
+      "data" => {
+        "object" => {
+          "customer" => "cus_123",
+          "id" => "sub_addon_errors_1",
+          "status" => "active",
+          "trial_end" => nil,
+          "current_period_start" => Time.current.to_i,
+          "current_period_end" => 1.month.from_now.to_i,
+          "items" => {
+            "data" => [
+              { "price" => { "id" => "price_team_m" }, "quantity" => 1 },
+              { "price" => { "id" => "price_errors_m" }, "quantity" => 3 }
+            ]
+          }
+        }
+      }
+    }
+
+    StripeEventHandler.new(event: subscription_event).call
+    @account.reload
+
+    assert_equal 300_000, @account.addon_extra_errors, "3 packs x 100K = 300K extra errors"
+  ensure
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = original_team
+    ENV["STRIPE_PRICE_ERRORS_MONTHLY"] = original_errors
+  end
+
+  test "sets addon_session_replays from subscription items" do
+    @account.update!(current_plan: "free", trial_ends_at: 1.month.ago)
+
+    original_team = ENV["STRIPE_PRICE_TEAM_MONTHLY"]
+    original_replays = ENV["STRIPE_PRICE_REPLAYS_MONTHLY"]
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = "price_team_m"
+    ENV["STRIPE_PRICE_REPLAYS_MONTHLY"] = "price_replays_m"
+
+    subscription_event = {
+      "type" => "customer.subscription.created",
+      "data" => {
+        "object" => {
+          "customer" => "cus_123",
+          "id" => "sub_addon_replays_1",
+          "status" => "active",
+          "trial_end" => nil,
+          "current_period_start" => Time.current.to_i,
+          "current_period_end" => 1.month.from_now.to_i,
+          "items" => {
+            "data" => [
+              { "price" => { "id" => "price_team_m" }, "quantity" => 1 },
+              { "price" => { "id" => "price_replays_m" }, "quantity" => 2 }
+            ]
+          }
+        }
+      }
+    }
+
+    StripeEventHandler.new(event: subscription_event).call
+    @account.reload
+
+    assert_equal 10_000, @account.addon_session_replays, "2 packs x 5K = 10K session replays"
+  ensure
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = original_team
+    ENV["STRIPE_PRICE_REPLAYS_MONTHLY"] = original_replays
+  end
+
+  test "sets all addons from a single subscription with multiple items" do
+    @account.update!(current_plan: "free", trial_ends_at: 1.month.ago)
+
+    original_team = ENV["STRIPE_PRICE_TEAM_MONTHLY"]
+    original_uptime = ENV["STRIPE_PRICE_UPTIME_MONTHLY"]
+    original_errors = ENV["STRIPE_PRICE_ERRORS_MONTHLY"]
+    original_replays = ENV["STRIPE_PRICE_REPLAYS_MONTHLY"]
+    original_ai = ENV["STRIPE_PRICE_AI_MONTHLY"]
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = "price_team_m"
+    ENV["STRIPE_PRICE_UPTIME_MONTHLY"] = "price_uptime_m"
+    ENV["STRIPE_PRICE_ERRORS_MONTHLY"] = "price_errors_m"
+    ENV["STRIPE_PRICE_REPLAYS_MONTHLY"] = "price_replays_m"
+    ENV["STRIPE_PRICE_AI_MONTHLY"] = "price_ai_m"
+
+    subscription_event = {
+      "type" => "customer.subscription.created",
+      "data" => {
+        "object" => {
+          "customer" => "cus_123",
+          "id" => "sub_addon_all_1",
+          "status" => "active",
+          "trial_end" => nil,
+          "current_period_start" => Time.current.to_i,
+          "current_period_end" => 1.month.from_now.to_i,
+          "items" => {
+            "data" => [
+              { "price" => { "id" => "price_team_m" }, "quantity" => 1 },
+              { "price" => { "id" => "price_uptime_m" }, "quantity" => 2 },
+              { "price" => { "id" => "price_errors_m" }, "quantity" => 3 },
+              { "price" => { "id" => "price_replays_m" }, "quantity" => 2 },
+              { "price" => { "id" => "price_ai_m" }, "quantity" => 1 }
+            ]
+          }
+        }
+      }
+    }
+
+    StripeEventHandler.new(event: subscription_event).call
+    @account.reload
+
+    assert_equal 10, @account.addon_uptime_monitors, "2 packs x 5 = 10 uptime monitors"
+    assert_equal 300_000, @account.addon_extra_errors, "3 packs x 100K = 300K extra errors"
+    assert_equal 10_000, @account.addon_session_replays, "2 packs x 5K = 10K session replays"
+    assert @account.ai_mode_enabled, "AI mode should be enabled when AI addon is present"
+  ensure
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = original_team
+    ENV["STRIPE_PRICE_UPTIME_MONTHLY"] = original_uptime
+    ENV["STRIPE_PRICE_ERRORS_MONTHLY"] = original_errors
+    ENV["STRIPE_PRICE_REPLAYS_MONTHLY"] = original_replays
+    ENV["STRIPE_PRICE_AI_MONTHLY"] = original_ai
+  end
+
+  test "resets addon columns to zero when addons removed from subscription" do
+    @account.update!(current_plan: "team", addon_uptime_monitors: 10)
+
+    original_team = ENV["STRIPE_PRICE_TEAM_MONTHLY"]
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = "price_team_m"
+
+    subscription_event = {
+      "type" => "customer.subscription.updated",
+      "data" => {
+        "object" => {
+          "customer" => "cus_123",
+          "id" => "sub_addon_reset_1",
+          "status" => "active",
+          "trial_end" => nil,
+          "current_period_start" => Time.current.to_i,
+          "current_period_end" => 1.month.from_now.to_i,
+          "items" => {
+            "data" => [
+              { "price" => { "id" => "price_team_m" }, "quantity" => 1 }
+            ]
+          }
+        }
+      }
+    }
+
+    StripeEventHandler.new(event: subscription_event).call
+    @account.reload
+
+    assert_equal 0, @account.addon_uptime_monitors, "Uptime monitors should be reset to 0"
+    assert_equal 0, @account.addon_extra_errors, "Extra errors should be reset to 0"
+    assert_equal 0, @account.addon_session_replays, "Session replays should be reset to 0"
+  ensure
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = original_team
+  end
+
+  test "updates addon quantities when subscription is updated" do
+    @account.update!(current_plan: "team", addon_uptime_monitors: 5)
+
+    original_team = ENV["STRIPE_PRICE_TEAM_MONTHLY"]
+    original_uptime = ENV["STRIPE_PRICE_UPTIME_MONTHLY"]
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = "price_team_m"
+    ENV["STRIPE_PRICE_UPTIME_MONTHLY"] = "price_uptime_m"
+
+    subscription_event = {
+      "type" => "customer.subscription.updated",
+      "data" => {
+        "object" => {
+          "customer" => "cus_123",
+          "id" => "sub_addon_update_1",
+          "status" => "active",
+          "trial_end" => nil,
+          "current_period_start" => Time.current.to_i,
+          "current_period_end" => 1.month.from_now.to_i,
+          "items" => {
+            "data" => [
+              { "price" => { "id" => "price_team_m" }, "quantity" => 1 },
+              { "price" => { "id" => "price_uptime_m" }, "quantity" => 4 }
+            ]
+          }
+        }
+      }
+    }
+
+    StripeEventHandler.new(event: subscription_event).call
+    @account.reload
+
+    assert_equal 20, @account.addon_uptime_monitors, "4 packs x 5 = 20 uptime monitors"
+  ensure
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = original_team
+    ENV["STRIPE_PRICE_UPTIME_MONTHLY"] = original_uptime
+  end
 end

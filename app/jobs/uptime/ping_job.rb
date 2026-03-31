@@ -36,7 +36,7 @@ module Uptime
     private
 
     def perform_http_check(monitor)
-      uri = URI.parse(monitor.url)
+      uri = URI.parse(monitor.url.strip)
       result = { region: CHECK_REGION }
 
       start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)

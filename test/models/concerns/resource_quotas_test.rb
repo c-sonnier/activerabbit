@@ -693,4 +693,60 @@ class ResourceQuotasTest < ActiveSupport::TestCase
     assert_equal 0, account.cached_ai_summaries_used, "AI summaries should be reset"
     assert_equal 3, account.cached_projects_used, "Projects should NOT be reset"
   end
+
+  # ==========================================================================
+  # Addon quota overrides
+  # ==========================================================================
+
+  test "event_quota_value includes addon_extra_errors" do
+    account = accounts(:team_account)
+    account.addon_extra_errors = 200_000
+
+    assert_equal 250_000, account.event_quota_value
+  end
+
+  test "uptime_monitors_quota includes addon_uptime_monitors" do
+    account = accounts(:team_account)
+    account.addon_uptime_monitors = 10
+
+    assert_equal 13, account.uptime_monitors_quota
+  end
+
+  test "session_replays_quota includes addon_session_replays" do
+    account = accounts(:team_account)
+    account.addon_session_replays = 5_000
+
+    assert_equal 5_050, account.session_replays_quota
+  end
+
+  test "addon columns default to zero and don't affect base quota" do
+    account = accounts(:team_account)
+
+    assert_equal 50_000, account.event_quota_value
+    assert_equal 3, account.uptime_monitors_quota
+    assert_equal 50, account.session_replays_quota
+  end
+
+  test "usage_summary reflects addon quotas" do
+    account = accounts(:team_account)
+    account.addon_extra_errors = 100_000
+
+    summary = account.usage_summary
+
+    assert_equal 150_000, summary[:events][:quota]
+  end
+
+  test "within_quota? respects addon uptime monitors" do
+    account = accounts(:team_account)
+    account.addon_uptime_monitors = 5
+    account.cached_uptime_monitors_used = 4
+
+    assert account.within_quota?(:uptime_monitors)
+  end
+
+  test "free plan addon columns are ignored" do
+    account = Account.new(current_plan: "free", addon_extra_errors: 100_000)
+
+    assert_equal 105_000, account.event_quota_value
+  end
 end

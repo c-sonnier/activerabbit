@@ -43,7 +43,9 @@ class CheckoutCreator
     items = [{ price: price_for_plan(@plan, @interval), quantity: 1 }]
     if @ai
       items << { price: ai_base_price, quantity: 1 }
-      items << { price: ENV.fetch("STRIPE_PRICE_AI_OVERAGE_METERED"), quantity: 1 }
+      if ENV["STRIPE_PRICE_AI_OVERAGE_METERED"].present?
+        items << { price: ENV["STRIPE_PRICE_AI_OVERAGE_METERED"], quantity: 1 }
+      end
     end
     if @uptime_monitors > 0
       qty = (@uptime_monitors / 5.0).ceil # packs of 5

@@ -8,9 +8,17 @@ export default class extends Controller {
     "replaySlider", "replayPrice", "replayValue", "replayCard",
     "totalMonthly", "totalSection", "summaryBox", "itemList",
     "tierTeam", "tierBusiness", "freqAnnual", "freqMonthly",
-    "subscribeForm", "formPlan", "formInterval", "formAi",
+    "subscribeForm", "submitButton", "formPlan", "formInterval", "formAi",
     "formUptime", "formErrors", "formReplays"
   ]
+
+  static values = {
+    currentPlan: { type: String, default: "" },
+    currentAi: { type: String, default: "false" },
+    currentUptime: { type: Number, default: 0 },
+    currentErrors: { type: Number, default: 0 },
+    currentReplays: { type: Number, default: 0 }
+  }
 
   static prices = {
     team:     { monthly: 29, annual: 26 },
@@ -18,22 +26,59 @@ export default class extends Controller {
   }
 
   connect() {
-    this.aiEnabled = false
-    this.selectedTier = "team"
+    // Initialize tier from current plan
+    var plan = this.currentPlanValue
+    this.selectedTier = (plan === "business") ? "business" : "team"
     this.selectedFrequency = "monthly"
-    // Ensure button states match defaults
-    this._toggleButton(this.tierTeamTarget, true)
-    this._toggleButton(this.tierBusinessTarget, false)
+
+    this._toggleButton(this.tierTeamTarget, this.selectedTier === "team")
+    this._toggleButton(this.tierBusinessTarget, this.selectedTier === "business")
     this._toggleButton(this.freqMonthlyTarget, true)
     this._toggleButton(this.freqAnnualTarget, false)
-    // Initialize card highlights for default values
-    var uptimeVal = parseInt(this.uptimeSliderTarget.value)
+
+    // Initialize AI toggle from current state
+    this.aiEnabled = this.currentAiValue === "true"
+    if (this.aiEnabled) {
+      this.aiToggleTarget.style.backgroundColor = "#7c3aed"
+      this.aiKnobTarget.style.transform = "translateX(20px)"
+      this.aiCardTarget.style.borderColor = "#7c3aed"
+      this.aiCardTarget.style.backgroundColor = "#faf5ff"
+      this.aiPriceTarget.textContent = "$40"
+    }
+
+    // Initialize uptime slider from current addon value
+    var uptimeVal = this.currentUptimeValue || parseInt(this.uptimeSliderTarget.value)
+    this.uptimeSliderTarget.value = uptimeVal
     this._highlightCard(this.uptimeCardTarget, uptimeVal > 0, "#059669", "#f0fdf4")
     this.uptimePriceTarget.textContent = "$" + ((uptimeVal / 5) * 5)
+    this.uptimeValueTarget.textContent = uptimeVal + " monitors"
 
-    var replayVal = parseInt(this.replaySliderTarget.value)
+    // Initialize errors slider from current addon value
+    var errorsVal = this.currentErrorsValue || parseInt(this.errorsSliderTarget.value)
+    this.errorsSliderTarget.value = errorsVal
+    this._highlightCard(this.errorsCardTarget, errorsVal > 0, "#dc2626", "#fef2f2")
+    this.errorsPriceTarget.textContent = "$" + ((errorsVal / 100000) * 14)
+    if (errorsVal >= 1000000) {
+      this.errorsValueTarget.textContent = "1M errors/mo"
+    } else if (errorsVal > 0) {
+      this.errorsValueTarget.textContent = (errorsVal / 1000) + "K errors/mo"
+    } else {
+      this.errorsValueTarget.textContent = "0 errors/mo"
+    }
+
+    // Initialize replay slider from current addon value
+    var replayVal = this.currentReplaysValue || parseInt(this.replaySliderTarget.value)
+    this.replaySliderTarget.value = replayVal
     this._highlightCard(this.replayCardTarget, replayVal > 0, "#2563eb", "#eff6ff")
     this.replayPriceTarget.textContent = "$" + (Math.ceil(replayVal / 5000) * 14)
+    if (replayVal >= 1000000) {
+      this.replayValueTarget.textContent = "1M sessions"
+    } else if (replayVal > 0) {
+      this.replayValueTarget.textContent = (replayVal / 1000) + "K sessions"
+    } else {
+      this.replayValueTarget.textContent = "0 sessions"
+    }
+
     this.updateTotal()
   }
 
@@ -223,5 +268,21 @@ export default class extends Controller {
     this.formUptimeTarget.value = uptime
     this.formErrorsTarget.value = errors
     this.formReplaysTarget.value = replay
+  }
+
+  onSubmit() {
+    var btn = this.submitButtonTarget
+
+    if (!document.getElementById("spin-keyframes")) {
+      var style = document.createElement("style")
+      style.id = "spin-keyframes"
+      style.textContent = "@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }"
+      document.head.appendChild(style)
+    }
+
+    btn.style.opacity = "0.7"
+    btn.style.cursor = "wait"
+    btn.style.pointerEvents = "none"
+    btn.innerHTML = '<svg style="display:inline-block;vertical-align:middle;margin-right:8px;animation:spin 1s linear infinite;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83"/></svg>Updating plan...'
   }
 }

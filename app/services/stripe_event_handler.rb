@@ -83,6 +83,9 @@ class StripeEventHandler
     ai_overage_item = items.find do |i|
       (i.respond_to?(:price) ? i.price&.id : i.dig("price", "id")) == ENV["STRIPE_PRICE_AI_OVERAGE_METERED"]
     end
+    uptime_item = items.find { |i| uptime_price_ids.include?(i.respond_to?(:price) ? i.price&.id : i.dig("price", "id")) }
+    errors_item = items.find { |i| errors_price_ids.include?(i.respond_to?(:price) ? i.price&.id : i.dig("price", "id")) }
+    replays_item = items.find { |i| replays_price_ids.include?(i.respond_to?(:price) ? i.price&.id : i.dig("price", "id")) }
 
     base_price_id = if base_item.respond_to?(:price)
       base_item.price&.id
@@ -118,7 +121,10 @@ class StripeEventHandler
         ai_overage_item.id
                                        else
         ai_overage_item && ai_overage_item["id"]
-                                       end
+                                       end,
+      addon_uptime_monitors: item_quantity(uptime_item) * 5,
+      addon_extra_errors: item_quantity(errors_item) * 100_000,
+      addon_session_replays: item_quantity(replays_item) * 5_000
     }
 
     if subscription_billable
@@ -179,7 +185,7 @@ class StripeEventHandler
 
   def handle_subscription_deleted
     if (account = account_from_customer)
-      account.update!(ai_mode_enabled: false)
+      account.update!(ai_mode_enabled: false, addon_uptime_monitors: 0, addon_extra_errors: 0, addon_session_replays: 0)
     end
     # Mark Pay subscription as canceled
     if (sub_id = @data["id"]).present?
@@ -266,6 +272,27 @@ class StripeEventHandler
     when ENV["STRIPE_PRICE_BUSINESS_MONTHLY"] then ["business", "month"]
     when ENV["STRIPE_PRICE_BUSINESS_ANNUAL"] then ["business", "year"]
     else [nil, nil]
+    end
+  end
+
+  def uptime_price_ids
+    [ENV["STRIPE_PRICE_UPTIME_MONTHLY"], ENV["STRIPE_PRICE_UPTIME_ANNUAL"]].compact
+  end
+
+  def errors_price_ids
+    [ENV["STRIPE_PRICE_ERRORS_MONTHLY"], ENV["STRIPE_PRICE_ERRORS_ANNUAL"]].compact
+  end
+
+  def replays_price_ids
+    [ENV["STRIPE_PRICE_REPLAYS_MONTHLY"], ENV["STRIPE_PRICE_REPLAYS_ANNUAL"]].compact
+  end
+
+  def item_quantity(item)
+    return 0 unless item
+    if item.respond_to?(:quantity)
+      item.quantity.to_i
+    else
+      (item["quantity"] || 0).to_i
     end
   end
 

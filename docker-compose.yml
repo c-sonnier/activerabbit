@@ -111,6 +111,15 @@ services:
     env_file:
       - .env
 
+  stripe-listen:
+    image: stripe/stripe-cli:latest
+    command: listen --forward-to http://web:3000/webhooks/stripe --api-key ${STRIPE_SECRET_KEY} --skip-verify
+    depends_on:
+      web:
+        condition: service_started
+    env_file:
+      - .env
+
   css:
     build:
       context: .

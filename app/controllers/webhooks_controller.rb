@@ -7,8 +7,12 @@ class WebhooksController < ApplicationController
 
   def stripe
     payload = request.body.read
-    sig = request.env["HTTP_STRIPE_SIGNATURE"]
-    event = Stripe::Webhook.construct_event(payload, sig, ENV.fetch("STRIPE_SIGNING_SECRET"))
+    if Rails.env.development? && ENV["STRIPE_SKIP_SIGNATURE_VERIFICATION"] == "true"
+      event = Stripe::Event.construct_from(JSON.parse(payload))
+    else
+      sig = request.env["HTTP_STRIPE_SIGNATURE"]
+      event = Stripe::Webhook.construct_event(payload, sig, ENV.fetch("STRIPE_SIGNING_SECRET"))
+    end
 
     # Idempotency tracking
     already = WebhookEvent.find_by(provider: "stripe", event_id: event.id)

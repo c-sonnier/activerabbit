@@ -384,6 +384,17 @@ html.dark .bg-emerald-50 {
   background-color: #071e14 !important;
 }
 
+/* ---- Primary action buttons: keep original indigo in dark mode ---- */
+html.dark .bg-indigo-600 {
+  background-color: #4f46e5 !important;
+  color: #ffffff !important;
+}
+html.dark .bg-indigo-600:hover,
+html.dark .hover\:bg-indigo-700:hover {
+  background-color: #4338ca !important;
+  color: #ffffff !important;
+}
+
 /* ---- Shadows ---- */
 html.dark .shadow,
 html.dark .shadow-sm,
