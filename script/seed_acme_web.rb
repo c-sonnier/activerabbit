@@ -18,14 +18,14 @@ ActsAsTenant.without_tenant do
     "https://acme.com/onboarding/step-2",
     "https://acme.com/account/billing",
     "https://acme.com/search?q=widgets",
-    "https://acme.com/orders/1234",
+    "https://acme.com/orders/1234"
   ]
 
   user_agents = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/120.0.0.0",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/119.0.0.0",
     "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) Mobile/15E148",
-    "Mozilla/5.0 (Linux; Android 14) Chrome/120.0.0.0 Mobile",
+    "Mozilla/5.0 (Linux; Android 14) Chrome/120.0.0.0 Mobile"
   ]
 
   viewports = [[1920, 1080], [1440, 900], [1366, 768], [375, 812], [390, 844]]
@@ -35,7 +35,7 @@ ActsAsTenant.without_tenant do
     "Cannot read properties of undefined (reading 'map')",
     "fetchCart is not defined",
     "Failed to fetch /api/checkout",
-    "Request timed out after 30000ms",
+    "Request timed out after 30000ms"
   ]
 
   25.times do |i|
@@ -96,7 +96,7 @@ ActsAsTenant.without_tenant do
     { level: 5, message: "Sidekiq process terminated unexpectedly", source: "Sidekiq" },
     { level: 5, message: "Database connection pool exhausted", source: "ActiveRecord" },
     { level: 0, message: "Request started: GET /api/v1/products", source: "ActionDispatch" },
-    { level: 0, message: "Params: {page: 1, per: 25, category: 'electronics'}", source: "ActionDispatch" },
+    { level: 0, message: "Params: {page: 1, per: 25, category: 'electronics'}", source: "ActionDispatch" }
   ]
 
   150.times do |i|

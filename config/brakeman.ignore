@@ -611,7 +611,53 @@
         915
       ],
       "note": ""
+    },
+    {
+      "warning_type": "File Access",
+      "warning_code": 16,
+      "fingerprint": "516b1ab226a1ce9962d6e241581e0858678cc51fde052580797b9a7486cc4fc6",
+      "check_name": "SendFile",
+      "message": "Parameter value used in file name",
+      "file": "app/controllers/replays_controller.rb",
+      "line": 57,
+      "link": "https://brakemanscanner.org/docs/warning_types/file_access/",
+      "code": "send_file(Rails.root.join(\"storage\", \"replays\", Replay.joins(:project).where(:projects => ({ :slug => params[:project_slug] })).find(params[:id]).storage_key.delete_prefix(\"local://\")).to_s, :type => \"application/octet-stream\", :disposition => \"inline\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "ReplaysController",
+        "method": "data"
+      },
+      "user_input": "params[:id]",
+      "confidence": "Weak",
+      "cwe_id": [
+        22
+      ],
+      "note": "Path confined to storage/replays with prefix check and File.exist? before send_file."
+    },
+    {
+      "warning_type": "File Access",
+      "warning_code": 16,
+      "fingerprint": "a745127f5560899e90458790d0763f2889e8f525c648715f9ea704f5e3a3af97",
+      "check_name": "FileAccess",
+      "message": "Model attribute used in file name",
+      "file": "app/jobs/replay_ingest_job.rb",
+      "line": 30,
+      "link": "https://brakemanscanner.org/docs/warning_types/file_access/",
+      "code": "FileUtils.mkdir_p(LOCAL_STORAGE_DIR.join(Replay.unscoped.find(replay_id).storage_path).dirname)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "ReplayIngestJob",
+        "method": "perform"
+      },
+      "user_input": "Replay.unscoped.find(replay_id)",
+      "confidence": "Weak",
+      "cwe_id": [
+        22
+      ],
+      "note": "Replay#storage_path is server-derived from account_id, project_id, replay_id only."
     }
   ],
-  "brakeman_version": "8.0.2"
+  "brakeman_version": "8.0.4"
 }
