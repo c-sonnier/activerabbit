@@ -723,7 +723,7 @@ ActsAsTenant.with_tenant(account) do
     # Staging environment logs
     { level: 2, message: "Deployment started: v2.14.0-rc1", source: "Deployer", environment: "staging" },
     { level: 3, message: "Feature flag 'new_checkout' enabled for 10% of users", source: "FeatureFlags", environment: "staging" },
-    { level: 4, message: "Migration failed: column already exists on users table", source: "ActiveRecord::Migration", environment: "staging" },
+    { level: 4, message: "Migration failed: column already exists on users table", source: "ActiveRecord::Migration", environment: "staging" }
   ]
 
   total_logs = 0

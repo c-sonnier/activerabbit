@@ -312,7 +312,8 @@
             </div>
           <% elsif frame[:in_app] && !source_context %>
             <div class="px-4 py-3 bg-gray-50 text-sm text-gray-500 italic">
-              Source code context not available. Update activerabbit-ai gem to latest version for source capture.
+              Snippet of surrounding source is not included for this event.
+              The Ruby <code class="text-xs">activerabbit-ai</code> gem can attach it; the JavaScript SDK currently sends file, line, and function only.
             </div>
           <% end %>
         </div>
