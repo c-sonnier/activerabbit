@@ -263,153 +263,292 @@ ActiveRabbit::Client.track_performance("test_operation", 100, { custom: "data" }
   <div class="lg:col-span-2">
     <div class="bg-white rounded-lg shadow p-6">
 
-      <!-- Step 1: Endpoint -->
-      <div class="flex items-center mb-6">
-        <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-blue-100 text-blue-600 text-lg mr-4">
-          1
-        </span>
-        <h2 class="text-lg font-medium text-gray-900">Send Logs via HTTP API</h2>
-      </div>
-
-      <p class="text-gray-600 mb-4">
-        Send structured log entries from any language or platform using a simple POST request.
-        Logs are ingested asynchronously and appear in your project's log viewer within seconds.
-      </p>
-
-      <div class="bg-gray-900 rounded-lg p-4 mb-6">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-gray-400 text-sm">Endpoint</span>
-        </div>
-        <pre class="text-green-400 text-sm"><code>POST <%= request.base_url %>/api/v1/logs</code></pre>
-      </div>
-
-      <!-- Step 2: Auth header -->
-      <div class="flex items-center mb-6 pt-6 border-t border-gray-200">
-        <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-blue-100 text-blue-600 text-lg mr-4">
-          2
-        </span>
-        <h2 class="text-lg font-medium text-gray-900">Authenticate with Your Project Token</h2>
-      </div>
-
-      <p class="text-gray-600 mb-4">
-        Include the <code class="bg-gray-100 px-1.5 py-0.5 rounded text-sm">X-Project-Token</code> header
-        in every request. This identifies which project the logs belong to.
-      </p>
-
-      <div class="bg-gray-900 rounded-lg p-4 mb-6">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-gray-400 text-sm">Header</span>
-          <button onclick="copyToClipboard('logs-token-code')" class="text-gray-400 hover:text-white text-sm">
-            📋 Copy
-          </button>
-        </div>
-        <pre id="logs-token-code" class="text-green-400 text-sm"><code>X-Project-Token: <%= @project.api_token %></code></pre>
-      </div>
-
-      <!-- Step 3: Payload -->
-      <div class="flex items-center mb-6 pt-6 border-t border-gray-200">
-        <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-blue-100 text-blue-600 text-lg mr-4">
-          3
-        </span>
-        <h2 class="text-lg font-medium text-gray-900">Send Log Entries</h2>
-      </div>
-
-      <p class="text-gray-600 mb-2">
-        Send one or more entries in the <code class="bg-gray-100 px-1.5 py-0.5 rounded text-sm">entries</code>
-        array (up to 1,000 per request). Each entry requires a <code class="bg-gray-100 px-1.5 py-0.5 rounded text-sm">message</code> field.
-      </p>
-
-      <!-- Field reference -->
-      <div class="mb-4 mt-4">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b border-gray-200">
-              <th class="text-left py-2 pr-4 font-medium text-gray-700">Field</th>
-              <th class="text-left py-2 pr-4 font-medium text-gray-700">Type</th>
-              <th class="text-left py-2 font-medium text-gray-700">Description</th>
-            </tr>
-          </thead>
-          <tbody class="text-gray-600">
-            <tr class="border-b border-gray-100">
-              <td class="py-1.5 pr-4 font-mono text-xs">message</td>
-              <td class="py-1.5 pr-4">string</td>
-              <td class="py-1.5"><strong>Required.</strong> The log message.</td>
-            </tr>
-            <tr class="border-b border-gray-100">
-              <td class="py-1.5 pr-4 font-mono text-xs">level</td>
-              <td class="py-1.5 pr-4">string/int</td>
-              <td class="py-1.5">trace, debug, info (default), warn, error, fatal</td>
-            </tr>
-            <tr class="border-b border-gray-100">
-              <td class="py-1.5 pr-4 font-mono text-xs">source</td>
-              <td class="py-1.5 pr-4">string</td>
-              <td class="py-1.5">Originating service or component</td>
-            </tr>
-            <tr class="border-b border-gray-100">
-              <td class="py-1.5 pr-4 font-mono text-xs">environment</td>
-              <td class="py-1.5 pr-4">string</td>
-              <td class="py-1.5">e.g. production, staging, development</td>
-            </tr>
-            <tr class="border-b border-gray-100">
-              <td class="py-1.5 pr-4 font-mono text-xs">params</td>
-              <td class="py-1.5 pr-4">object</td>
-              <td class="py-1.5">Structured key-value data (searchable)</td>
-            </tr>
-            <tr class="border-b border-gray-100">
-              <td class="py-1.5 pr-4 font-mono text-xs">context</td>
-              <td class="py-1.5 pr-4">object</td>
-              <td class="py-1.5">Additional metadata</td>
-            </tr>
-            <tr class="border-b border-gray-100">
-              <td class="py-1.5 pr-4 font-mono text-xs">trace_id</td>
-              <td class="py-1.5 pr-4">string</td>
-              <td class="py-1.5">Distributed trace ID for correlation</td>
-            </tr>
-            <tr class="border-b border-gray-100">
-              <td class="py-1.5 pr-4 font-mono text-xs">span_id</td>
-              <td class="py-1.5 pr-4">string</td>
-              <td class="py-1.5">Span ID within a trace</td>
-            </tr>
-            <tr class="border-b border-gray-100">
-              <td class="py-1.5 pr-4 font-mono text-xs">request_id</td>
-              <td class="py-1.5 pr-4">string</td>
-              <td class="py-1.5">HTTP request ID</td>
-            </tr>
-            <tr>
-              <td class="py-1.5 pr-4 font-mono text-xs">occurred_at</td>
-              <td class="py-1.5 pr-4">ISO 8601</td>
-              <td class="py-1.5">When the log happened (defaults to now)</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Step 4: Examples -->
-      <div class="flex items-center mb-6 pt-6 border-t border-gray-200">
-        <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-green-100 text-green-600 text-lg mr-4">
-          4
-        </span>
-        <h2 class="text-lg font-medium text-gray-900">Examples</h2>
-      </div>
-
-      <!-- Language tabs -->
-      <div class="mb-4">
+      <!-- Integration method tabs -->
+      <div class="mb-6">
         <nav class="flex space-x-2">
-          <button onclick="switchLang('curl')" id="lang-curl" class="lang-tab px-3 py-1.5 text-sm font-medium rounded-md bg-gray-900 text-white">cURL</button>
-          <button onclick="switchLang('ruby')" id="lang-ruby" class="lang-tab px-3 py-1.5 text-sm font-medium rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200">Ruby</button>
-          <button onclick="switchLang('python')" id="lang-python" class="lang-tab px-3 py-1.5 text-sm font-medium rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200">Python</button>
-          <button onclick="switchLang('node')" id="lang-node" class="lang-tab px-3 py-1.5 text-sm font-medium rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200">Node.js</button>
+          <button onclick="switchLogMethod('rails')" id="logmethod-rails"
+                  class="logmethod-tab px-4 py-2 text-sm font-medium rounded-md bg-purple-600 text-white">
+            Rails SDK
+          </button>
+          <button onclick="switchLogMethod('http')" id="logmethod-http"
+                  class="logmethod-tab px-4 py-2 text-sm font-medium rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200">
+            HTTP API
+          </button>
         </nav>
       </div>
 
-      <!-- cURL example -->
-      <div id="lang-panel-curl" class="lang-panel">
+      <!-- ====================== -->
+      <!-- METHOD: Rails SDK       -->
+      <!-- ====================== -->
+      <div id="logmethod-panel-rails" class="logmethod-panel">
+
+        <p class="text-gray-600 mb-6">
+          Already using the <code class="bg-gray-100 px-1.5 py-0.5 rounded text-sm">activerabbit-ai</code> gem?
+          Enable log forwarding with a single line. Every <code class="bg-gray-100 px-1.5 py-0.5 rounded text-sm">Rails.logger</code>
+          call will be automatically sent to ActiveRabbit &mdash; no extra code needed.
+        </p>
+
+        <!-- Step 1: enable_logs -->
+        <div class="flex items-center mb-6">
+          <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-purple-100 text-purple-600 text-lg mr-4">
+            1
+          </span>
+          <h2 class="text-lg font-medium text-gray-900">Enable Logs</h2>
+        </div>
+
+        <p class="text-gray-600 mb-4">
+          Add <code class="bg-gray-100 px-1.5 py-0.5 rounded text-sm">enable_logs</code> to your existing ActiveRabbit
+          initializer:
+        </p>
+
         <div class="bg-gray-900 rounded-lg p-4 mb-6">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-gray-400 text-sm">Terminal</span>
-            <button onclick="copyToClipboard('curl-example')" class="text-gray-400 hover:text-white text-sm">📋 Copy</button>
+            <span class="text-gray-400 text-sm">config/initializers/activerabbit.rb</span>
+            <button onclick="copyToClipboard('rails-sdk-code')" class="text-gray-400 hover:text-white text-sm">📋 Copy</button>
           </div>
-          <pre id="curl-example" class="text-green-400 text-sm whitespace-pre-wrap"><code>curl -X POST <%= request.base_url %>/api/v1/logs \
+          <pre id="rails-sdk-code" class="text-green-400 text-sm whitespace-pre-wrap"><code>ActiveRabbit::Client.configure do |config|
+  config.api_key = "<%= @project.api_token %>"
+
+  config.enable_logs = true
+end</code></pre>
+        </div>
+
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <p class="text-sm text-green-800">
+            That's it. Restart your app and all <code class="bg-green-100 px-1 py-0.5 rounded text-xs">Rails.logger</code>
+            output (info, warn, error, etc.) will appear in your
+            <%= link_to "log viewer", project_logs_path(@project), class: "underline font-medium" %>
+            within seconds.
+          </p>
+        </div>
+
+        <!-- Step 2: optional config -->
+        <div class="flex items-center mb-6 pt-6 border-t border-gray-200">
+          <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-gray-100 text-gray-500 text-lg mr-4">
+            2
+          </span>
+          <h2 class="text-lg font-medium text-gray-900">Optional Configuration</h2>
+        </div>
+
+        <div class="mb-4">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-gray-200">
+                <th class="text-left py-2 pr-4 font-medium text-gray-700">Option</th>
+                <th class="text-left py-2 pr-4 font-medium text-gray-700">Default</th>
+                <th class="text-left py-2 font-medium text-gray-700">Description</th>
+              </tr>
+            </thead>
+            <tbody class="text-gray-600">
+              <tr class="border-b border-gray-100">
+                <td class="py-1.5 pr-4 font-mono text-xs">enable_logs</td>
+                <td class="py-1.5 pr-4">false</td>
+                <td class="py-1.5">Enable log forwarding to ActiveRabbit</td>
+              </tr>
+              <tr class="border-b border-gray-100">
+                <td class="py-1.5 pr-4 font-mono text-xs">logs_source</td>
+                <td class="py-1.5 pr-4">"rails"</td>
+                <td class="py-1.5">Label to identify this app in your logs</td>
+              </tr>
+              <tr class="border-b border-gray-100">
+                <td class="py-1.5 pr-4 font-mono text-xs">logs_batch_size</td>
+                <td class="py-1.5 pr-4">100</td>
+                <td class="py-1.5">Entries buffered before an early flush</td>
+              </tr>
+              <tr>
+                <td class="py-1.5 pr-4 font-mono text-xs">logs_flush_interval</td>
+                <td class="py-1.5 pr-4">5</td>
+                <td class="py-1.5">Seconds between background flushes</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="bg-gray-900 rounded-lg p-4 mb-6">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-gray-400 text-sm">Full example</span>
+            <button onclick="copyToClipboard('rails-sdk-full')" class="text-gray-400 hover:text-white text-sm">📋 Copy</button>
+          </div>
+          <pre id="rails-sdk-full" class="text-green-400 text-sm whitespace-pre-wrap"><code>ActiveRabbit::Client.configure do |config|
+  config.api_key = "<%= @project.api_token %>"
+
+  config.enable_logs        = true
+  config.logs_source        = "my-app"
+  config.logs_batch_size    = 200
+  config.logs_flush_interval = 10
+end</code></pre>
+        </div>
+
+        <!-- How it works -->
+        <div class="flex items-center mb-6 pt-6 border-t border-gray-200">
+          <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-blue-100 text-blue-600 text-lg mr-4">
+            ?
+          </span>
+          <h2 class="text-lg font-medium text-gray-900">How It Works</h2>
+        </div>
+
+        <div class="space-y-3 text-sm text-gray-600 mb-6">
+          <div class="flex items-start">
+            <span class="text-purple-500 mr-3 mt-0.5 font-bold">1.</span>
+            <p>The gem hooks into <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">Rails.logger</code> via
+            <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">BroadcastLogger</code> &mdash; your existing logs
+            keep going to STDOUT / files as before.</p>
+          </div>
+          <div class="flex items-start">
+            <span class="text-purple-500 mr-3 mt-0.5 font-bold">2.</span>
+            <p>Log entries are buffered in-memory and flushed in batches to
+            <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">POST /api/v1/logs</code>.</p>
+          </div>
+          <div class="flex items-start">
+            <span class="text-purple-500 mr-3 mt-0.5 font-bold">3.</span>
+            <p>Each entry is automatically enriched with <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">request_id</code>,
+            environment, and process metadata for correlation with errors and traces.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================== -->
+      <!-- METHOD: HTTP API        -->
+      <!-- ====================== -->
+      <div id="logmethod-panel-http" class="logmethod-panel hidden">
+
+        <p class="text-gray-600 mb-6">
+          Send structured log entries from any language or platform using a simple POST request.
+          Logs are ingested asynchronously and appear in your project's log viewer within seconds.
+        </p>
+
+        <!-- Endpoint -->
+        <div class="flex items-center mb-6">
+          <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-blue-100 text-blue-600 text-lg mr-4">
+            1
+          </span>
+          <h2 class="text-lg font-medium text-gray-900">Endpoint &amp; Auth</h2>
+        </div>
+
+        <div class="bg-gray-900 rounded-lg p-4 mb-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-gray-400 text-sm">Endpoint</span>
+          </div>
+          <pre class="text-green-400 text-sm"><code>POST <%= request.base_url %>/api/v1/logs</code></pre>
+        </div>
+
+        <p class="text-gray-600 mb-4">
+          Include the <code class="bg-gray-100 px-1.5 py-0.5 rounded text-sm">X-Project-Token</code> header
+          in every request:
+        </p>
+
+        <div class="bg-gray-900 rounded-lg p-4 mb-6">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-gray-400 text-sm">Header</span>
+            <button onclick="copyToClipboard('logs-token-code')" class="text-gray-400 hover:text-white text-sm">📋 Copy</button>
+          </div>
+          <pre id="logs-token-code" class="text-green-400 text-sm"><code>X-Project-Token: <%= @project.api_token %></code></pre>
+        </div>
+
+        <!-- Payload -->
+        <div class="flex items-center mb-6 pt-6 border-t border-gray-200">
+          <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-blue-100 text-blue-600 text-lg mr-4">
+            2
+          </span>
+          <h2 class="text-lg font-medium text-gray-900">Send Log Entries</h2>
+        </div>
+
+        <p class="text-gray-600 mb-2">
+          Send one or more entries in the <code class="bg-gray-100 px-1.5 py-0.5 rounded text-sm">entries</code>
+          array (up to 1,000 per request). Each entry requires a <code class="bg-gray-100 px-1.5 py-0.5 rounded text-sm">message</code> field.
+        </p>
+
+        <!-- Field reference -->
+        <div class="mb-4 mt-4">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-gray-200">
+                <th class="text-left py-2 pr-4 font-medium text-gray-700">Field</th>
+                <th class="text-left py-2 pr-4 font-medium text-gray-700">Type</th>
+                <th class="text-left py-2 font-medium text-gray-700">Description</th>
+              </tr>
+            </thead>
+            <tbody class="text-gray-600">
+              <tr class="border-b border-gray-100">
+                <td class="py-1.5 pr-4 font-mono text-xs">message</td>
+                <td class="py-1.5 pr-4">string</td>
+                <td class="py-1.5"><strong>Required.</strong> The log message.</td>
+              </tr>
+              <tr class="border-b border-gray-100">
+                <td class="py-1.5 pr-4 font-mono text-xs">level</td>
+                <td class="py-1.5 pr-4">string/int</td>
+                <td class="py-1.5">trace, debug, info (default), warn, error, fatal</td>
+              </tr>
+              <tr class="border-b border-gray-100">
+                <td class="py-1.5 pr-4 font-mono text-xs">source</td>
+                <td class="py-1.5 pr-4">string</td>
+                <td class="py-1.5">Originating service or component</td>
+              </tr>
+              <tr class="border-b border-gray-100">
+                <td class="py-1.5 pr-4 font-mono text-xs">environment</td>
+                <td class="py-1.5 pr-4">string</td>
+                <td class="py-1.5">e.g. production, staging, development</td>
+              </tr>
+              <tr class="border-b border-gray-100">
+                <td class="py-1.5 pr-4 font-mono text-xs">params</td>
+                <td class="py-1.5 pr-4">object</td>
+                <td class="py-1.5">Structured key-value data (searchable)</td>
+              </tr>
+              <tr class="border-b border-gray-100">
+                <td class="py-1.5 pr-4 font-mono text-xs">context</td>
+                <td class="py-1.5 pr-4">object</td>
+                <td class="py-1.5">Additional metadata</td>
+              </tr>
+              <tr class="border-b border-gray-100">
+                <td class="py-1.5 pr-4 font-mono text-xs">trace_id</td>
+                <td class="py-1.5 pr-4">string</td>
+                <td class="py-1.5">Distributed trace ID for correlation</td>
+              </tr>
+              <tr class="border-b border-gray-100">
+                <td class="py-1.5 pr-4 font-mono text-xs">span_id</td>
+                <td class="py-1.5 pr-4">string</td>
+                <td class="py-1.5">Span ID within a trace</td>
+              </tr>
+              <tr class="border-b border-gray-100">
+                <td class="py-1.5 pr-4 font-mono text-xs">request_id</td>
+                <td class="py-1.5 pr-4">string</td>
+                <td class="py-1.5">HTTP request ID</td>
+              </tr>
+              <tr>
+                <td class="py-1.5 pr-4 font-mono text-xs">occurred_at</td>
+                <td class="py-1.5 pr-4">ISO 8601</td>
+                <td class="py-1.5">When the log happened (defaults to now)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Examples -->
+        <div class="flex items-center mb-6 pt-6 border-t border-gray-200">
+          <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-green-100 text-green-600 text-lg mr-4">
+            3
+          </span>
+          <h2 class="text-lg font-medium text-gray-900">Examples</h2>
+        </div>
+
+        <!-- Language tabs -->
+        <div class="mb-4">
+          <nav class="flex space-x-2">
+            <button onclick="switchLang('curl')" id="lang-curl" class="lang-tab px-3 py-1.5 text-sm font-medium rounded-md bg-gray-900 text-white">cURL</button>
+            <button onclick="switchLang('ruby')" id="lang-ruby" class="lang-tab px-3 py-1.5 text-sm font-medium rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200">Ruby</button>
+            <button onclick="switchLang('python')" id="lang-python" class="lang-tab px-3 py-1.5 text-sm font-medium rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200">Python</button>
+            <button onclick="switchLang('node')" id="lang-node" class="lang-tab px-3 py-1.5 text-sm font-medium rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200">Node.js</button>
+          </nav>
+        </div>
+
+        <!-- cURL example -->
+        <div id="lang-panel-curl" class="lang-panel">
+          <div class="bg-gray-900 rounded-lg p-4 mb-6">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-gray-400 text-sm">Terminal</span>
+              <button onclick="copyToClipboard('curl-example')" class="text-gray-400 hover:text-white text-sm">📋 Copy</button>
+            </div>
+            <pre id="curl-example" class="text-green-400 text-sm whitespace-pre-wrap"><code>curl -X POST <%= request.base_url %>/api/v1/logs \
   -H "Content-Type: application/json" \
   -H "X-Project-Token: <%= @project.api_token %>" \
   -d '{
@@ -431,17 +570,17 @@ ActiveRabbit::Client.track_performance("test_operation", 100, { custom: "data" }
       }
     ]
   }'</code></pre>
-        </div>
-      </div>
-
-      <!-- Ruby example -->
-      <div id="lang-panel-ruby" class="lang-panel hidden">
-        <div class="bg-gray-900 rounded-lg p-4 mb-6">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-gray-400 text-sm">Ruby</span>
-            <button onclick="copyToClipboard('ruby-example')" class="text-gray-400 hover:text-white text-sm">📋 Copy</button>
           </div>
-          <pre id="ruby-example" class="text-green-400 text-sm whitespace-pre-wrap"><code>require "net/http"
+        </div>
+
+        <!-- Ruby example -->
+        <div id="lang-panel-ruby" class="lang-panel hidden">
+          <div class="bg-gray-900 rounded-lg p-4 mb-6">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-gray-400 text-sm">Ruby</span>
+              <button onclick="copyToClipboard('ruby-example')" class="text-gray-400 hover:text-white text-sm">📋 Copy</button>
+            </div>
+            <pre id="ruby-example" class="text-green-400 text-sm whitespace-pre-wrap"><code>require "net/http"
 require "json"
 
 uri = URI("<%= request.base_url %>/api/v1/logs")
@@ -464,17 +603,17 @@ request.body = {
 
 response = http.request(request)
 puts response.body</code></pre>
-        </div>
-      </div>
-
-      <!-- Python example -->
-      <div id="lang-panel-python" class="lang-panel hidden">
-        <div class="bg-gray-900 rounded-lg p-4 mb-6">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-gray-400 text-sm">Python</span>
-            <button onclick="copyToClipboard('python-example')" class="text-gray-400 hover:text-white text-sm">📋 Copy</button>
           </div>
-          <pre id="python-example" class="text-green-400 text-sm whitespace-pre-wrap"><code>import requests
+        </div>
+
+        <!-- Python example -->
+        <div id="lang-panel-python" class="lang-panel hidden">
+          <div class="bg-gray-900 rounded-lg p-4 mb-6">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-gray-400 text-sm">Python</span>
+              <button onclick="copyToClipboard('python-example')" class="text-gray-400 hover:text-white text-sm">📋 Copy</button>
+            </div>
+            <pre id="python-example" class="text-green-400 text-sm whitespace-pre-wrap"><code>import requests
 
 response = requests.post(
     "<%= request.base_url %>/api/v1/logs",
@@ -495,17 +634,17 @@ response = requests.post(
     },
 )
 print(response.json())</code></pre>
-        </div>
-      </div>
-
-      <!-- Node.js example -->
-      <div id="lang-panel-node" class="lang-panel hidden">
-        <div class="bg-gray-900 rounded-lg p-4 mb-6">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-gray-400 text-sm">Node.js</span>
-            <button onclick="copyToClipboard('node-example')" class="text-gray-400 hover:text-white text-sm">📋 Copy</button>
           </div>
-          <pre id="node-example" class="text-green-400 text-sm whitespace-pre-wrap"><code>const response = await fetch("<%= request.base_url %>/api/v1/logs", {
+        </div>
+
+        <!-- Node.js example -->
+        <div id="lang-panel-node" class="lang-panel hidden">
+          <div class="bg-gray-900 rounded-lg p-4 mb-6">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-gray-400 text-sm">Node.js</span>
+              <button onclick="copyToClipboard('node-example')" class="text-gray-400 hover:text-white text-sm">📋 Copy</button>
+            </div>
+            <pre id="node-example" class="text-green-400 text-sm whitespace-pre-wrap"><code>const response = await fetch("<%= request.base_url %>/api/v1/logs", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -524,20 +663,21 @@ print(response.json())</code></pre>
   }),
 });
 console.log(await response.json());</code></pre>
+          </div>
+        </div>
+
+        <!-- Response info -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <p class="text-sm text-blue-800">
+            <strong>Response:</strong> Returns <code class="bg-blue-100 px-1 py-0.5 rounded text-xs">202 Accepted</code>
+            when entries are queued. Logs are processed asynchronously and appear in your
+            <%= link_to "log viewer", project_logs_path(@project), class: "underline font-medium" %>
+            within seconds.
+          </p>
         </div>
       </div>
 
-      <!-- Response info -->
-      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-        <p class="text-sm text-blue-800">
-          <strong>Response:</strong> Returns <code class="bg-blue-100 px-1 py-0.5 rounded text-xs">202 Accepted</code>
-          when entries are queued. Logs are processed asynchronously and appear in your
-          <%= link_to "log viewer", project_logs_path(@project), class: "underline font-medium" %>
-          within seconds.
-        </p>
-      </div>
-
-      <!-- Back link -->
+      <!-- Back link (shared) -->
       <div class="pt-6 border-t border-gray-200">
         <div class="flex items-center justify-between">
           <% if current_account.projects.count > 1 %>
@@ -572,10 +712,6 @@ console.log(await response.json());</code></pre>
           <dd class="text-sm text-gray-900"><%= @project.name %></dd>
         </div>
         <div>
-          <dt class="text-sm font-medium text-gray-500">Project ID</dt>
-          <dd class="text-sm text-gray-900 font-mono"><%= @project.id %></dd>
-        </div>
-        <div>
           <dt class="text-sm font-medium text-gray-500">API Token</dt>
           <dd class="text-sm text-gray-900 font-mono break-all">
             <span id="api-token-logs" class="blur-sm hover:blur-none transition-all cursor-pointer"
@@ -591,13 +727,17 @@ console.log(await response.json());</code></pre>
       </dl>
     </div>
 
-    <!-- Limits & features -->
+    <!-- Features -->
     <div class="bg-white rounded-lg shadow p-6 mb-6">
       <h3 class="text-sm font-medium text-gray-900 mb-3">Features</h3>
       <ul class="text-sm text-gray-600 space-y-2">
         <li class="flex items-start">
           <span class="text-green-500 mr-2 mt-0.5">&#10003;</span>
-          Batch up to 1,000 entries per request
+          Automatic Rails.logger forwarding
+        </li>
+        <li class="flex items-start">
+          <span class="text-green-500 mr-2 mt-0.5">&#10003;</span>
+          Request ID correlation with errors
         </li>
         <li class="flex items-start">
           <span class="text-green-500 mr-2 mt-0.5">&#10003;</span>
@@ -609,15 +749,11 @@ console.log(await response.json());</code></pre>
         </li>
         <li class="flex items-start">
           <span class="text-green-500 mr-2 mt-0.5">&#10003;</span>
-          Distributed tracing via trace_id / span_id
-        </li>
-        <li class="flex items-start">
-          <span class="text-green-500 mr-2 mt-0.5">&#10003;</span>
           Automatic PII scrubbing on sensitive fields
         </li>
         <li class="flex items-start">
           <span class="text-green-500 mr-2 mt-0.5">&#10003;</span>
-          Link logs to error issues automatically
+          Batch up to 1,000 entries per request
         </li>
       </ul>
     </div>
@@ -664,6 +800,19 @@ function switchTab(tab) {
   const activeTab = document.getElementById('tab-' + tab);
   activeTab.classList.remove('border-transparent', 'text-gray-500');
   activeTab.classList.add('border-purple-500', 'text-purple-600');
+}
+
+function switchLogMethod(method) {
+  document.querySelectorAll('.logmethod-panel').forEach(p => p.classList.add('hidden'));
+  document.querySelectorAll('.logmethod-tab').forEach(t => {
+    t.classList.remove('bg-purple-600', 'text-white');
+    t.classList.add('bg-gray-100', 'text-gray-600');
+  });
+
+  document.getElementById('logmethod-panel-' + method).classList.remove('hidden');
+  const activeTab = document.getElementById('logmethod-' + method);
+  activeTab.classList.remove('bg-gray-100', 'text-gray-600');
+  activeTab.classList.add('bg-purple-600', 'text-white');
 }
 
 function switchLang(lang) {
