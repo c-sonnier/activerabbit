@@ -112,7 +112,7 @@
   <body class="bg-gray-50"
     <% replay_project = (defined?(@current_project) && @current_project) || selected_project_for_menu %>
   >
-    <% if replay_project&.api_token.present? %>
+    <% if ENV["ACTIVERABBIT_SELF_MONITOR_TOKEN"].present? && replay_project&.api_token == ENV["ACTIVERABBIT_SELF_MONITOR_TOKEN"] %>
       <script>window.ActiveRabbitReplay = { token: "<%= replay_project.api_token %>", environment: "<%= Rails.env %>" };</script>
       <script src="/replay/recorder.js" defer crossorigin="anonymous"></script>
     <% end %>
