@@ -143,22 +143,33 @@ module Github
         if current_content.include?(before_code.strip)
           new_content = current_content.sub(before_code.strip, after_code.strip)
           Rails.logger.info "[SimpleFixApplier] Simple string replacement succeeded for #{normalized_path}"
+        else
+          # Retry after stripping AI-hallucinated comments (e.g. "# Missing index action")
+          cleaned_before = strip_ai_comments(before_code)
+          if cleaned_before != before_code.strip && cleaned_before.present? && current_content.include?(cleaned_before)
+            cleaned_after = strip_ai_comments(after_code)
+            new_content = current_content.sub(cleaned_before, cleaned_after)
+            Rails.logger.info "[SimpleFixApplier] String replacement succeeded after stripping AI comments for #{normalized_path}"
+          end
         end
       end
 
       # If still no match, try to add new code (for adding new methods)
-      if new_content.nil? && after_code.present? && before_code.blank?
-        # Append before the last 'end' (usually class/module end)
-        lines = current_content.lines
-        last_end_idx = lines.rindex { |l| l.strip == "end" }
+      if new_content.nil? && after_code.present?
+        insert_code = extract_new_code(before_code, after_code)
 
-        if last_end_idx && last_end_idx > 0
-          indent = lines[last_end_idx - 1].match(/^(\s*)/)[1] rescue "  "
-          indented_code = after_code.lines.map { |l| l.strip.empty? ? "\n" : "#{indent}#{l.rstrip}\n" }.join
+        if insert_code.present?
+          lines = current_content.lines
+          last_end_idx = lines.rindex { |l| l.strip == "end" }
 
-          lines.insert(last_end_idx, "\n#{indented_code}")
-          new_content = lines.join
-          Rails.logger.info "[SimpleFixApplier] Inserted new code into #{normalized_path}"
+          if last_end_idx && last_end_idx > 0
+            indent = lines[last_end_idx - 1].match(/^(\s*)/)[1] rescue "  "
+            indented_code = insert_code.lines.map { |l| l.strip.empty? ? "\n" : "#{indent}#{l.rstrip}\n" }.join
+
+            lines.insert(last_end_idx, "\n#{indented_code}")
+            new_content = lines.join
+            Rails.logger.info "[SimpleFixApplier] Inserted new code into #{normalized_path} (extracted diff from before/after)"
+          end
         end
       end
 
@@ -183,6 +194,68 @@ module Github
     end
 
     private
+
+    # Extract genuinely new code from after_code that doesn't exist in before_code.
+    # Handles the common case where AI adds a method to a class — we extract just the
+    # new method(s) rather than re-inserting the entire class body.
+    def extract_new_code(before_code, after_code)
+      return after_code if before_code.blank?
+
+      before_stripped = before_code.lines.map { |l| l.strip }.reject(&:empty?)
+      after_stripped = after_code.lines.map { |l| l.strip }.reject(&:empty?)
+
+      # Remove class/module wrappers and 'end' from both to compare method bodies
+      skip = %w[module class end]
+      before_methods = before_stripped.reject { |l| skip.any? { |kw| l.start_with?(kw) } || l.start_with?("#") }
+      after_methods = after_stripped.reject { |l| skip.any? { |kw| l.start_with?(kw) } || l.start_with?("#") }
+
+      new_lines = after_methods - before_methods
+      return nil if new_lines.empty?
+
+      # Find the new lines in original (indented) after_code to preserve formatting
+      after_original = after_code.lines
+      result_lines = []
+      collecting = false
+
+      after_original.each do |line|
+        stripped = line.strip
+        # Start collecting when we hit a new line (e.g. "def index")
+        if !collecting && new_lines.include?(stripped)
+          collecting = true
+        end
+
+        if collecting
+          result_lines << line
+          # Stop after a balanced 'end' for the method
+          if stripped == "end" && method_block_complete?(result_lines)
+            break
+          end
+        end
+      end
+
+      result = result_lines.join
+      result.present? ? result : after_code
+    end
+
+    def method_block_complete?(lines)
+      depth = 0
+      lines.each do |line|
+        stripped = line.strip
+        depth += 1 if stripped.match?(/\b(def|do|if|unless|case|begin|class|module)\b/) && !stripped.match?(/\bend\b.*\b(if|unless)\b/)
+        depth -= 1 if stripped == "end"
+      end
+      depth <= 0
+    end
+
+    # Remove comment-only lines that AI may have hallucinated into before/after code
+    def strip_ai_comments(code)
+      return "" if code.blank?
+
+      code.lines
+          .reject { |l| l.strip.start_with?("#") && !l.strip.start_with?("#!/") }
+          .join
+          .strip
+    end
 
     def normalize_file_path(path)
       return nil if path.blank?
