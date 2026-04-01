@@ -119,7 +119,7 @@ class CheckInsController < ApplicationController
     expected_pings = (hours_since_creation * 3600 / interval).floor
     return 100.0 if expected_pings.zero?
 
-    actual_pings = check_in.pings.count
+    actual_pings = check_in.pings.where(status: "success").count
     [(actual_pings.to_f / expected_pings * 100).round(1), 100.0].min
   end
 
@@ -139,20 +139,31 @@ class CheckInsController < ApplicationController
     cursor = 24.hours.ago.beginning_of_hour
     while cursor < Time.current
       slot_end = cursor + slot_duration
-      count = pings.count { |p| p.pinged_at >= cursor && p.pinged_at < slot_end }
+      in_slot = ->(p) { p.pinged_at >= cursor && p.pinged_at < slot_end }
+      count_success = pings.count { |p| in_slot.call(p) && p.status == "success" }
+      count_error = pings.count { |p| in_slot.call(p) && p.status == "error" }
+      count = count_success + count_error
       expected = slot_duration >= interval ? 1 : 0
 
-      status = if check_in.last_seen_at.nil? && count.zero?
+      status = if check_in.last_seen_at.nil? && count_success.zero? && count_error.zero?
                  "empty"
-      elsif count > 0
+      elsif count_success > 0
                  "ok"
+      elsif count_error > 0
+                 "error"
       elsif expected > 0 && cursor < Time.current - interval
                  "missed"
       else
                  "pending"
       end
 
-      slots << { time: cursor, count: count, status: status }
+      slots << {
+        time: cursor,
+        count: count,
+        count_success: count_success,
+        count_error: count_error,
+        status: status
+      }
       cursor = slot_end
     end
 

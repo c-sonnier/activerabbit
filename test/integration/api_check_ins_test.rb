@@ -89,13 +89,18 @@ class ApiCheckInsTest < ActionDispatch::IntegrationTest
     assert_nil @check_in.run_started_at
   end
 
-  test "POST cron check_ins error does not record ping" do
-    assert_no_difference -> { CheckInPing.where(check_in_id: @check_in.id).count } do
+  test "POST cron check_ins error records error ping and optional message" do
+    assert_difference -> { CheckInPing.where(check_in_id: @check_in.id, status: "error").count }, 1 do
       post "/api/v1/cron/check_ins",
-           params: { slug: @check_in.slug, status: "error" }.to_json,
+           params: { slug: @check_in.slug, status: "error", message: "job failed" }.to_json,
            headers: @api_headers
     end
     assert_response :success
+    json = JSON.parse(response.body)
+    assert_equal "ok", json["status"]
+    @check_in.reload
+    assert_nil @check_in.run_started_at
+    assert_equal "missed", @check_in.last_status
   end
 
   test "POST cron check_ins missing slug is bad_request" do
