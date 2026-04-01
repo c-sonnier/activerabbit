@@ -6,7 +6,7 @@ class CheckInPing < ApplicationRecord
   belongs_to :check_in
 
   validates :pinged_at, presence: true
-  validates :status, inclusion: { in: %w[success] }
+  validates :status, inclusion: { in: %w[success error] }
 
   scope :recent, -> { order(pinged_at: :desc) }
   scope :today, -> { where(pinged_at: Time.current.beginning_of_day..) }

@@ -53,17 +53,46 @@ class CheckIn < ApplicationRecord
     )
   end
 
+  # Failed run from the app (after :in_progress). Does not move last_seen_at / success clock.
+  def record_error_ping!(source_ip: nil)
+    update!(
+      run_started_at: nil,
+      last_status: "missed"
+    )
+    pings.create!(
+      status: "error",
+      source_ip: source_ip,
+      pinged_at: Time.current
+    )
+  end
+
   def token
     read_attribute(:identifier)
   end
 
   def overdue?
-    return false unless enabled? && last_seen_at.present? && heartbeat_interval_seconds.present?
+    return false unless enabled? && heartbeat_interval_seconds.present?
+
+    if run_started_at.present? && run_started_at < heartbeat_interval_seconds.seconds.ago
+      return true
+    end
+
+    return false unless last_seen_at.present?
 
     last_seen_at < heartbeat_interval_seconds.seconds.ago
   end
 
+  # Latest row wins: error after success shows "error" until the next successful :ok/:success ping.
   def status_display
+    if run_started_at.present?
+      return "missed" if heartbeat_interval_seconds.present? && run_started_at < heartbeat_interval_seconds.seconds.ago
+
+      return "running"
+    end
+
+    latest = pings.order(pinged_at: :desc, id: :desc).first
+    return "error" if latest&.status == "error"
+
     return "new" if last_seen_at.nil?
     return "missed" if overdue?
 
@@ -74,6 +103,8 @@ class CheckIn < ApplicationRecord
     case status_display
     when "healthy" then "green"
     when "missed" then "red"
+    when "error" then "red"
+    when "running" then "blue"
     when "new" then "gray"
     else "gray"
     end
@@ -98,6 +129,13 @@ class CheckIn < ApplicationRecord
 
   def should_alert?
     return false unless enabled?
+
+    latest = pings.order(pinged_at: :desc, id: :desc).first
+    if latest&.status == "error"
+      return false if last_alerted_at.present? && last_alerted_at >= latest.pinged_at
+      return true
+    end
+
     return false unless overdue?
     return false if last_alerted_at.present? && last_alerted_at > 1.hour.ago
 

@@ -136,4 +136,33 @@ class CheckInTest < ActiveSupport::TestCase
     assert ci.last_seen_at.present?
     assert_equal "127.0.0.1", ci.pings.last.source_ip
   end
+
+  test "record_error_ping! creates error row without moving last_seen_at" do
+    ci = check_ins(:healthy)
+    had_seen = ci.last_seen_at
+
+    assert_difference -> { ci.pings.where(status: "error").count }, 1 do
+      ActsAsTenant.with_tenant(@account) do
+        ci.record_error_ping!(source_ip: "10.0.0.1")
+      end
+    end
+
+    ci.reload
+    assert_equal had_seen.to_i, ci.last_seen_at.to_i
+    assert_equal "error", ci.pings.order(pinged_at: :desc).first.status
+    assert_equal "error", ci.status_display
+  end
+
+  test "status_display running when run_started_at fresh" do
+    ci = check_ins(:healthy)
+    ci.update_columns(run_started_at: 30.seconds.ago)
+    assert_equal "running", ci.status_display
+  end
+
+  test "should_alert? true when latest ping is error and not yet alerted" do
+    ci = check_ins(:healthy)
+    ActsAsTenant.with_tenant(@account) { ci.record_error_ping! }
+    ci.update_column(:last_alerted_at, nil)
+    assert ci.should_alert?
+  end
 end

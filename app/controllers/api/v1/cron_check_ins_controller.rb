@@ -55,7 +55,12 @@ module Api
           end
           render json: { status: "ok", message: "Run started recorded" }
         when "error"
-          render json: { status: "ok", message: "Error acknowledged" }
+          ActsAsTenant.with_tenant(check_in.account) do
+            check_in.record_error_ping!(source_ip: request.remote_ip)
+          end
+          msg = params[:message].presence || params[:error_message].presence
+          Rails.logger.warn("[CronCheckIns] slug=#{slug} error from job#{msg ? ": #{msg.to_s.truncate(500)}" : ""}")
+          render json: { status: "ok", message: "Error recorded" }
         end
       rescue => e
         Rails.logger.error("[CronCheckIns] Error: #{e.message}")
