@@ -78,13 +78,135 @@
             <% end %>
           <% else %>
             <tr>
-              <td colspan="6" class="px-6 py-12 text-center">
-                <div class="mx-auto">
-                  <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                  </svg>
-                  <h3 class="text-lg font-medium text-gray-900 mb-2">No log entries found</h3>
-                  <p class="text-gray-500">Start sending logs via <code class="bg-gray-100 px-1 rounded">POST /api/v1/logs</code></p>
+              <td colspan="6" class="px-6 py-12">
+                <div class="max-w-2xl mx-auto">
+                  <div class="text-center mb-8">
+                    <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <h3 class="text-lg font-medium text-gray-900 mb-1">No log entries yet</h3>
+                    <p class="text-sm text-gray-500">Choose one of the methods below to start sending logs.</p>
+                  </div>
+
+                  <!-- Tabs -->
+                  <div class="flex gap-2 mb-4 justify-center" id="log-example-tabs">
+                    <button onclick="switchLogExample('rails')" id="log-ex-tab-rails"
+                            class="log-ex-tab px-4 py-1.5 text-sm font-medium rounded-md bg-indigo-600 text-white">
+                      Rails SDK
+                    </button>
+                    <button onclick="switchLogExample('curl')" id="log-ex-tab-curl"
+                            class="log-ex-tab px-4 py-1.5 text-sm font-medium rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200">
+                      cURL
+                    </button>
+                    <button onclick="switchLogExample('ruby')" id="log-ex-tab-ruby"
+                            class="log-ex-tab px-4 py-1.5 text-sm font-medium rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200">
+                      Ruby
+                    </button>
+                    <button onclick="switchLogExample('node')" id="log-ex-tab-node"
+                            class="log-ex-tab px-4 py-1.5 text-sm font-medium rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200">
+                      Node.js
+                    </button>
+                  </div>
+
+                  <!-- Rails SDK panel -->
+                  <div id="log-ex-panel-rails" class="log-ex-panel">
+                    <p class="text-sm text-gray-600 mb-3">Add <code class="bg-gray-100 px-1.5 py-0.5 rounded text-xs">enable_logs</code> to your initializer &mdash; every <code class="bg-gray-100 px-1.5 py-0.5 rounded text-xs">Rails.logger</code> call is forwarded automatically.</p>
+                    <div class="bg-gray-900 rounded-lg p-4 text-left">
+<pre class="text-green-400 text-sm whitespace-pre-wrap"><code><span class="text-gray-500"># config/initializers/activerabbit.rb</span>
+ActiveRabbit::Client.configure do |config|
+  config.api_key     = ENV["ACTIVERABBIT_API_KEY"]
+  config.enable_logs = true
+end
+
+<span class="text-gray-500"># That's it! All Rails.logger calls are now forwarded:</span>
+Rails.logger.info "Order created"
+Rails.logger.warn "Slow query detected"
+Rails.logger.error "Payment failed"</code></pre>
+                    </div>
+                  </div>
+
+                  <!-- cURL panel -->
+                  <div id="log-ex-panel-curl" class="log-ex-panel hidden">
+                    <p class="text-sm text-gray-600 mb-3">Send structured log entries from any platform using a simple POST request.</p>
+                    <div class="bg-gray-900 rounded-lg p-4 text-left">
+<pre class="text-green-400 text-sm whitespace-pre-wrap"><code>curl -X POST <%= request.base_url %>/api/v1/logs \
+  -H "Content-Type: application/json" \
+  -H "X-Project-Token: <span class="text-yellow-300"><%= @project&.api_token || 'YOUR_PROJECT_TOKEN' %></span>" \
+  -d '{
+    "entries": [
+      {
+        "level": "info",
+        "message": "User signed in",
+        "source": "AuthController",
+        "environment": "production"
+      },
+      {
+        "level": "error",
+        "message": "Payment gateway timeout",
+        "source": "PaymentService",
+        "trace_id": "tr_abc123"
+      }
+    ]
+  }'</code></pre>
+                    </div>
+                  </div>
+
+                  <!-- Ruby panel -->
+                  <div id="log-ex-panel-ruby" class="log-ex-panel hidden">
+                    <p class="text-sm text-gray-600 mb-3">Send logs from any Ruby app using <code class="bg-gray-100 px-1.5 py-0.5 rounded text-xs">Net::HTTP</code>.</p>
+                    <div class="bg-gray-900 rounded-lg p-4 text-left">
+<pre class="text-green-400 text-sm whitespace-pre-wrap"><code>require "net/http"
+require "json"
+
+uri = URI("<%= request.base_url %>/api/v1/logs")
+http = Net::HTTP.new(uri.host, uri.port)
+
+request = Net::HTTP::Post.new(uri)
+request["Content-Type"] = "application/json"
+request["X-Project-Token"] = "<span class="text-yellow-300"><%= @project&.api_token || 'YOUR_PROJECT_TOKEN' %></span>"
+request.body = {
+  entries: [
+    { level: "info",  message: "Job started",  source: "ImportJob" },
+    { level: "error", message: "CSV parse failed", source: "ImportJob" }
+  ]
+}.to_json
+
+response = http.request(request)
+puts response.body</code></pre>
+                    </div>
+                  </div>
+
+                  <!-- Node.js panel -->
+                  <div id="log-ex-panel-node" class="log-ex-panel hidden">
+                    <p class="text-sm text-gray-600 mb-3">Send logs from Node.js using <code class="bg-gray-100 px-1.5 py-0.5 rounded text-xs">fetch</code>.</p>
+                    <div class="bg-gray-900 rounded-lg p-4 text-left">
+<pre class="text-green-400 text-sm whitespace-pre-wrap"><code>const response = await fetch("<%= request.base_url %>/api/v1/logs", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "X-Project-Token": "<span class="text-yellow-300"><%= @project&.api_token || 'YOUR_PROJECT_TOKEN' %></span>"
+  },
+  body: JSON.stringify({
+    entries: [
+      { level: "info",  message: "Server started", source: "app" },
+      { level: "warn",  message: "Memory usage high", source: "monitor" },
+      { level: "error", message: "Unhandled rejection", source: "api" }
+    ]
+  })
+});
+
+console.log(await response.json());</code></pre>
+                    </div>
+                  </div>
+
+                  <% if @project %>
+                    <div class="mt-4 text-center">
+                      <%= link_to onboarding_install_gem_path(project_id: @project.id),
+                                  class: "text-sm text-indigo-600 hover:text-indigo-800 font-medium" do %>
+                        View full setup guide &rarr;
+                      <% end %>
+                    </div>
+                  <% end %>
                 </div>
               </td>
             </tr>
@@ -92,8 +214,20 @@
         </tbody>
       </table>
     </div>
+    <!-- Loading indicator for infinite scroll -->
+    <div class="hidden px-6 py-4 border-t border-gray-200 text-center" data-log-stream-target="loader">
+      <div class="inline-flex items-center gap-2 text-sm text-gray-500">
+        <span class="flex gap-1">
+          <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+          <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+          <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+        </span>
+        Loading more logs
+      </div>
+    </div>
+
     <% if @logs.respond_to?(:total_pages) && @logs.total_pages > 1 %>
-      <div class="px-6 py-4 border-t border-gray-200">
+      <div class="px-6 py-4 border-t border-gray-200" data-log-stream-target="pagination">
         <%= paginate @logs %>
       </div>
     <% end %>
@@ -113,4 +247,19 @@
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
   window.addEventListener('resize', sync);
 })();
+
+function switchLogExample(method) {
+  document.querySelectorAll('.log-ex-panel').forEach(function(p) { p.classList.add('hidden'); });
+  document.querySelectorAll('.log-ex-tab').forEach(function(t) {
+    t.classList.remove('bg-indigo-600', 'text-white');
+    t.classList.add('bg-gray-100', 'text-gray-600');
+  });
+  var panel = document.getElementById('log-ex-panel-' + method);
+  if (panel) panel.classList.remove('hidden');
+  var tab = document.getElementById('log-ex-tab-' + method);
+  if (tab) {
+    tab.classList.remove('bg-gray-100', 'text-gray-600');
+    tab.classList.add('bg-indigo-600', 'text-white');
+  }
+}
 </script>

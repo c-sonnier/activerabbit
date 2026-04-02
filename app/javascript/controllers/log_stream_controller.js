@@ -2,13 +2,17 @@ import { Controller } from "@hotwired/stimulus"
 import { createConsumer } from "@rails/actioncable"
 
 export default class extends Controller {
-  static targets = ["entries", "toggleBtn", "indicator", "label"]
+  static targets = ["entries", "toggleBtn", "indicator", "label", "pagination", "loader"]
   static values = { projectId: String }
 
   connect() {
     this.active = false
     this.consumer = null
     this.subscription = null
+    this.loading = false
+    this.nextPage = 2
+    this.noMorePages = false
+    this.scrollHandler = this.onScroll.bind(this)
   }
 
   disconnect() {
@@ -68,6 +72,78 @@ export default class extends Controller {
     if (this.hasLabelTarget) {
       this.labelTarget.textContent = active ? "Live" : "Live Tail"
     }
+
+    // Hide/show pagination when live tail toggles
+    if (this.hasPaginationTarget) {
+      this.paginationTarget.classList.toggle("hidden", active)
+    }
+
+    // Setup/teardown scroll-based loading
+    if (active) {
+      this.nextPage = 2
+      this.noMorePages = false
+      window.addEventListener("scroll", this.scrollHandler)
+    } else {
+      window.removeEventListener("scroll", this.scrollHandler)
+      if (this.hasLoaderTarget) {
+        this.loaderTarget.classList.add("hidden")
+      }
+    }
+  }
+
+  onScroll() {
+    if (!this.active || this.loading || this.noMorePages) return
+
+    const scrollBottom = window.innerHeight + window.scrollY
+    const docHeight = document.documentElement.scrollHeight
+
+    if (docHeight - scrollBottom < 200) {
+      this.loadNextPage()
+    }
+  }
+
+  async loadNextPage() {
+    this.loading = true
+    if (this.hasLoaderTarget) {
+      this.loaderTarget.classList.remove("hidden")
+    }
+
+    try {
+      const url = new URL(window.location.href)
+      url.searchParams.set("page", this.nextPage)
+
+      const response = await fetch(url.toString(), {
+        headers: { "X-Requested-With": "XMLHttpRequest" }
+      })
+
+      if (!response.ok) {
+        this.noMorePages = true
+        return
+      }
+
+      const html = await response.text()
+      const parser = new DOMParser()
+      const doc = parser.parseFromString(html, "text/html")
+      const newRows = doc.querySelectorAll("#log-entries > tr")
+
+      if (newRows.length === 0) {
+        this.noMorePages = true
+        return
+      }
+
+      newRows.forEach(row => {
+        this.entriesTarget.appendChild(row.cloneNode(true))
+      })
+
+      this.nextPage++
+    } catch (e) {
+      this.noMorePages = true
+    } finally {
+      this.loading = false
+      if (this.hasLoaderTarget) {
+        this.loaderTarget.classList.add("hidden")
+      }
+    }
   }
 
   appendEntry(data) {
@@ -93,33 +169,30 @@ export default class extends Controller {
 
     const level = data.level || "info"
     const timestamp = data.occurred_at ? new Date(data.occurred_at).toISOString().replace("T", " ").slice(0, 23) : ""
+    const traceHtml = data.trace_id ? `<span class="text-xs text-indigo-600 font-mono">${this.escapeHtml(data.trace_id.slice(0, 12))}</span>` : ""
 
     const html = `
-      <div class="group px-4 py-3 hover:bg-gray-50 transition-colors bg-green-50/30 animate-fade-in">
-        <div class="flex items-start gap-3">
-          <div class="flex-shrink-0 mt-1.5">
-            <div class="w-2 h-2 rounded-full ${dotColors[level] || "bg-gray-400"}"></div>
-          </div>
-          <div class="flex-shrink-0 w-44 text-xs text-gray-500 font-mono mt-0.5">${timestamp}</div>
-          <div class="flex-shrink-0">
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${levelColors[level] || "bg-gray-100 text-gray-700"}">
-              ${level.toUpperCase()}
-            </span>
-          </div>
-          ${data.source ? `<div class="flex-shrink-0 text-xs text-gray-500 font-mono">${this.escapeHtml(data.source)}</div>` : ""}
-          <div class="flex-1 min-w-0">
-            <p class="text-sm text-gray-900 truncate font-mono">${this.escapeHtml(data.message)}</p>
-          </div>
-          ${data.trace_id ? `<div class="flex-shrink-0"><span class="text-xs text-indigo-600 font-mono">${this.escapeHtml(data.trace_id.slice(0, 12))}</span></div>` : ""}
-        </div>
-      </div>
+      <tr class="hover:bg-gray-50 cursor-pointer bg-green-50/30 animate-fade-in">
+        <td class="px-4 py-2">
+          <div class="w-1.5 h-1.5 rounded-full ${dotColors[level] || "bg-gray-400"}"></div>
+        </td>
+        <td class="px-4 py-2 font-mono text-xs text-gray-500 whitespace-nowrap">${timestamp}</td>
+        <td class="px-4 py-2">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${levelColors[level] || "bg-gray-100 text-gray-700"}">
+            ${level.toUpperCase()}
+          </span>
+        </td>
+        <td class="px-4 py-2 font-mono text-xs text-gray-500 whitespace-nowrap">${this.escapeHtml(data.source)}</td>
+        <td class="px-4 py-2 text-xs text-gray-900 font-mono max-w-md truncate">${this.escapeHtml(data.message)}</td>
+        <td class="px-4 py-2 font-mono text-xs text-indigo-600 whitespace-nowrap">${traceHtml}</td>
+      </tr>
     `
 
     this.entriesTarget.insertAdjacentHTML("afterbegin", html)
 
     // Remove the empty state if present
     const emptyState = this.entriesTarget.querySelector(".text-center")
-    if (emptyState) emptyState.remove()
+    if (emptyState) emptyState.closest("tr")?.remove()
 
     // Cap at 500 entries to prevent memory issues
     while (this.entriesTarget.children.length > 500) {

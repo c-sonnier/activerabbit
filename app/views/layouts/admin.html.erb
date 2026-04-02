@@ -22,6 +22,7 @@
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
     <link rel="stylesheet" href="/rrweb.min.css">
+    <script src="/rrweb.min.js" defer></script>
     <%= javascript_importmap_tags %>
 
     <script>
@@ -112,8 +113,8 @@
   <body class="bg-gray-50"
     <% replay_project = (defined?(@current_project) && @current_project) || selected_project_for_menu %>
   >
-    <% if ENV["ACTIVERABBIT_SELF_MONITOR_TOKEN"].present? && replay_project&.api_token == ENV["ACTIVERABBIT_SELF_MONITOR_TOKEN"] %>
-      <script>window.ActiveRabbitReplay = { token: "<%= replay_project.api_token %>", environment: "<%= Rails.env %>" };</script>
+    <% if ENV["ACTIVERABBIT_SELF_MONITOR_TOKEN"].present? && !viewing_as_super_admin? %>
+      <script>window.ActiveRabbitReplay = { token: "<%= ENV["ACTIVERABBIT_SELF_MONITOR_TOKEN"] %>", environment: "<%= Rails.env %>" };</script>
       <script src="/replay/recorder.js" defer crossorigin="anonymous"></script>
     <% end %>
     <div id="flash_messages"></div>
