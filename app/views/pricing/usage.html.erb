@@ -58,6 +58,7 @@
 <div class="space-y-8 mx-auto w-full lg:w-[85%]">
   <!-- Current Usage Box -->
   <% if @account %>
+    <% first_project = @account.projects.order(:id).first %>
     <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-8 border-2 border-indigo-200 shadow-lg mb-12">
       <div class="text-center mb-6">
         <h2 class="text-3xl font-bold text-gray-900 mb-2">Current Plan: <span class="text-indigo-600"><%= @account.effective_plan_name %></span></h2>
@@ -99,6 +100,11 @@
                 Upgrade for more
               </a>
             <% end %>
+            <div class="mt-2">
+              <%= link_to errors_path, class: "text-xs text-indigo-600 hover:text-indigo-800 font-medium" do %>
+                View errors &rarr;
+              <% end %>
+            </div>
           </div>
         </div>
 
@@ -121,6 +127,11 @@
                 Upgrade to unlock
               </a>
             </div>
+            <div class="mt-2">
+              <%= link_to errors_path, class: "text-xs text-indigo-600 hover:text-indigo-800 font-medium" do %>
+                View issues &rarr;
+              <% end %>
+            </div>
           </div>
         <% else %>
           <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 border-purple-500">
@@ -140,6 +151,11 @@
               <div class="flex justify-between text-xs text-gray-500">
                 <span>Last 30 days:</span>
                 <span><%= number_with_delimiter(@ai_summaries_last_30_days) %></span>
+              </div>
+              <div class="mt-2">
+                <%= link_to errors_path, class: "text-xs text-indigo-600 hover:text-indigo-800 font-medium" do %>
+                  View issues &rarr;
+                <% end %>
               </div>
             </div>
           </div>
@@ -163,6 +179,11 @@
               <a href="<%= plan_path %>" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md shadow hover:from-indigo-700 hover:to-violet-700 transition-all">
                 Upgrade to unlock
               </a>
+            </div>
+            <div class="mt-2">
+              <%= link_to errors_path, class: "text-xs text-indigo-600 hover:text-indigo-800 font-medium" do %>
+                View issues &rarr;
+              <% end %>
             </div>
           </div>
         <% else %>
@@ -197,6 +218,11 @@
               </div>
               <div class="text-right text-sm font-bold <%= pr_over ? 'text-red-600' : (pr_pct >= 90 ? 'text-orange-500' : pr_pct >= 80 ? 'text-yellow-500' : 'text-green-500') %>">
                 <%= pr_pct.round(1) %>%
+              </div>
+              <div class="mt-2">
+                <%= link_to errors_path, class: "text-xs text-indigo-600 hover:text-indigo-800 font-medium" do %>
+                  View issues &rarr;
+                <% end %>
               </div>
             </div>
           </div>
@@ -258,6 +284,13 @@
               <div class="text-right text-sm font-bold <%= replay_over ? 'text-red-600' : (replay_pct >= 90 ? 'text-orange-500' : replay_pct >= 80 ? 'text-yellow-500' : 'text-blue-600') %>">
                 <%= replay_pct %>%
               </div>
+              <% if first_project %>
+                <div class="mt-2">
+                  <%= link_to project_replays_path(first_project.slug), class: "text-xs text-indigo-600 hover:text-indigo-800 font-medium" do %>
+                    View replays &rarr;
+                  <% end %>
+                </div>
+              <% end %>
             </div>
           </div>
         <% end %>
@@ -279,6 +312,11 @@
               <a href="<%= plan_path %>" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md shadow hover:from-indigo-700 hover:to-violet-700 transition-all">
                 Upgrade to unlock
               </a>
+            </div>
+            <div class="mt-2">
+              <%= link_to uptime_index_path, class: "text-xs text-indigo-600 hover:text-indigo-800 font-medium" do %>
+                View monitors &rarr;
+              <% end %>
             </div>
           </div>
         <% else %>
@@ -350,6 +388,14 @@
               <span class="text-gray-600">Requests (last 30 days):</span>
               <span class="font-bold text-gray-900"><%= number_with_delimiter(@requests_total_last_30_days) %></span>
             </div>
+            <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+              <%= link_to performance_path, class: "text-xs text-indigo-600 hover:text-indigo-800 font-medium" do %>
+                View performance &rarr;
+              <% end %>
+              <%= link_to errors_path, class: "text-xs text-indigo-600 hover:text-indigo-800 font-medium" do %>
+                View errors &rarr;
+              <% end %>
+            </div>
           </div>
         </div>
       </div>
@@ -405,6 +451,11 @@
                 Upgrade for more
               </a>
             <% end %>
+            <div class="mt-2">
+              <%= link_to errors_path, class: "text-xs text-indigo-600 hover:text-indigo-800 font-medium" do %>
+                View errors &rarr;
+              <% end %>
+            </div>
           </div>
         </div>
 
@@ -436,41 +487,62 @@
                 Upgrade for more
               </a>
             <% end %>
+            <div class="mt-2">
+              <%= link_to users_path, class: "text-xs text-indigo-600 hover:text-indigo-800 font-medium" do %>
+                Manage team &rarr;
+              <% end %>
+            </div>
           </div>
         </div>
 
-        <!-- Notifications -->
-        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 <%= @slack_allowed ? 'border-teal-500' : 'border-gray-300' %>">
+        <!-- Logs (structured log storage; quota shared across plans) -->
+        <%
+          log_bytes_used = @account.log_bytes_used
+          log_bytes_quota = @account.log_bytes_quota
+          log_storage_pct = log_bytes_quota.positive? ? (log_bytes_used.to_f / log_bytes_quota * 100).round(1) : 0.0
+          log_storage_over = @account.log_quota_exceeded?
+          log_entries_period = @account.cached_log_entries_used.to_i
+        %>
+        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 <%= log_storage_over ? 'border-red-500 ring-2 ring-red-200' : 'border-slate-500' %>">
           <div class="flex items-center justify-between mb-3">
-            <h3 class="text-lg font-semibold text-gray-900">Notifications</h3>
-            <svg class="w-8 h-8 <%= @slack_allowed ? 'text-teal-500' : 'text-gray-400' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-            </svg>
+            <h3 class="text-lg font-semibold text-gray-900">Logs</h3>
+            <% if log_storage_over %>
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">STORAGE FULL</span>
+            <% else %>
+              <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+            <% end %>
           </div>
           <div class="space-y-2">
             <div class="flex justify-between text-sm">
-              <span class="text-gray-600">Email:</span>
-              <span class="font-bold text-green-600">&#10003; Enabled</span>
+              <span class="text-gray-600">Storage used:</span>
+              <span class="font-bold <%= log_storage_over ? 'text-red-600' : 'text-gray-900' %>"><%= number_to_human_size(log_bytes_used) %></span>
             </div>
             <div class="flex justify-between text-sm">
-              <span class="text-gray-600">Slack:</span>
-              <% if @slack_allowed %>
-                <span class="font-bold text-green-600">&#10003; Available</span>
-              <% else %>
-                <span class="font-bold text-gray-400">&mdash; Not available</span>
+              <span class="text-gray-600">Quota:</span>
+              <span class="font-medium text-gray-700"><%= number_to_human_size(log_bytes_quota) %></span>
+            </div>
+            <div class="flex justify-between text-xs text-gray-500">
+              <span>Entries (billing period):</span>
+              <span><%= number_with_delimiter(log_entries_period) %></span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3 mt-2">
+              <div class="<%= log_storage_over ? 'bg-red-500' : 'bg-slate-500' %> h-3 rounded-full transition-all" style="width: <%= [log_storage_pct, 100].min %>%"></div>
+            </div>
+            <div class="text-right text-sm font-bold <%= log_storage_over ? 'text-red-600' : (log_storage_pct >= 90 ? 'text-orange-500' : log_storage_pct >= 80 ? 'text-yellow-500' : 'text-slate-600') %>">
+              <%= log_storage_pct %>%
+            </div>
+            <% if log_storage_over %>
+              <p class="text-xs text-red-600 font-medium mt-1">New log ingestion is paused until you free space or contact support for a higher limit.</p>
+            <% else %>
+              <p class="text-xs text-gray-400 mt-1">Sentry-style structured logs; PII in params/context is scrubbed.</p>
+            <% end %>
+            <div class="mt-2">
+              <%= link_to logs_path, class: "text-xs text-indigo-600 hover:text-indigo-800 font-medium" do %>
+                View logs &rarr;
               <% end %>
             </div>
-            <% if @is_free_plan %>
-              <div class="flex items-center gap-2 text-xs text-gray-400 mt-2">
-                <svg class="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                </svg>
-                Team &amp; Business: Email + Slack
-              </div>
-              <a href="<%= plan_path %>" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md shadow hover:from-indigo-700 hover:to-violet-700 transition-all mt-1">
-                Upgrade for Slack
-              </a>
-            <% end %>
           </div>
         </div>
       </div>

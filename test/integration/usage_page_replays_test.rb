@@ -82,4 +82,11 @@ class UsagePageReplaysTest < ActionDispatch::IntegrationTest
     assert_response :success
     refute_match(/Uptime monitoring is not included/, response.body)
   end
+
+  test "usage page shows logs storage card" do
+    get usage_path
+    assert_response :success
+    assert_select "h3", text: "Logs"
+    assert_match(/Storage used/, response.body)
+  end
 end
