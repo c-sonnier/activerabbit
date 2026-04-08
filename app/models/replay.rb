@@ -86,4 +86,30 @@ class Replay < ApplicationRecord
 
     false
   end
+
+  # True when the session was recorded on this ActiveRabbit deployment (same host as APP_HOST).
+  # Those are almost always mistakes: snippet pasted in the dashboard instead of the customer's site.
+  def recorded_on_app_host?
+    self.class.recorded_on_app_host?(url)
+  end
+
+  def self.recorded_on_app_host?(url_string)
+    app_host = normalize_host_for_compare(ENV["APP_HOST"].to_s)
+    return false if app_host.blank?
+
+    begin
+      recorded = normalize_host_for_compare(URI.parse(url_string.to_s).host)
+      return false if recorded.blank?
+
+      recorded == app_host
+    rescue URI::InvalidURIError, ArgumentError
+      false
+    end
+  end
+
+  def self.normalize_host_for_compare(host)
+    return nil if host.blank?
+
+    host.to_s.downcase.sub(/\Awww\./, "").presence
+  end
 end

@@ -234,4 +234,25 @@ class ReplayTest < ActiveSupport::TestCase
     assert Replay.development_host?("myapp.lvh.me")
     refute Replay.development_host?("app.example.com")
   end
+
+  test "recorded_on_app_host? when APP_HOST matches URL host" do
+    prev = ENV["APP_HOST"]
+    ENV["APP_HOST"] = "app.activerabbit.ai"
+    assert Replay.recorded_on_app_host?("https://app.activerabbit.ai/dashboard")
+    assert Replay.recorded_on_app_host?("https://www.app.activerabbit.ai/plan")
+    refute Replay.recorded_on_app_host?("https://customer.example.com/")
+  ensure
+    if prev
+      ENV["APP_HOST"] = prev
+    else
+      ENV.delete("APP_HOST")
+    end
+  end
+
+  test "recorded_on_app_host? is false when APP_HOST unset" do
+    prev = ENV.delete("APP_HOST")
+    refute Replay.recorded_on_app_host?("https://app.activerabbit.ai/dashboard")
+  ensure
+    ENV["APP_HOST"] = prev if prev
+  end
 end

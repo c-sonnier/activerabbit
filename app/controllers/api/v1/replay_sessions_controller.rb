@@ -14,6 +14,14 @@ class Api::V1::ReplaySessionsController < Api::BaseController
         return
       end
 
+      if Replay.recorded_on_app_host?(params[:url])
+        render json: {
+          error: "invalid_recording_origin",
+          message: "Recording was captured on the ActiveRabbit app itself. Install the replay snippet only on your product website (the URL set for this project), not on app.activerabbit.ai."
+        }, status: :unprocessable_entity
+        return
+      end
+
       # New replay
       if @current_project.account.replay_quota_exceeded?
         render json: { error: "quota_exceeded", message: "Replay quota exceeded" }, status: :too_many_requests

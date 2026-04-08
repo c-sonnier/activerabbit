@@ -124,6 +124,12 @@
   </div>
 </div>
 
+<% if @replay.recorded_on_app_host? %>
+  <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+    This session was recorded on the <strong>ActiveRabbit</strong> app (dashboard), not on your product. Remove the replay snippet from ActiveRabbit pages and add it only to your customer-facing site. New uploads from this host are rejected.
+  </div>
+<% end %>
+
 <!-- Player card -->
 <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
   <!-- Browser-style URL bar -->

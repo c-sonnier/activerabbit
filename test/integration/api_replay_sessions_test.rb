@@ -237,6 +237,27 @@ class ApiReplaySessionsTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
   end
 
+  test "POST rejects recording when page URL is the ActiveRabbit app host" do
+    prev = ENV["APP_HOST"]
+    ENV["APP_HOST"] = "app.example.com"
+    params = valid_replay_params.merge(url: "https://app.example.com/dashboard")
+    assert_no_difference "Replay.count" do
+      post "/api/v1/replay_sessions",
+        params: params,
+        headers: auth_headers,
+        as: :json
+    end
+    assert_response :unprocessable_entity
+    json = JSON.parse(response.body)
+    assert_equal "invalid_recording_origin", json["error"]
+  ensure
+    if prev
+      ENV["APP_HOST"] = prev
+    else
+      ENV.delete("APP_HOST")
+    end
+  end
+
   private
 
   def auth_headers

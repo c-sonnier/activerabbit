@@ -256,6 +256,10 @@ initReplay({
           </table>
         </div>
 
+        <div class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <p class="text-xs text-amber-900"><span class="font-semibold">Important:</span> Add the snippet only to <strong>your product</strong> (the site whose URL you set for this project). Do not install it on the ActiveRabbit dashboard — replays would show <code class="bg-amber-100 px-1 rounded">app.activerabbit.ai/…</code> instead of your app.</p>
+        </div>
+
         <div class="mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
           <p class="text-xs text-indigo-800"><span class="font-semibold">Recommended for high-traffic sites:</span> Set <code class="bg-indigo-100 px-1 rounded">replaysSessionSampleRate: 0.1</code> to record 10% of sessions, and keep <code class="bg-indigo-100 px-1 rounded">replaysOnErrorSampleRate: 1.0</code> to always capture sessions with errors.</p>
         </div>
@@ -302,6 +306,9 @@ initReplay({
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-normal bg-red-100 text-red-800">Error</span>
             <% else %>
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-normal bg-indigo-100 text-indigo-800">Session</span>
+            <% end %>
+            <% if replay.recorded_on_app_host? %>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-normal bg-amber-100 text-amber-900" title="Recorded on the ActiveRabbit dashboard — move the snippet to your product site">AR UI</span>
             <% end %>
             <% display_u = replay.display_url_for_project(@project) %>
             <span class="text-sm font-medium text-gray-900 truncate flex-1 min-w-0" title="<%= replay.display_url_differs_from_recorded?(@project) ? "Recorded as #{replay.url}" : replay.url %>">
