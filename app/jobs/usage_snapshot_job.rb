@@ -70,6 +70,11 @@ class UsageSnapshotJob < ApplicationJob
                                   .where(occurred_at: start_at..end_at)
                                   .count
 
+      # Count replay sessions in billing period
+      replays_count = Replay.where(account_id: account.id)
+                            .where(created_at: start_at..end_at)
+                            .count
+
       # Count projects (current count)
       projects_count = Project.where(account_id: account.id).count
 
@@ -82,6 +87,7 @@ class UsageSnapshotJob < ApplicationJob
         cached_uptime_monitors_used: uptime_monitors_count,
         cached_status_pages_used: status_pages_count,
         cached_log_entries_used: log_entries_count,
+        cached_replays_used: replays_count,
         cached_projects_used: projects_count,
         usage_cached_at: Time.current
       )

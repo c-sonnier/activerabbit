@@ -65,6 +65,35 @@ class UsageSnapshotJobTest < ActiveSupport::TestCase
     assert @account.cached_performance_events_used >= 1
   end
 
+  test "counts replay sessions in billing period" do
+    Replay.create!(
+      account: @account,
+      project: @project,
+      replay_id: SecureRandom.uuid,
+      session_id: SecureRandom.uuid,
+      started_at: Time.current,
+      duration_ms: 1200,
+      status: "pending",
+      created_at: Time.current
+    )
+
+    Replay.create!(
+      account: @account,
+      project: @project,
+      replay_id: SecureRandom.uuid,
+      session_id: SecureRandom.uuid,
+      started_at: 45.days.ago,
+      duration_ms: 800,
+      status: "expired",
+      created_at: 45.days.ago
+    )
+
+    UsageSnapshotJob.new.perform
+
+    @account.reload
+    assert_equal 1, @account.cached_replays_used
+  end
+
   test "sets cached values to 0 with no data" do
     # Use an account with no associated data (trial_account has no events/projects)
     empty_account = accounts(:trial_account)
@@ -82,6 +111,7 @@ class UsageSnapshotJobTest < ActiveSupport::TestCase
     assert_equal 0, empty_account.cached_pull_requests_used
     assert_equal 0, empty_account.cached_uptime_monitors_used
     assert_equal 0, empty_account.cached_status_pages_used
+    assert_equal 0, empty_account.cached_replays_used
   end
 
   test "defaults to current month when billing period not set" do
