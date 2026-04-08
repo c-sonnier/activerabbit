@@ -74,7 +74,7 @@ scenarios = [
   { level: 4, source: "Stripe::WebhookHandler", message: "Webhook signature verification failed for event evt_1N...", environment: "production" },
   { level: 3, source: "S3Storage",              message: "Upload retry #2 for attachment 8f2a — SlowDown response from S3", environment: "production" },
   { level: 2, source: "HealthCheck",            message: "All checks passing: db=ok redis=ok sidekiq=ok",       environment: "production" },
-  { level: 4, source: "ActionController",       message: "Timeout::Error: execution expired after 30s in ReportsController#generate", environment: "production" },
+  { level: 4, source: "ActionController",       message: "Timeout::Error: execution expired after 30s in ReportsController#generate", environment: "production" }
 ]
 
 # Generate ~200 log entries spread over the last 24 hours
@@ -84,13 +84,13 @@ request_ids = 10.times.map { "req_#{SecureRandom.hex(8)}" }
 
 scenarios.each do |scenario|
   count = case scenario[:level]
-          when 0 then rand(2..4)    # trace: few
-          when 1 then rand(4..8)    # debug: moderate
-          when 2 then rand(5..12)   # info: most common
-          when 3 then rand(3..6)    # warn: some
-          when 4 then rand(2..5)    # error: fewer
-          when 5 then rand(1..2)    # fatal: rare
-          end
+  when 0 then rand(2..4)    # trace: few
+  when 1 then rand(4..8)    # debug: moderate
+  when 2 then rand(5..12)   # info: most common
+  when 3 then rand(3..6)    # warn: some
+  when 4 then rand(2..5)    # error: fewer
+  when 5 then rand(1..2)    # fatal: rare
+  end
 
   count.times do
     occurred = rand(24.hours).seconds.ago

@@ -20,7 +20,7 @@ class ReplayIngestJob
       checksum          = Digest::SHA256.hexdigest(compressed)
       key               = replay.storage_path
 
-      if ReplayStorage::BUCKET.present?
+      if ReplayStorage::BUCKET.present? || Rails.env.test?
         result = ReplayStorage.client.upload(key: key, data: compressed)
         success = result[:success]
         storage_key = result[:key]

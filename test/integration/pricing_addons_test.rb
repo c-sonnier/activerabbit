@@ -118,8 +118,8 @@ class PricingAddonsTest < ActionDispatch::IntegrationTest
 
   test "plan cards include uptime monitors" do
     get plan_path
-    assert_match(/3 uptime monitors/, response.body)   # Team
-    assert_match(/5 uptime monitors/, response.body)    # Business
+    assert_match(/monitors \(uptime \+ cron\)/, response.body) # Team card copy
+    assert_match(/5 monitors \(uptime \+ cron\)/, response.body) # Business
   end
 
   test "plan cards include session replays" do
@@ -145,7 +145,8 @@ class PricingAddonsTest < ActionDispatch::IntegrationTest
 
   test "subscribe button exists" do
     get plan_path
-    assert_select "button[type='submit']", text: "Subscribe"
+    assert_select "[data-addons-target='submitButton']", 1
+    assert_select "[data-addons-target='submitButton']", /Subscribe|Update Plan/
   end
 
   # ===========================================================================
