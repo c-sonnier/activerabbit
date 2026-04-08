@@ -66,6 +66,12 @@ class UsageSnapshotJobTest < ActiveSupport::TestCase
   end
 
   test "counts replay sessions in billing period" do
+    period_start = @account.event_usage_period_start
+    period_end = @account.event_usage_period_end
+    baseline_count = Replay.where(account_id: @account.id)
+                           .where(created_at: period_start..period_end)
+                           .count
+
     Replay.create!(
       account: @account,
       project: @project,
@@ -91,7 +97,7 @@ class UsageSnapshotJobTest < ActiveSupport::TestCase
     UsageSnapshotJob.new.perform
 
     @account.reload
-    assert_equal 1, @account.cached_replays_used
+    assert_equal baseline_count + 1, @account.cached_replays_used
   end
 
   test "sets cached values to 0 with no data" do

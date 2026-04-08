@@ -83,7 +83,7 @@ class CheckoutsControllerTest < ActionDispatch::IntegrationTest
     }) do
       post checkouts_path, params: { plan: "starter" }
 
-      assert_redirected_to settings_path
+      assert_redirected_to plan_path
       assert flash[:alert].present?
     end
   end

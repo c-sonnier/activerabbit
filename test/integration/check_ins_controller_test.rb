@@ -50,6 +50,9 @@ class CheckInsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "POST create check-in" do
+    # Ensure this test is not blocked by shared monitor quota fixtures.
+    @account.update!(addon_uptime_monitors: 10)
+
     assert_difference -> { CheckIn.count }, 1 do
       post check_ins_path, params: {
         check_in: {
