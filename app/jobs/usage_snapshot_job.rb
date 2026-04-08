@@ -75,6 +75,10 @@ class UsageSnapshotJob < ApplicationJob
                             .where(created_at: start_at..end_at)
                             .count
 
+      # Total stored log payload size (reconciles incremental ingest counter)
+      log_bytes = LogEntry.where(account_id: account.id)
+                          .sum("COALESCE(LENGTH(message), 0) + COALESCE(LENGTH(CAST(params AS text)), 0) + COALESCE(LENGTH(CAST(context AS text)), 0)")
+
       # Count projects (current count)
       projects_count = Project.where(account_id: account.id).count
 
@@ -88,6 +92,7 @@ class UsageSnapshotJob < ApplicationJob
         cached_status_pages_used: status_pages_count,
         cached_log_entries_used: log_entries_count,
         cached_replays_used: replays_count,
+        cached_log_bytes_used: log_bytes,
         cached_projects_used: projects_count,
         usage_cached_at: Time.current
       )

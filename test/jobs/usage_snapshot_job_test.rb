@@ -100,6 +100,24 @@ class UsageSnapshotJobTest < ActiveSupport::TestCase
     assert_equal baseline_count + 1, @account.cached_replays_used
   end
 
+  test "recalculates cached_log_bytes_used from log row payload lengths" do
+    LogEntry.create!(
+      account: @account,
+      project: @project,
+      level: 2,
+      message: "Z" * 40,
+      params: {},
+      context: {},
+      occurred_at: Time.current,
+      environment: "production"
+    )
+
+    UsageSnapshotJob.new.perform
+
+    @account.reload
+    assert_operator @account.cached_log_bytes_used, :>=, 40
+  end
+
   test "sets cached values to 0 with no data" do
     # Use an account with no associated data (trial_account has no events/projects)
     empty_account = accounts(:trial_account)
@@ -118,6 +136,7 @@ class UsageSnapshotJobTest < ActiveSupport::TestCase
     assert_equal 0, empty_account.cached_uptime_monitors_used
     assert_equal 0, empty_account.cached_status_pages_used
     assert_equal 0, empty_account.cached_replays_used
+    assert_equal 0, empty_account.cached_log_bytes_used
   end
 
   test "defaults to current month when billing period not set" do

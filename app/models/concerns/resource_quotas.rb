@@ -26,10 +26,13 @@ module ResourceQuotas
   #   trial    → 20  (14-day trial period)
   #   team     → unlimited (with AI addon, $40/mo)
   #   business → unlimited (with AI addon, $40/mo)
+  # 1 GB in bytes — free log storage for all plans
+  LOG_BYTES_QUOTA = 1_073_741_824
+
   PLAN_QUOTAS = {
     free: {
       events: 5_000,
-      log_entries: 10_000,
+      log_entries: Float::INFINITY,
       ai_summaries: 0,
       pull_requests: 0,
       uptime_monitors: 0,
@@ -42,7 +45,7 @@ module ResourceQuotas
     },
     trial: {
       events: 50_000,
-      log_entries: 100_000,
+      log_entries: Float::INFINITY,
       ai_summaries: 20,
       pull_requests: 20,
       uptime_monitors: 3,
@@ -54,7 +57,7 @@ module ResourceQuotas
     },
     team: {
       events: 50_000,
-      log_entries: 100_000,
+      log_entries: Float::INFINITY,
       ai_summaries: Float::INFINITY,
       pull_requests: 20,
       uptime_monitors: 3,
@@ -66,7 +69,7 @@ module ResourceQuotas
     },
     business: {
       events: 100_000,
-      log_entries: 500_000,
+      log_entries: Float::INFINITY,
       ai_summaries: Float::INFINITY,
       pull_requests: 250,
       uptime_monitors: 5,
@@ -107,6 +110,19 @@ module ResourceQuotas
 
   def log_entries_quota
     quota_for_resource(:log_entries)
+  end
+
+  # 1 GB free log storage for all plans
+  def log_bytes_quota
+    LOG_BYTES_QUOTA
+  end
+
+  def log_bytes_used
+    cached_log_bytes_used || 0
+  end
+
+  def log_quota_exceeded?
+    log_bytes_used >= log_bytes_quota
   end
 
   def session_replays_quota

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_30_234247) do
+ActiveRecord::Schema[8.0].define(version: 2026_04_02_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -46,6 +46,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_30_234247) do
     t.integer "addon_uptime_monitors", default: 0, null: false
     t.integer "addon_extra_errors", default: 0, null: false
     t.integer "addon_session_replays", default: 0, null: false
+    t.bigint "cached_log_bytes_used", default: 0, null: false
     t.index ["name"], name: "index_accounts_on_name"
   end
 

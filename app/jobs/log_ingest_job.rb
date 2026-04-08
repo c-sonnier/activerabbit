@@ -14,15 +14,19 @@ class LogIngestJob < ApplicationJob
     account = project.account
     return unless account
 
-    # Check quota before inserting
-    unless account.within_quota?(:log_entries)
-      Rails.logger.warn "[LogIngest] Quota exceeded for account #{account.id}, dropping #{entries.size} log entries"
+    # Check storage quota (1 GB free)
+    if account.log_quota_exceeded?
+      Rails.logger.warn "[LogIngest] Log storage quota exceeded for account #{account.id}, dropping #{entries.size} log entries"
       return
     end
 
     ActsAsTenant.with_tenant(account) do
       symbolized = entries.map { |e| e.deep_symbolize_keys }
       records = LogStore.insert_batch(project, symbolized)
+
+      # Track approximate storage bytes used
+      batch_bytes = entries.sum { |e| e.to_json.bytesize }
+      Account.where(id: account.id).update_all("cached_log_bytes_used = COALESCE(cached_log_bytes_used, 0) + #{batch_bytes.to_i}")
 
       # Broadcast each entry to ActionCable for live tail
       records.each do |record|

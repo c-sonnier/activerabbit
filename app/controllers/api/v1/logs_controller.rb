@@ -6,12 +6,12 @@ class Api::V1::LogsController < Api::BaseController
       return
     end
 
-    # Check log quota
+    # Check log storage quota (1 GB free for all plans)
     account = @current_project.account
-    if account && !account.within_quota?(:log_entries)
+    if account&.log_quota_exceeded?
       render json: {
         error: "quota_exceeded",
-        message: "Log quota exceeded. Upgrade your plan for higher limits."
+        message: "Log storage quota exceeded (1 GB). Contact support for higher limits."
       }, status: :too_many_requests
       return
     end
