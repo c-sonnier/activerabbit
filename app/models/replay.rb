@@ -46,4 +46,44 @@ class Replay < ApplicationRecord
   def mark_failed!
     update!(status: "failed")
   end
+
+  # URL shown in the UI. Recordings store the browser's location.href, which in
+  # dev is often http://localhost:... — replace that origin with the project's
+  # configured app URL so /acme-web/replays lists the real app domain, not the dashboard host.
+  def display_url_for_project(project)
+    return url if url.blank?
+    return url unless project&.url.present?
+
+    begin
+      recorded = URI.parse(url)
+      app = URI.parse(project.url)
+      return url unless self.class.development_host?(recorded.host)
+      return url if recorded.host&.downcase == app.host&.downcase
+
+      port = app.port
+      default_port = (app.scheme == "https" ? 443 : 80)
+      port_suffix = port && port != default_port ? ":#{port}" : ""
+
+      path = recorded.path.presence || "/"
+      qs = recorded.query.present? ? "?#{recorded.query}" : ""
+      frag = recorded.fragment.present? ? "##{recorded.fragment}" : ""
+      "#{app.scheme}://#{app.host}#{port_suffix}#{path}#{qs}#{frag}"
+    rescue URI::InvalidURIError, ArgumentError
+      url
+    end
+  end
+
+  def display_url_differs_from_recorded?(project)
+    url.present? && display_url_for_project(project) != url
+  end
+
+  def self.development_host?(host)
+    return true if host.blank?
+
+    h = host.downcase.delete("[]") # [::1] -> ::1
+    return true if %w[localhost 127.0.0.1 0.0.0.0 ::1].include?(h)
+    return true if h.end_with?(".lvh.me") || h == "lvh.me"
+
+    false
+  end
 end

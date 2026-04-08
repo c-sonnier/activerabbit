@@ -47,7 +47,7 @@
     <% end %>
     <div>
       <h1 class="text-xl font-bold text-gray-900">Session Replays</h1>
-      <p class="text-sm text-gray-500"><%= @project.name %></p>
+      <p class="text-sm text-gray-500"><%= @project.name %> <span class="text-gray-400">·</span> <span class="text-gray-500">sessions for this app only</span></p>
     </div>
   </div>
 
@@ -303,8 +303,9 @@ initReplay({
             <% else %>
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-normal bg-indigo-100 text-indigo-800">Session</span>
             <% end %>
-            <span class="text-sm font-medium text-gray-900 truncate flex-1 min-w-0">
-              <%= replay.url.present? ? replay.url.truncate(80) : "Unknown URL" %>
+            <% display_u = replay.display_url_for_project(@project) %>
+            <span class="text-sm font-medium text-gray-900 truncate flex-1 min-w-0" title="<%= replay.display_url_differs_from_recorded?(@project) ? "Recorded as #{replay.url}" : replay.url %>">
+              <%= display_u.present? ? display_u.truncate(80) : "Unknown URL" %>
             </span>
             <span class="text-xs text-gray-400 whitespace-nowrap" title="Session duration"><%= format_duration_ms(replay.duration_ms) %></span>
             <% if replay.viewport_width.present? && replay.viewport_height.present? %>

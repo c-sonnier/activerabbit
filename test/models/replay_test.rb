@@ -210,4 +210,28 @@ class ReplayTest < ActiveSupport::TestCase
     replay.mark_failed!
     assert_equal "failed", replay.reload.status
   end
+
+  # ===========================================================================
+  # display_url_for_project (localhost → project app URL)
+  # ===========================================================================
+
+  test "display_url_for_project maps localhost recording to project.url origin" do
+    @replay.update!(url: "http://localhost:3003/plan?q=1")
+    assert_equal "http://example.com/plan?q=1", @replay.display_url_for_project(@project)
+    assert @replay.display_url_differs_from_recorded?(@project)
+  end
+
+  test "display_url_for_project leaves production URLs unchanged" do
+    @replay.update!(url: "https://example.com/dashboard")
+    assert_equal "https://example.com/dashboard", @replay.display_url_for_project(@project)
+    refute @replay.display_url_differs_from_recorded?(@project)
+  end
+
+  test "development_host? detects common dev hosts" do
+    assert Replay.development_host?("localhost")
+    assert Replay.development_host?("127.0.0.1")
+    assert Replay.development_host?("[::1]")
+    assert Replay.development_host?("myapp.lvh.me")
+    refute Replay.development_host?("app.example.com")
+  end
 end
