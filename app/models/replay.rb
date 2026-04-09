@@ -22,6 +22,19 @@ class Replay < ApplicationRecord
   scope :recent, -> { order(created_at: :desc) }
   scope :expired, -> { where("retention_until < ?", Time.current) }
   scope :with_issue, -> { where.not(issue_id: nil) }
+  DEV_HOST_PATTERNS = %w[localhost 127.0.0.1 0.0.0.0 lvh.me].freeze
+
+  scope :from_user_app, -> {
+    rel = where.not(url: [nil, ""])
+    DEV_HOST_PATTERNS.each do |host|
+      rel = rel.where.not("url ILIKE ?", "%://#{host}%")
+    end
+    app_host = normalize_host_for_compare(ENV["APP_HOST"].to_s)
+    if app_host.present?
+      rel = rel.where.not("url ILIKE ?", "%#{app_host}%")
+    end
+    rel
+  }
 
   def expired?
     retention_until.present? && retention_until < Time.current

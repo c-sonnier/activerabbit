@@ -4,7 +4,7 @@ class ReplaysController < ApplicationController
   before_action :set_project, except: [:data]
 
   def index
-    @replays = @project.replays.ready.recent
+    @replays = @project.replays.ready.from_user_app.recent
 
     # Filtering
     @replays = @replays.where(environment: params[:environment]) if params[:environment].present?
@@ -15,7 +15,7 @@ class ReplaysController < ApplicationController
 
     @replays = @replays.page(params[:page]).per(25)
 
-    stats_row = @project.replays.ready
+    stats_row = @project.replays.ready.from_user_app
       .select("COUNT(*) AS total, COUNT(issue_id) AS with_errors, COALESCE(AVG(CASE WHEN duration_ms > 0 AND duration_ms < 3600000 THEN duration_ms END), 0)::integer AS avg_duration")
       .take
     @stats = { total: stats_row.total, with_errors: stats_row.with_errors, avg_duration: stats_row.avg_duration }
@@ -25,8 +25,8 @@ class ReplaysController < ApplicationController
     @replay = @project.replays.find(params[:id])
     @replay_url = project_replay_data_path(@project.slug, @replay) if @replay.storage_key.present?
 
-    @prev_replay = @project.replays.ready.where("created_at > ?", @replay.created_at).order(created_at: :asc).limit(1).first
-    @next_replay = @project.replays.ready.where("created_at < ?", @replay.created_at).order(created_at: :desc).limit(1).first
+    @prev_replay = @project.replays.ready.from_user_app.where("created_at > ?", @replay.created_at).order(created_at: :asc).limit(1).first
+    @next_replay = @project.replays.ready.from_user_app.where("created_at < ?", @replay.created_at).order(created_at: :desc).limit(1).first
   end
 
   # Serve replay data — proxies from local storage or R2
