@@ -75,6 +75,36 @@ RSpec.describe Account, type: :model do
     end
   end
 
+  describe '#ai_provider_config' do
+    it 'returns the active AI provider config' do
+      account = create(:account)
+      config = create(:ai_provider_config, account: account, active: true)
+
+      expect(account.ai_provider_config).to eq(config)
+    end
+
+    it 'returns nil when no active config exists' do
+      account = create(:account)
+
+      expect(account.ai_provider_config).to be_nil
+    end
+  end
+
+  describe '#ai_configured?' do
+    it 'returns true when an active config exists' do
+      account = create(:account)
+      create(:ai_provider_config, account: account, active: true)
+
+      expect(account.ai_configured?).to be true
+    end
+
+    it 'returns false when no config exists' do
+      account = create(:account)
+
+      expect(account.ai_configured?).to be false
+    end
+  end
+
   # describe '#slack_channel=' do
   #   it 'normalizes channel to start with #' do
   #     account.slack_channel = 'alerts'

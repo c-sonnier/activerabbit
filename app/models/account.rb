@@ -12,6 +12,7 @@ class Account < ApplicationRecord
   has_many :users, dependent: :destroy
   has_many :projects, dependent: :destroy
   has_many :api_tokens, through: :projects
+  has_many :ai_provider_configs, dependent: :destroy
 
   # Scopes
   scope :active, -> { where(active: true) }
@@ -116,6 +117,15 @@ class Account < ApplicationRecord
 
   def active_subscription?
     active_subscription_record.present?
+  end
+
+  # AI provider configuration
+  def ai_provider_config
+    ai_provider_configs.active.first
+  end
+
+  def ai_configured?
+    ai_provider_config.present?
   end
 
   # Account-wide Slack notification settings

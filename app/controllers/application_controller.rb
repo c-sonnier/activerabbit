@@ -11,6 +11,7 @@ class ApplicationController < ActionController::Base
     checkouts
     subscriptions
     account_settings
+    ai_provider_configs
     settings
   ].freeze
 
