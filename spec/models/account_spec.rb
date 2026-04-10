@@ -103,6 +103,52 @@ RSpec.describe Account, type: :model do
 
       expect(account.ai_configured?).to be false
     end
+
+    it 'returns true when ANTHROPIC_API_KEY env is set and no DB config' do
+      account = create(:account)
+
+      ClimateControl.modify(ANTHROPIC_API_KEY: "sk-ant-test") do
+        expect(account.ai_configured?).to be true
+      end
+    end
+
+    it 'returns true when OPENAI_API_KEY env is set and no DB config' do
+      account = create(:account)
+
+      ClimateControl.modify(OPENAI_API_KEY: "sk-test") do
+        expect(account.ai_configured?).to be true
+      end
+    end
+  end
+
+  describe '#ai_provider_config ENV fallback' do
+    it 'returns ENV-based config when no DB config exists' do
+      account = create(:account)
+
+      ClimateControl.modify(ANTHROPIC_API_KEY: "sk-ant-test") do
+        config = account.ai_provider_config
+        expect(config).to be_present
+        expect(config.provider).to eq("anthropic")
+        expect(config.api_key).to eq("sk-ant-test")
+      end
+    end
+
+    it 'prefers DB config over ENV' do
+      account = create(:account)
+      db_config = create(:ai_provider_config, account: account, provider: "openai", active: true)
+
+      ClimateControl.modify(ANTHROPIC_API_KEY: "sk-ant-test") do
+        expect(account.ai_provider_config).to eq(db_config)
+      end
+    end
+
+    it 'returns nil when neither DB config nor ENV exists' do
+      account = create(:account)
+
+      ClimateControl.modify(ANTHROPIC_API_KEY: nil, OPENAI_API_KEY: nil, GEMINI_API_KEY: nil) do
+        expect(account.ai_provider_config).to be_nil
+      end
+    end
   end
 
   # describe '#slack_channel=' do
