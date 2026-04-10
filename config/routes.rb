@@ -73,6 +73,9 @@ Rails.application.routes.draw do
     post :test_notification
     patch :update_user_preferences
     resources :ai_provider_configs, only: [:create, :update, :destroy] do
+      collection do
+        get :models
+      end
       member do
         post :activate
       end

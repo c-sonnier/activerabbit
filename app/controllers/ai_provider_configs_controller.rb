@@ -3,6 +3,21 @@ class AiProviderConfigsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_config, only: [:update, :destroy, :activate]
 
+  def models
+    provider = params[:provider].to_s
+    unless %w[anthropic openai gemini].include?(provider)
+      return render json: { fast: [], power: [] }
+    end
+
+    chat_models = RubyLLM.models.by_provider(provider).select { |m| m.type == "chat" }
+    sorted = chat_models.sort_by { |m| m.name.downcase }
+
+    render json: {
+      fast: sorted.map { |m| { value: m.id, label: m.name } },
+      power: sorted.map { |m| { value: m.id, label: m.name } }
+    }
+  end
+
   def create
     @config = current_account.ai_provider_configs.build(config_params)
 
