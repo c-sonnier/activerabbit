@@ -56,7 +56,7 @@ RSpec.describe AiPerformanceSummaryService, type: :service do
         mock_chat = double(with_instructions: nil)
         allow(mock_chat).to receive(:with_instructions).and_return(mock_chat)
         allow(mock_chat).to receive(:ask).and_return(mock_message)
-        allow_any_instance_of(described_class).to receive(:build_chat).and_return(mock_chat)
+        allow_any_instance_of(described_class).to receive(:ai_chat).and_return(mock_chat)
 
         service = described_class.new(account: account, target: target, stats: stats)
         result = service.call

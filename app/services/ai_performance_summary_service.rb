@@ -1,4 +1,6 @@
 class AiPerformanceSummaryService
+  include AiProviderChat
+
   SYSTEM_PROMPT = <<~PROMPT
     You are a senior Rails performance engineer. Analyze the performance target, recent stats, and a sample event.
     Provide a concise Root Cause Analysis (RCA), concrete optimization steps, and suggested tests/monitoring.
@@ -13,10 +15,9 @@ class AiPerformanceSummaryService
   end
 
   def call
-    config = @account.ai_provider_config
-    return { error: "missing_config", message: "No AI provider configured" } unless config
+    chat = ai_chat(@account)
+    return { error: "missing_config", message: "No AI provider configured" } unless chat
 
-    chat = build_chat(config)
     response = chat.with_instructions(SYSTEM_PROMPT).ask(build_content)
     { summary: response.content }
   rescue => e
@@ -25,21 +26,6 @@ class AiPerformanceSummaryService
   end
 
   private
-
-  def build_chat(config)
-    ctx = RubyLLM.context do |c|
-      case config.provider
-      when "anthropic"
-        c.anthropic_api_key = config.api_key
-      when "openai"
-        c.openai_api_key = config.api_key
-      when "gemini"
-        c.gemini_api_key = config.api_key
-      end
-    end
-
-    ctx.chat(model: config.fast_model)
-  end
 
   def build_content
     parts = []
