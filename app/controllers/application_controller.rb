@@ -198,6 +198,7 @@ class ApplicationController < ActionController::Base
     settings
     account_settings
     project_settings
+    ai_provider_configs
   ].freeze
 
   # Super admin viewing mode: block most write operations (allow settings changes)
